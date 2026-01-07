@@ -22,11 +22,11 @@ type HistoryItem = {
 
 function HistoryCard({ item, firestore, userId }: { item: HistoryItem, firestore: Firestore, userId: string }) {
     
-    const handleDelete = async (e: React.MouseEvent) => {
+    const handleDelete = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
         if (window.confirm(`Are you sure you want to delete "${item.title}" and all its saved words?`)) {
-            await deleteVideoAndAssociatedData(firestore, userId, item.id);
+            deleteVideoAndAssociatedData(firestore, userId, item.id);
         }
     };
 
@@ -36,7 +36,7 @@ function HistoryCard({ item, firestore, userId }: { item: HistoryItem, firestore
                 <CardContent className="p-0">
                     <div className="relative aspect-video">
                         <Image
-                            src={`https://picsum.photos/seed/${item.id}/400/225`}
+                            src={`https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`}
                             alt={item.title}
                             fill
                             className="object-cover transition-transform group-hover:scale-105"
@@ -106,4 +106,3 @@ export function VideoHistory() {
         </div>
     );
 }
-
