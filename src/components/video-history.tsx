@@ -31,32 +31,34 @@ function HistoryCard({ item, firestore, userId }: { item: HistoryItem, firestore
     };
 
     return (
-        <Link href={`/watch?v=${item.id}`} className="group relative">
-             <Card className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
-                <CardContent className="p-0">
-                    <div className="relative aspect-video">
-                        <Image
-                            src={`https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`}
-                            alt={item.title}
-                            fill
-                            className="object-cover transition-transform group-hover:scale-105"
-                        />
-                    </div>
-                    <div className="p-3">
-                        <p className="font-semibold text-sm truncate group-hover:text-primary">{item.title}</p>
-                    </div>
-                </CardContent>
-             </Card>
+        <div className="group relative">
+            <Link href={`/watch?v=${item.id}`} className="block">
+                 <Card className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
+                    <CardContent className="p-0">
+                        <div className="relative aspect-video">
+                            <Image
+                                src={`https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`}
+                                alt={item.title}
+                                fill
+                                className="object-cover transition-transform group-hover:scale-105"
+                            />
+                        </div>
+                        <div className="p-3">
+                            <p className="font-semibold text-sm truncate group-hover:text-primary">{item.title}</p>
+                        </div>
+                    </CardContent>
+                 </Card>
+            </Link>
             <Button
                 variant="destructive"
                 size="icon"
-                className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                 onClick={handleDelete}
             >
                 <Trash2 className="h-4 w-4" />
                 <span className="sr-only">Delete video</span>
             </Button>
-        </Link>
+        </div>
     );
 }
 
