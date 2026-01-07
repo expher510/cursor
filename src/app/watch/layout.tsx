@@ -11,7 +11,7 @@ export default function WatchLayout({
     <WatchPageProvider>
       <div className="flex min-h-screen w-full flex-col">
         <AppHeader />
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-4 md:p-6 pt-20">{children}</main>
       </div>
     </WatchPageProvider>
   );
