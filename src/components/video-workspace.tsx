@@ -1,17 +1,15 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { MOCK_VIDEO_DATA } from "@/lib/data";
 import { VideoPlayer } from "./video-player";
 import { TranscriptView } from "./transcript-view";
-import { useWatchPage } from "@/context/watch-page-context";
 import { useFirebase } from "@/firebase";
-import { addDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { collection, doc } from "firebase/firestore";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { doc } from "firebase/firestore";
 
 export function VideoWorkspace({ videoId }: { videoId: string }) {
   const { firestore, user } = useFirebase();
-  const { addVocabularyItemOptimistic } = useWatchPage();
 
   const videoData = MOCK_VIDEO_DATA;
 
@@ -27,13 +25,6 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
     }
   }, [videoId, videoData.title, user, firestore]);
 
-  const handleAddToVocabulary = useCallback((word: string, translation: string) => {
-    if (user && firestore) {
-      addVocabularyItemOptimistic(word, translation, videoId);
-    }
-  }, [addVocabularyItemOptimistic, user, firestore, videoId]);
-
-
   return (
     <div className="grid grid-cols-1 gap-6 lg:gap-8">
       <div className="flex flex-col gap-6">
@@ -41,6 +32,7 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
         <TranscriptView 
           transcript={videoData.transcript} 
           translations={videoData.translations}
+          videoId={videoId}
         />
       </div>
     </div>

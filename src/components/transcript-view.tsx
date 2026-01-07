@@ -10,15 +10,17 @@ import { cn } from "@/lib/utils";
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
   translations: Record<string, string>;
+  videoId: string;
 };
 
-function DraggableWord({ word, translation, lineIndex, wordIndex }: { word: string; translation: string; lineIndex: number; wordIndex: number; }) {
+function DraggableWord({ word, translation, lineIndex, wordIndex, videoId }: { word: string; translation: string; lineIndex: number; wordIndex: number; videoId: string; }) {
   const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `draggable-${lineIndex}-${wordIndex}`,
     data: {
       word: cleanedWord,
       translation: translation,
+      videoId: videoId,
     },
   });
 
@@ -38,7 +40,7 @@ function DraggableWord({ word, translation, lineIndex, wordIndex }: { word: stri
 }
 
 
-export function TranscriptView({ transcript, translations }: TranscriptViewProps) {
+export function TranscriptView({ transcript, translations, videoId }: TranscriptViewProps) {
 
   return (
     <Card>
@@ -67,6 +69,7 @@ export function TranscriptView({ transcript, translations }: TranscriptViewProps
                             translation={translation}
                             lineIndex={lineIndex}
                             wordIndex={wordIndex}
+                            videoId={videoId}
                           />
                           {' '}
                         </span>
