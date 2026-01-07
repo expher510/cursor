@@ -13,25 +13,20 @@ import {
 } from "@/components/ui/sheet";
 import { useState } from "react";
 import { useWatchPage } from "@/context/watch-page-context";
-import { AnimatePresence, motion } from "framer-motion";
-
 
 function HeaderNotification() {
     const { notification } = useWatchPage();
 
     return (
-        <AnimatePresence>
+        <>
             {notification && (
-                <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10, transition: { duration: 0.2 } }}
+                <div
                     className="ml-4 text-sm font-medium text-muted-foreground"
                     >
                     {notification}
-                </motion.div>
+                </div>
             )}
-        </AnimatePresence>
+        </>
     )
 }
 
