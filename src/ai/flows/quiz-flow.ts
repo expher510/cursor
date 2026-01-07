@@ -55,8 +55,6 @@ const generateQuizFlow = ai.defineFlow(
     `;
 
     // --- Step 2: Make the API call to Groq ---
-    // To enable this: 1) Add GROQ_API_KEY to .env, 2) Uncomment the block below, 3) Remove the mock data block.
-    /*
     const GROQ_API_KEY = process.env.GROQ_API_KEY;
     if (!GROQ_API_KEY) {
       throw new Error('GROQ_API_KEY is not defined in your .env file.');
@@ -84,38 +82,5 @@ const generateQuizFlow = ai.defineFlow(
       console.error("Error calling Groq API:", error);
       throw new Error("Failed to generate quiz from Groq API.");
     }
-    */
-
-    // --- Step 3: Return mock data (Remove this when you enable the API call) ---
-    console.log("--- Generating Mock Quiz Data (Groq API call is disabled) ---");
-    return {
-      questions: [
-        {
-          questionText: "What is the primary topic of the video?",
-          options: ["Cooking", "History", "Language", "Sports"],
-          correctAnswer: "Language"
-        },
-        {
-          questionText: "How many people speak the language discussed?",
-          options: ["10 million", "100 million", "Over 420 million", "Under 5 million"],
-          correctAnswer: "Over 420 million"
-        },
-        {
-          questionText: "In which direction is the script written?",
-          options: ["Left to right", "Top to bottom", "Right to left", "Bottom to top"],
-          correctAnswer: "Right to left"
-        },
-        {
-          questionText: "What does the root 'k-t-b' relate to?",
-          options: ["Food", "Travel", "Writing", "Music"],
-          correctAnswer: "Writing"
-        },
-        {
-          questionText: "What does 'Kitab' mean?",
-          options: ["Writer", "Book", "School", "Paper"],
-          correctAnswer: "Book"
-        }
-      ]
-    };
   }
 );
