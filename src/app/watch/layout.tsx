@@ -1,4 +1,5 @@
 'use client';
+import { WatchPageHeader } from "@/components/watch-page-header";
 import { WatchPageProvider } from "@/context/watch-page-context";
 
 export default function WatchLayout({
@@ -8,7 +9,8 @@ export default function WatchLayout({
 }) {
   return (
     <WatchPageProvider>
-        <main className="flex-1 p-4 md:p-6 pt-20">{children}</main>
+      <WatchPageHeader />
+      <main className="flex-1 p-4 md:p-6 pt-20">{children}</main>
     </WatchPageProvider>
   );
 }

@@ -3,7 +3,6 @@ import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
 import { AuthProvider } from '@/components/auth-provider';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
-import { AppHeader } from '@/components/app-header';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-plus-jakarta-sans' });
@@ -25,7 +24,6 @@ export default function RootLayout({
         <FirebaseClientProvider>
           <AuthProvider>
             <div className="flex min-h-screen w-full flex-col">
-              <AppHeader />
               {children}
             </div>
           </AuthProvider>

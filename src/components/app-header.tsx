@@ -12,25 +12,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useState } from "react";
-import { useWatchPage } from "@/context/watch-page-context";
 
-function HeaderNotification() {
-    const { notification } = useWatchPage();
-
-    return (
-        <>
-            {notification && (
-                <div
-                    className="ml-4 text-sm font-medium text-muted-foreground"
-                    >
-                    {notification}
-                </div>
-            )}
-        </>
-    )
-}
-
-export function AppHeader() {
+export function AppHeader({ children }: { children?: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   
   return (
@@ -54,7 +37,7 @@ export function AppHeader() {
         
         <div className="hidden md:flex flex-1 items-center justify-start">
            <Logo />
-           <HeaderNotification />
+           {children}
         </div>
 
         <div className="md:hidden flex-1 flex justify-center">
