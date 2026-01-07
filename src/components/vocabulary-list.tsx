@@ -4,10 +4,35 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "./ui/button";
 import { X, List } from "lucide-react";
-import { useWatchPage } from "@/context/watch-page-context";
+import { useFirebase } from "@/firebase";
+import { useCollection, WithId } from "@/firebase/firestore/use-collection";
+import { collection, doc } from "firebase/firestore";
+import { deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
+import { useMemoFirebase } from "@/firebase/provider";
+import { Skeleton } from "./ui/skeleton";
+
+type VocabularyItem = {
+  word: string;
+  translation: string;
+  userId: string;
+  videoId: string;
+};
 
 export function VocabularyList() {
-  const { vocabulary, removeVocabularyItem } = useWatchPage();
+  const { firestore, user } = useFirebase();
+
+  const vocabQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return collection(firestore, `users/${user.uid}/vocabularies`);
+  }, [user, firestore]);
+
+  const { data: vocabulary, isLoading } = useCollection<VocabularyItem>(vocabQuery);
+
+  const removeVocabularyItem = (id: string) => {
+    if (!firestore || !user) return;
+    const docRef = doc(firestore, `users/${user.uid}/vocabularies`, id);
+    deleteDocumentNonBlocking(docRef);
+  };
 
   return (
     <Card className="sticky top-0 h-screen border-none shadow-none rounded-none">
@@ -20,7 +45,13 @@ export function VocabularyList() {
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[calc(100vh-150px)] pr-4">
-          {vocabulary.length === 0 ? (
+          {isLoading ? (
+             <div className="space-y-2">
+               <Skeleton className="h-16 w-full" />
+               <Skeleton className="h-16 w-full" />
+               <Skeleton className="h-16 w-full" />
+            </div>
+          ) :!vocabulary || vocabulary.length === 0 ? (
             <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
               <p className="text-sm text-muted-foreground">Your saved words will appear here.</p>
             </div>

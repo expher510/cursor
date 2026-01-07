@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
+// This hook is now a fallback for when Firebase is not available.
+// The main history logic is now in HistoryMenu.tsx using useCollection.
+
 export type HistoryItem = {
   id: string;
   title: string;

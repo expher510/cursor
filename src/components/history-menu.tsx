@@ -7,12 +7,44 @@ import { Button } from "./ui/button";
 import { SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "./ui/sidebar";
 import { ScrollArea } from "./ui/scroll-area";
 import { usePathname, useSearchParams } from "next/navigation";
+import { useFirebase } from "@/firebase";
+import { useCollection } from "@/firebase/firestore/use-collection";
+import { collection, query, orderBy, limit, writeBatch } from "firebase/firestore";
+import { useMemoFirebase } from "@/firebase/provider";
+import { Skeleton } from "./ui/skeleton";
 
 export function HistoryMenu() {
-  const { history, clearHistory, isLoaded } = useHistory();
+  const { firestore, user } = useFirebase();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentVideoId = searchParams.get('v');
+
+  const historyQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return query(
+      collection(firestore, `users/${user.uid}/videos`),
+      orderBy("timestamp", "desc"),
+      limit(50)
+    );
+  }, [user, firestore]);
+
+  const { data: history, isLoading } = useCollection<{id: string, title: string, timestamp: number}>(historyQuery);
+
+  const clearHistory = async () => {
+    if (!firestore || !user || !history) return;
+
+    const batch = writeBatch(firestore);
+    const historyCollectionRef = collection(firestore, `users/${user.uid}/videos`);
+    
+    // In a real app with many documents, you would query for documents in batches.
+    // For this case, we assume the history from the hook is sufficient.
+    history.forEach(item => {
+      const docRef = doc(historyCollectionRef, item.id);
+      batch.delete(docRef);
+    });
+
+    await batch.commit();
+  };
 
 
   return (
@@ -22,7 +54,7 @@ export function HistoryMenu() {
           <History />
           <span>History</span>
         </div>
-        {history.length > 0 && (
+        {history && history.length > 0 && (
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={clearHistory}>
             <Trash2 className="h-4 w-4"/>
             <span className="sr-only">Clear history</span>
@@ -31,9 +63,13 @@ export function HistoryMenu() {
       </SidebarGroupLabel>
       <SidebarGroupContent>
         <ScrollArea className="h-[calc(100vh-200px)]">
-          {!isLoaded ? (
-             <div className="p-2 text-sm text-muted-foreground">Loading history...</div>
-          ) : history.length === 0 ? (
+          {isLoading ? (
+             <div className="space-y-2 p-2">
+               <Skeleton className="h-8 w-full" />
+               <Skeleton className="h-8 w-full" />
+               <Skeleton className="h-8 w-full" />
+             </div>
+          ) : !history || history.length === 0 ? (
             <div className="p-2 text-sm text-muted-foreground">Your viewed videos will appear here.</div>
           ) : (
             <SidebarMenu>
