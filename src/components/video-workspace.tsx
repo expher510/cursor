@@ -58,15 +58,16 @@ function ErrorState({ message }: { message: string }) {
 
 export function VideoWorkspace({ videoId }: { videoId: string }) {
   const { firestore, user } = useFirebase();
-  const { setVideoData, videoData, isLoading, error } = useWatchPage();
+  const { setVideoData, videoData, isLoading, error, setError, setIsLoading } = useWatchPage();
   
   useEffect(() => {
     async function processAndSetVideo() {
       if (!videoId) {
+        setError("No video ID provided.");
         return;
       }
       
-      setVideoData(null); // Clear previous data
+      setIsLoading(true);
       
       try {
         const result = await processVideo({ videoId });
@@ -92,12 +93,14 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
           }
 
       } catch (e: any) {
-        console.error(e);
-        // Let the context handle the error state
+        console.error("Error processing video:", e);
+        setError(e.message || "An unknown error occurred while processing the video.");
+      } finally {
+        setIsLoading(false);
       }
     }
     processAndSetVideo();
-  }, [videoId, user, firestore, setVideoData]);
+  }, [videoId, user, firestore, setVideoData, setError, setIsLoading]);
   
   if (isLoading) {
     return <LoadingState />;

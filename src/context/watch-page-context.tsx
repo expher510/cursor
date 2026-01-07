@@ -23,7 +23,9 @@ type WatchPageContextType = {
   videoData: ProcessVideoOutput | null;
   setVideoData: (data: ProcessVideoOutput | null) => void;
   isLoading: boolean;
+  setIsLoading: (loading: boolean) => void;
   error: string | null;
+  setError: (error: string | null) => void;
 };
 
 const WatchPageContext = createContext<WatchPageContextType | undefined>(undefined);
@@ -43,20 +45,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
   const { data: vocabulary, isLoading: isVocabLoading } = useCollection<VocabularyItem>(vocabQuery);
 
-  const handleSetVideoData = (data: ProcessVideoOutput | null) => {
-    if (data) {
-        setVideoData(data);
-        setError(null);
-    } else {
-        // This allows clearing data without setting an error
-        setVideoData(null);
-    }
-    setIsLoading(false);
-  };
-
-
   const addVocabularyItem = useCallback((word: string, videoId: string) => {
-    if (!user || !firestore || !videoData) return;
+    if (!user || !firestore) return;
 
     const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
     if (!cleanedWord) return;
@@ -64,7 +54,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     const alreadyExists = vocabulary?.some(item => item.word === cleanedWord);
     if (alreadyExists) return;
 
-    const translation = videoData.translations[cleanedWord] || "";
+    const translation = ""; // No translation for now
 
     const vocabCollectionRef = collection(firestore, `users/${user.uid}/vocabularies`);
     addDocumentNonBlocking(vocabCollectionRef, {
@@ -73,7 +63,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
       userId: user.uid,
       videoId: videoId,
     });
-  }, [user, firestore, vocabulary, videoData]);
+  }, [user, firestore, vocabulary]);
 
   const removeVocabularyItem = useCallback((id: string) => {
       if (!firestore || !user) return;
@@ -87,9 +77,11 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     addVocabularyItem,
     removeVocabularyItem,
     videoData,
-    setVideoData: handleSetVideoData,
+    setVideoData,
     isLoading,
+    setIsLoading,
     error,
+    setError,
   };
 
   return (
