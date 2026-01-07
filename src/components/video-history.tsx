@@ -13,6 +13,7 @@ import { Button } from './ui/button';
 import { Trash2 } from 'lucide-react';
 import { deleteVideoAndAssociatedData } from '@/lib/utils';
 import type { Firestore } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 type HistoryItem = {
     id: string;
@@ -21,34 +22,44 @@ type HistoryItem = {
 };
 
 function HistoryCard({ item, firestore, userId }: { item: HistoryItem, firestore: Firestore, userId: string }) {
+    const router = useRouter();
     
     const handleDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.preventDefault();
-        e.stopPropagation();
+        e.stopPropagation(); // Prevent the card's onClick from firing
         if (window.confirm(`Are you sure you want to delete "${item.title}" and all its saved words?`)) {
-            await deleteVideoAndAssociatedData(firestore, userId, item.id);
+            try {
+                await deleteVideoAndAssociatedData(firestore, userId, item.id);
+            } catch (error) {
+                console.error("Deletion failed:", error);
+                // Optionally show a toast notification for the error
+            }
         }
     };
+    
+    const handleCardClick = () => {
+        router.push(`/watch?v=${item.id}`);
+    }
 
     return (
         <div className="group relative">
-            <Link href={`/watch?v=${item.id}`} className="block">
-                 <Card className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
-                    <CardContent className="p-0">
-                        <div className="relative aspect-video">
-                            <Image
-                                src={`https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`}
-                                alt={item.title}
-                                fill
-                                className="object-cover transition-transform group-hover:scale-105"
-                            />
-                        </div>
-                        <div className="p-3">
-                            <p className="font-semibold text-sm truncate group-hover:text-primary">{item.title}</p>
-                        </div>
-                    </CardContent>
-                 </Card>
-            </Link>
+            <Card 
+                className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+                onClick={handleCardClick}
+            >
+                <CardContent className="p-0">
+                    <div className="relative aspect-video">
+                        <Image
+                            src={`https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`}
+                            alt={item.title}
+                            fill
+                            className="object-cover transition-transform group-hover:scale-105"
+                        />
+                    </div>
+                    <div className="p-3">
+                        <p className="font-semibold text-sm truncate group-hover:text-primary">{item.title}</p>
+                    </div>
+                </CardContent>
+            </Card>
             <Button
                 variant="destructive"
                 size="icon"
