@@ -1,13 +1,16 @@
+'use client';
+
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
 import { Logo } from "@/components/logo";
 import { AppHeader } from "@/components/app-header";
+import { VideoHistory } from "@/components/video-history";
 
 export default function Home() {
   return (
     <>
       <AppHeader />
-      <main className="flex min-h-screen w-full flex-col items-center justify-center bg-background p-4 pt-14">
-        <div className="flex flex-col items-center gap-8 text-center max-w-2xl">
+      <main className="flex min-h-screen w-full flex-col items-center bg-background p-4 pt-24">
+        <div className="flex flex-col items-center gap-8 text-center max-w-4xl w-full">
           <Logo />
           <div className="flex flex-col gap-2">
             <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
@@ -20,6 +23,7 @@ export default function Home() {
           <div className="w-full max-w-lg">
             <YoutubeUrlForm />
           </div>
+          <VideoHistory />
         </div>
       </main>
     </>
