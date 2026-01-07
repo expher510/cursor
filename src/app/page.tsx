@@ -4,16 +4,30 @@ import { YoutubeUrlForm } from "@/components/youtube-url-form";
 import { Logo } from "@/components/logo";
 import { VideoHistory } from "@/components/video-history";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BookOpen, Edit, Headphones } from "lucide-react";
+import { ArrowRight, BookOpen, Edit, Headphones, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { extractYouTubeVideoId } from "@/lib/utils";
+import { useFirebase } from "@/firebase";
+import { useCollection } from "@/firebase/firestore/use-collection";
+import { useMemoFirebase } from "@/firebase/provider";
+import { collection, limit, query, orderBy } from "firebase/firestore";
 
-function ActivityButtons({ videoId }: { videoId: string | null }) {
+type HistoryItem = {
+  id: string;
+  title: string;
+  timestamp: number;
+};
+
+function ActivityButtons({ newVideoId, latestHistoryVideoId, isHistoryLoading }: { newVideoId: string | null, latestHistoryVideoId: string | null, isHistoryLoading: boolean }) {
   const router = useRouter();
 
+  // A button is active if there's a new video OR if there's history.
+  const videoIdToUse = newVideoId || latestHistoryVideoId;
+  const isEnabled = !!videoIdToUse;
+
   const handleNavigation = (path: string) => {
-    if (videoId) {
-      router.push(`/${path}?v=${videoId}`);
+    if (videoIdToUse) {
+      router.push(`/${path}?v=${videoIdToUse}`);
     }
   };
 
@@ -22,17 +36,20 @@ function ActivityButtons({ videoId }: { videoId: string | null }) {
        <h2 className="text-2xl font-bold font-headline mb-6 text-center">Choose Your Practice</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <Button size="lg" disabled={!videoId} onClick={() => handleNavigation('watch')}>
+        <Button size="lg" disabled={!isEnabled} onClick={() => handleNavigation('watch')}>
+            {isHistoryLoading && <Loader2 className="mr-2 animate-spin" />}
             <Headphones className="mr-2" />
             Start Listening
         </Button>
         
-        <Button size="lg" disabled={!videoId} onClick={() => handleNavigation('reading')}>
+        <Button size="lg" disabled={!isEnabled} onClick={() => handleNavigation('reading')}>
+            {isHistoryLoading && <Loader2 className="mr-2 animate-spin" />}
             <BookOpen className="mr-2" />
             Start Reading
         </Button>
 
-        <Button size="lg" disabled={!videoId} onClick={() => handleNavigation('writing')}>
+        <Button size="lg" disabled={!isEnabled} onClick={() => handleNavigation('writing')}>
+            {isHistoryLoading && <Loader2 className="mr-2 animate-spin" />}
             <Edit className="mr-2" />
             Start Writing
         </Button>
@@ -44,7 +61,22 @@ function ActivityButtons({ videoId }: { videoId: string | null }) {
 
 export default function Home() {
   const [url, setUrl] = useState('');
-  const videoId = extractYouTubeVideoId(url);
+  const { firestore, user } = useFirebase();
+
+  // Fetch the latest video from history to enable the buttons
+  const historyQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return query(
+      collection(firestore, `users/${user.uid}/videos`),
+      orderBy("timestamp", "desc"),
+      limit(1)
+    );
+  }, [user, firestore]);
+
+  const { data: history, isLoading: isHistoryLoading } = useCollection<HistoryItem>(historyQuery);
+
+  const newVideoId = extractYouTubeVideoId(url);
+  const latestHistoryVideoId = history?.[0]?.id ?? null;
 
   return (
     <>
@@ -62,7 +94,7 @@ export default function Home() {
           <div className="w-full max-w-lg pt-4">
             <YoutubeUrlForm onUrlChange={setUrl} />
           </div>
-          <ActivityButtons videoId={videoId} />
+          <ActivityButtons newVideoId={newVideoId} latestHistoryVideoId={latestHistoryVideoId} isHistoryLoading={isHistoryLoading} />
           <VideoHistory />
         </div>
       </main>
