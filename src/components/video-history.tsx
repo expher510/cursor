@@ -3,14 +3,13 @@
 
 import { useFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, orderBy, limit } from 'firebase/firestore';
+import { collection, query, orderBy, limit, writeBatch, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from './ui/button';
 import { Trash2 } from 'lucide-react';
-import { deleteVideoAndAssociatedData } from '@/lib/utils';
 import type { Firestore } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
@@ -25,12 +24,28 @@ function HistoryCard({ item, firestore, userId }: { item: HistoryItem, firestore
     
     const handleDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
-        e.preventDefault();
         if (window.confirm(`Are you sure you want to delete this video from your history?`)) {
             try {
-                await deleteVideoAndAssociatedData(firestore, userId, item.id);
+                if (!firestore || !userId || !item.id) {
+                    console.error("Missing required parameters for deletion.");
+                    return;
+                }
+
+                const batch = writeBatch(firestore);
+
+                // 1. Delete the main video document
+                const videoDocRef = doc(firestore, `users/${userId}/videos/${item.id}`);
+                batch.delete(videoDocRef);
+
+                // 2. Delete the transcript document
+                const transcriptDocRef = doc(firestore, `users/${userId}/videos/${item.id}/transcripts/${item.id}`);
+                batch.delete(transcriptDocRef);
+
+                // 3. Commit the batch
+                await batch.commit();
+                console.log(`Successfully deleted video ${item.id} and its transcript.`);
             } catch (error) {
-                console.error("Deletion failed:", error);
+                console.error("Error deleting video and associated data:", error);
             }
         }
     };
