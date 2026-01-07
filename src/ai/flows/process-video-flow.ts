@@ -9,7 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { MOCK_VIDEO_DATA } from '@/lib/data';
+import { YoutubeTranscript } from 'youtube-transcript';
 
 const ProcessVideoInputSchema = z.object({
   videoId: z.string().describe('The ID of the YouTube video to process.'),
@@ -17,9 +17,11 @@ const ProcessVideoInputSchema = z.object({
 export type ProcessVideoInput = z.infer<typeof ProcessVideoInputSchema>;
 
 const TranscriptItemSchema = z.object({
-  timestamp: z.string(),
   text: z.string(),
+  offset: z.number(),
+  duration: z.number(),
 });
+export type TranscriptItem = z.infer<typeof TranscriptItemSchema>;
 
 const ProcessVideoOutputSchema = z.object({
   title: z.string().describe('The title of the video.'),
@@ -33,22 +35,83 @@ export async function processVideo(input: ProcessVideoInput): Promise<ProcessVid
   return processVideoFlow(input);
 }
 
+
+const youtubeTranscriptTool = ai.defineTool(
+  {
+    name: 'youtubeTranscriptTool',
+    description: 'Fetches the transcript and title for a given YouTube video ID.',
+    inputSchema: z.object({ videoId: z.string() }),
+    outputSchema: z.object({
+      title: z.string(),
+      transcript: z.array(TranscriptItemSchema),
+    }),
+  },
+  async (input) => {
+    const transcript = await YoutubeTranscript.fetchTranscript(input.videoId);
+    // In a real scenario, you would fetch the title via the YouTube Data API.
+    // For now, we will return a placeholder title.
+    const title = "YouTube Video"; 
+    return { title, transcript };
+  }
+);
+
+
 const processVideoFlow = ai.defineFlow(
   {
     name: 'processVideoFlow',
     inputSchema: ProcessVideoInputSchema,
     outputSchema: ProcessVideoOutputSchema,
+    tools: [youtubeTranscriptTool],
   },
   async (input) => {
-    // In a real implementation, we would use a tool to fetch the transcript
-    // from YouTube and another tool/prompt to generate the vocabulary list.
-    // For now, we will use mock data to simulate this process.
+    const { title, transcript } = await youtubeTranscriptTool(input);
+
+    const transcriptText = transcript.map(t => t.text).join(' ');
+
+    const vocabularyPrompt = `
+      You are an expert language teacher. Given the following transcript from a video,
+      identify up to 20 key vocabulary words or short phrases that would be
+      valuable for a language learner. For each word/phrase, provide a simple translation
+      in Arabic.
+
+      Focus on words that are common, useful, or relevant to the main topic of the video.
+      Avoid proper nouns unless they are crucial.
+
+      Transcript:
+      """
+      ${transcriptText.substring(0, 2000)}
+      """
+
+      Return ONLY a JSON object with the identified words as keys and their Arabic translations as values.
+      Example: {"hello": "مرحبا", "world": "عالم"}
+    `;
+
+    const llmResponse = await ai.generate({
+      prompt: vocabularyPrompt,
+      config: {
+        responseFormat: 'json',
+      }
+    });
+
+    let translations = {};
+    try {
+      const jsonResponse = llmResponse.text;
+      translations = JSON.parse(jsonResponse);
+    } catch (e) {
+      console.error("Failed to parse vocabulary JSON from LLM response", e);
+      // Return empty translations if parsing fails
+    }
     
-    // TODO: Replace with actual transcript fetching and AI-based vocabulary generation.
+    // Convert transcript to a format that matches ProcessVideoOutputSchema
+    const formattedTranscript = transcript.map(item => ({
+        ...item,
+        timestamp: new Date(item.offset).toISOString().substr(14, 5) // Format to MM:SS
+    }));
+
     return {
-      title: MOCK_VIDEO_DATA.title,
-      transcript: MOCK_VIDEO_DATA.transcript,
-      translations: MOCK_VIDEO_DATA.translations,
+      title: title,
+      transcript: formattedTranscript,
+      translations,
     };
   }
 );
