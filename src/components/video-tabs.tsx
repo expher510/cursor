@@ -5,18 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { TranscriptView } from "./transcript-view"
 import { VocabularyList } from "./vocabulary-list"
 import { type TranscriptItem } from "@/ai/flows/process-video-flow"
-import { BookOpenText, List, BrainCircuit } from "lucide-react"
-import { Button } from "./ui/button"
-import Link from "next/link"
+import { BookOpenText, List } from "lucide-react"
 
-
-type VideoTabsProps = {
+type ReadingTabsProps = {
   transcript: TranscriptItem[];
   videoId: string;
 };
 
 
-export function VideoTabs({ transcript, videoId }: VideoTabsProps) {
+export function ReadingTabs({ transcript, videoId }: ReadingTabsProps) {
   return (
     <Tabs defaultValue="transcript" className="w-full">
       <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
@@ -24,12 +21,6 @@ export function VideoTabs({ transcript, videoId }: VideoTabsProps) {
           <TabsTrigger value="transcript" className="gap-2"><BookOpenText/> Transcript</TabsTrigger>
           <TabsTrigger value="vocabulary" className="gap-2"><List/> Vocabulary</TabsTrigger>
         </TabsList>
-        <Button asChild>
-            <Link href={`/quiz?v=${videoId}`}>
-                <BrainCircuit className="mr-2 h-4 w-4" />
-                Start Quiz
-            </Link>
-        </Button>
       </div>
       <TabsContent value="transcript">
         <Card>

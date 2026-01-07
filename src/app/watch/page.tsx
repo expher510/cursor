@@ -4,7 +4,8 @@ import { VideoWorkspace } from "@/components/video-workspace";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2 } from "lucide-react";
+import { AppHeader } from "@/components/app-header";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -31,10 +32,24 @@ function WatchPageContent() {
   return <VideoWorkspace videoId={videoId} />;
 }
 
+
+function SuspenseFallback() {
+  return (
+    <div className="flex h-full w-full items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  )
+}
+
 export default function WatchPage() {
   return (
-    <Suspense>
-      <WatchPageContent />
-    </Suspense>
+    <>
+      <AppHeader showBackButton={true} />
+      <main className="flex-1 p-4 md:p-6 pt-20">
+        <Suspense fallback={<SuspenseFallback />}>
+          <WatchPageContent />
+        </Suspense>
+      </main>
+    </>
   );
 }

@@ -18,13 +18,16 @@ type VocabularyItem = {
   userId: string;
 };
 
+type VideoData = ProcessVideoOutput & { videoId?: string };
+
+
 type WatchPageContextType = {
   vocabulary: VocabularyItem[];
   savedWordsSet: Set<string>;
   addVocabularyItem: (word: string) => void;
   removeVocabularyItem: (id: string) => void;
-  videoData: ProcessVideoOutput | null;
-  setVideoData: (data: ProcessVideoOutput | null) => void;
+  videoData: VideoData | null;
+  setVideoData: (data: VideoData | null) => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
   error: string | null;
@@ -39,7 +42,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const searchParams = useSearchParams();
   const videoId = searchParams.get('v');
 
-  const [videoData, setVideoData] = useState<ProcessVideoOutput | null>(null);
+  const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
