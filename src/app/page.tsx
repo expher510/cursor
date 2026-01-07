@@ -8,7 +8,6 @@ import { VideoHistory } from "@/components/video-history";
 export default function Home() {
   return (
     <>
-      <AppHeader />
       <main className="flex min-h-screen w-full flex-col items-center bg-background p-4 pt-24">
         <div className="flex flex-col items-center gap-8 text-center max-w-4xl w-full">
           <Logo />
