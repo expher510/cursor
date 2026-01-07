@@ -8,6 +8,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
 import { type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 import { translateWord } from '@/ai/flows/translate-word-flow';
+import { useSearchParams } from 'next/navigation';
 
 type VocabularyItem = {
   id: string;
@@ -35,14 +36,14 @@ const WatchPageContext = createContext<WatchPageContextType | undefined>(undefin
 
 export function WatchPageProvider({ children }: { children: ReactNode }) {
   const { firestore, user } = useFirebase();
+  const searchParams = useSearchParams();
+  const videoId = searchParams.get('v');
 
   const [videoData, setVideoData] = useState<ProcessVideoOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const videoId = useMemo(() => videoData?.transcript?.[0]?.videoId, [videoData]);
 
   const showNotification = useCallback((message: string) => {
     if (notificationTimeoutRef.current) {
