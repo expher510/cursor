@@ -7,6 +7,7 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { Groq } from "groq-sdk";
 import { QuizInputSchema, QuizOutputSchema, type QuizInput, type QuizOutput } from '@/ai/schemas/quiz-schema';
 import 'dotenv/config';
 
@@ -53,38 +54,27 @@ const generateQuizFlow = ai.defineFlow(
       ---
     `;
 
-    // --- Step 2: Make the API call to Groq (Currently commented out) ---
-    // To enable this, uncomment the following block and add your GROQ_API_KEY to the .env file.
+    // --- Step 2: Make the API call to Groq ---
+    // To enable this: 1) Add GROQ_API_KEY to .env, 2) Uncomment the block below, 3) Remove the mock data block.
     /*
     const GROQ_API_KEY = process.env.GROQ_API_KEY;
     if (!GROQ_API_KEY) {
       throw new Error('GROQ_API_KEY is not defined in your .env file.');
     }
 
+    const groq = new Groq({ apiKey: GROQ_API_KEY });
+
     try {
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': \`Bearer \${GROQ_API_KEY}\`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const chatCompletion = await groq.chat.completions.create({
           messages: [{ role: 'user', content: groqPrompt }],
-          model: 'llama3-8b-8192', // Or another model you prefer
+          model: 'llama3-8b-8192',
           temperature: 0.7,
           n: 1,
           stream: false,
           response_format: { type: "json_object" },
-        }),
       });
 
-      if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(\`Groq API request failed: \${response.status} \${errorBody}\`);
-      }
-
-      const result = await response.json();
-      const content = JSON.parse(result.choices[0].message.content);
+      const content = JSON.parse(chatCompletion.choices[0].message.content || '{}');
       
       // Validate the response with Zod before returning
       const validatedOutput = QuizOutputSchema.parse(content);
