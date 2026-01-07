@@ -72,17 +72,7 @@ export function VideoTabs({ transcript, videoId }: VideoTabsProps) {
         </Collapsible>
       </TabsContent>
       <TabsContent value="vocabulary">
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <List />
-                    Vocabulary
-                </CardTitle>
-            </CardHeader>
-            <CardContent>
-                <VocabularyList />
-            </CardContent>
-        </Card>
+        <VocabularyList />
       </TabsContent>
     </Tabs>
   )

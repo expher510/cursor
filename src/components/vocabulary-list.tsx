@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "./ui/button";
-import { X, List, Search } from "lucide-react";
+import { X, List, Search, BrainCircuit, Copy } from "lucide-react";
 import { useFirebase } from "@/firebase";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, doc } from "firebase/firestore";
@@ -13,6 +13,7 @@ import { Skeleton } from "./ui/skeleton";
 import { Input } from "./ui/input";
 import { useState, useMemo } from "react";
 import { useWatchPage } from "@/context/watch-page-context";
+import Link from "next/link";
 
 type VocabularyItem = {
   id: string;
@@ -44,15 +45,8 @@ export function VocabularyList({ isSheet = false }: { isSheet?: boolean }) {
   const { isLoading } = useCollection<VocabularyItem>(vocabQuery);
 
 
-  return (
-    <div className={ isSheet ? "h-full flex flex-col" : ""}>
-        {isSheet && (
-             <div className="flex items-center justify-between p-4 border-b">
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                    <List className="h-5 w-5"/> Vocabulary
-                </h2>
-            </div>
-        )}
+  const content = (
+    <>
       <div className="p-4">
          <div className="relative">
              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -97,6 +91,45 @@ export function VocabularyList({ isSheet = false }: { isSheet?: boolean }) {
             </ul>
           )}
         </ScrollArea>
-    </div>
+    </>
+  )
+
+  if (isSheet) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+              <List className="h-5 w-5"/> Vocabulary
+          </h2>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/flashcards">
+                <Copy className="mr-2 h-4 w-4" />
+                Flashcards
+            </Link>
+          </Button>
+        </div>
+        {content}
+      </div>
+    )
+  }
+
+  return (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <List />
+              <CardTitle>Vocabulary</CardTitle>
+            </div>
+             <Button asChild variant="outline">
+                <Link href="/flashcards">
+                    <Copy className="mr-2 h-4 w-4" />
+                    Flashcards
+                </Link>
+            </Button>
+        </CardHeader>
+        <CardContent className="p-0">
+          {content}
+        </CardContent>
+    </Card>
   );
 }
