@@ -32,6 +32,7 @@ function HistoryCard({ item }: { item: HistoryItem }) {
         const videoDocRef = doc(firestore, `users/${user.uid}/videos`, item.id);
         deleteDocumentNonBlocking(videoDocRef);
 
+        // Also delete the transcript subcollection
         const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${item.id}/transcripts`, item.id);
         deleteDocumentNonBlocking(transcriptDocRef);
     };
@@ -61,7 +62,7 @@ function HistoryCard({ item }: { item: HistoryItem }) {
             <Button
                 variant="destructive"
                 size="icon"
-                className="absolute top-2 right-2 h-8 w-8 z-10"
+                className="absolute top-2 right-2 h-8 w-8 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={handleDelete}
             >
                 <Trash2 className="h-4 w-4" />
