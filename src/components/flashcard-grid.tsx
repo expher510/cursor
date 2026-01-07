@@ -7,22 +7,12 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
 import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
-import { ArrowLeft, Shuffle, Volume2, X } from 'lucide-react';
+import { ArrowLeft, Shuffle, Volume2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { doc } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 
 type VocabularyItem = {
@@ -36,10 +26,9 @@ function Flashcard({ item }: { item: VocabularyItem }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const { firestore, user } = useFirebase();
 
-  const speak = (e: React.MouseEvent, text: string, lang: string = 'en-us') => {
+  const speak = (e: React.MouseEvent, text: string, lang: string) => {
     e.stopPropagation();
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        // Stop any currently playing audio
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(text);
         utterance.lang = lang;
@@ -98,6 +87,7 @@ function Flashcard({ item }: { item: VocabularyItem }) {
 
 export function FlashcardGrid() {
   const { firestore, user } = useFirebase();
+  const router = useRouter();
 
   const vocabQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -133,11 +123,9 @@ export function FlashcardGrid() {
             <p className="text-muted-foreground">
                 Start by adding words from the video transcripts to build your deck.
             </p>
-            <Button asChild variant="outline">
-                <Link href="/">
-                    <ArrowLeft className="mr-2 h-4 w-4" />
-                    Find a Video
-                </Link>
+            <Button onClick={() => router.back()} variant="outline">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Go Back
             </Button>
         </div>
     );
