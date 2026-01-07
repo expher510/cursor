@@ -2,7 +2,7 @@
 
 import { useFirebase } from '@/firebase';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, doc } from 'firebase/firestore';
+import { collection, doc, query, where } from 'firebase/firestore';
 import { createContext, useContext, useState, useCallback, ReactNode, useMemo, Dispatch, SetStateAction, useEffect } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
@@ -39,12 +39,16 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const [videoData, setVideoData] = useState<ProcessVideoOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const currentVideoId = videoData?.transcript?.[0] ? videoData.transcript[0].videoId : null;
 
 
   const vocabQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return collection(firestore, `users/${user.uid}/vocabularies`);
-  }, [user, firestore]);
+    if (!user || !firestore || !currentVideoId) return null;
+    return query(
+        collection(firestore, `users/${user.uid}/vocabularies`),
+        where("videoId", "==", currentVideoId)
+    );
+  }, [user, firestore, currentVideoId]);
 
   const { data: vocabulary } = useCollection<VocabularyItem>(vocabQuery);
 

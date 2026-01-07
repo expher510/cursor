@@ -22,6 +22,7 @@ const TranscriptItemSchema = z.object({
   text: z.string(),
   offset: z.number(),
   duration: z.number(),
+  videoId: z.string().optional(), // Make videoId optional here
 });
 export type TranscriptItem = z.infer<typeof TranscriptItemSchema>;
 
@@ -83,7 +84,7 @@ const transcriptApiTool = ai.defineTool(
     
     // First, get metadata like the title from youtube-transcript
     const videoInfo = await YoutubeTranscript.fetchTranscript(videoUrl, { lang: 'en' }).catch(() => null);
-    const title = (videoInfo && Array.isArray(videoInfo) && videoInfo.length > 0 && 'videoTitle' in (videoInfo[0] as any) && (videoInfo[0] as any).videoTitle) ? (videoInfo[0] as any).videoTitle : "YouTube Video";
+    const title = "YouTube Video";
 
     const requestUrl = new URL(`${API_BASE_URL}/transcript`);
     requestUrl.searchParams.append('url', videoUrl);

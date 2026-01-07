@@ -17,7 +17,6 @@ function LoadingState() {
     <div className="space-y-6">
         <Card>
           <CardContent className="p-4 md:p-6">
-             <Skeleton className="h-8 w-3/4 mb-4" />
             <div className="aspect-video w-full overflow-hidden rounded-lg border">
               <Skeleton className="h-full w-full" />
             </div>
@@ -71,7 +70,12 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
       
       try {
         const result = await processVideo({ videoId });
-        setVideoData(result);
+        const videoDataWithId = {
+            ...result,
+            transcript: result.transcript.map(t => ({...t, videoId: videoId}))
+        };
+
+        setVideoData(videoDataWithId);
         
         if (user && firestore) {
             // Save video metadata to history
