@@ -3,10 +3,10 @@
 import * as React from 'react';
 import Link, { LinkProps } from 'next/link';
 import { useRouter } from 'next/navigation';
-import { History, LogOut, PlusCircle, Video } from 'lucide-react';
+import { History, LogOut, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirebase } from '@/firebase';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { HistoryMenu } from './history-menu';
 
 interface MobileLinkProps extends LinkProps {
   onOpenChange?: (open: boolean) => void;
@@ -47,10 +47,14 @@ export function MobileNav({ setOpen }: { setOpen: (open: boolean) => void }) {
         }
         setOpen(false);
     }
+    
+    const handleLinkClick = () => {
+        setOpen(false);
+    }
 
   return (
     <div className="flex flex-col h-full mt-4">
-      <div className="flex flex-col gap-1 p-4">
+      <div className="flex flex-col gap-1 p-4 border-b">
         <MobileLink href="/" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
           <PlusCircle className="w-5 h-5" />
           <span>New Video</span>
@@ -60,11 +64,8 @@ export function MobileNav({ setOpen }: { setOpen: (open: boolean) => void }) {
           <span>Logout</span>
         </button>
       </div>
-      <div className="p-4">
-        <div className="flex items-center gap-2 text-lg font-semibold">
-            <History className="h-5 w-5" />
-            <span>History</span>
-        </div>
+      <div className="flex-1">
+        <HistoryMenu isMobile={true} onLinkClick={handleLinkClick} />
       </div>
     </div>
   );
