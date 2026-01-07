@@ -9,9 +9,9 @@ import { Loader2, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useFirebase } from '@/firebase';
-import { doc, getDoc, collection, getDocs, query, limit, DocumentReference } from 'firebase/firestore';
+import { doc, getDoc, collection, DocumentReference } from 'firebase/firestore';
 import { generateQuiz } from '@/ai/flows/quiz-flow';
-import { type Question, type QuizOutput } from '@/ai/schemas/quiz-schema';
+import { type QuizOutput } from '@/ai/schemas/quiz-schema';
 import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
@@ -21,7 +21,7 @@ type AnswerState = {
     isCorrect: boolean | null;
 };
 
-type QuizDoc = QuizOutput & { id: string };
+type QuizDoc = QuizOutput & { id: string; score?: number; userAnswers?: string[] };
 
 function QuizView({ quizDoc, videoTitle, onQuizFinish }: { quizDoc: QuizDoc, videoTitle: string, onQuizFinish: (score: number, answers: AnswerState[]) => void }) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -45,31 +45,50 @@ function QuizView({ quizDoc, videoTitle, onQuizFinish }: { quizDoc: QuizDoc, vid
         if (currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex(currentQuestionIndex + 1);
         } else {
-            const finalScore = newAnswers.filter(a => a.isCorrect).length;
-            onQuizFinish(finalScore, newAnswers);
             setIsFinished(true);
         }
     };
     
-    // Also call onQuizFinish when the last question is answered
+    // Call onQuizFinish when the last question is answered
     useEffect(() => {
         const lastAnswer = answers[questions.length - 1];
-        if (lastAnswer.selectedAnswer !== null && !isFinished) {
-            const finalScore = answers.filter(a => a.isCorrect).length;
-            onQuizFinish(finalScore, answers);
-            // We don't set finished here, handleNext does that.
+        if (lastAnswer.selectedAnswer !== null) {
+             const finalScore = answers.filter(a => a.isCorrect).length;
+             onQuizFinish(finalScore, answers);
+             if (currentQuestionIndex === questions.length - 1) {
+                setIsFinished(true);
+            }
         }
-    }, [answers, questions.length, onQuizFinish, isFinished]);
+    }, [answers, questions.length, onQuizFinish, currentQuestionIndex]);
 
 
-    const newAnswers = useMemo(() => answers, [answers]);
-    const score = useMemo(() => newAnswers.filter(a => a.isCorrect).length, [newAnswers]);
+    const score = useMemo(() => answers.filter(a => a.isCorrect).length, [answers]);
 
     const restartQuiz = () => {
         setCurrentQuestionIndex(0);
-        setAnswers(Array(questions.length).fill({ selectedAnswer: null, isCorrect: null }));
+        setAnswers(Array(quizDoc.questions.length).fill({ selectedAnswer: null, isCorrect: null }));
         setIsFinished(false);
     }
+    
+    // Load previous answers if they exist
+    useEffect(() => {
+        if (quizDoc.userAnswers && quizDoc.userAnswers.length === questions.length) {
+            const loadedAnswers = quizDoc.userAnswers.map((userAnswer, index) => {
+                const question = questions[index];
+                if (!userAnswer) return { selectedAnswer: null, isCorrect: null };
+                
+                const isCorrect = userAnswer === question.correctAnswer;
+                return { selectedAnswer: userAnswer, isCorrect: isCorrect };
+            });
+            setAnswers(loadedAnswers);
+            
+            // If all questions were answered, mark as finished
+            if(loadedAnswers.every(a => a.selectedAnswer !== null)) {
+                setIsFinished(true);
+            }
+        }
+    }, [quizDoc, questions]);
+
 
     if (isFinished) {
         return (
@@ -161,34 +180,35 @@ function QuizGenerator() {
 
         async function getOrCreateQuiz() {
             try {
-                // 1. Check for existing quiz
-                const quizCollectionRef = collection(firestore, `users/${user!.uid}/videos/${videoId}/quizzes`);
-                const quizQuery = query(quizCollectionRef, limit(1));
-                const quizSnaps = await getDocs(quizQuery);
+                // 1. Check for existing quiz with predictable ID
+                const predictableQuizDocRef = doc(firestore, `users/${user!.uid}/videos/${videoId}/quizzes`, videoId);
+                setQuizDocRef(predictableQuizDocRef);
+                const quizSnap = await getDoc(predictableQuizDocRef);
 
-                if (!quizSnaps.empty) {
-                    const existingQuizDoc = quizSnaps.docs[0];
+
+                if (quizSnap.exists()) {
                     console.log("Found existing quiz in Firestore.");
-                    setQuizDoc({ id: existingQuizDoc.id, ...existingQuizDoc.data() } as QuizDoc);
-                    setQuizDocRef(existingQuizDoc.ref);
+                    setQuizDoc({ id: quizSnap.id, ...quizSnap.data() } as QuizDoc);
                 } else {
                     console.log("No existing quiz. Generating a new one.");
                     // 2. Fetch transcript
                     const transcriptRef = doc(firestore, `users/${user!.uid}/videos/${videoId}/transcripts`, videoId);
                     const transcriptSnap = await getDoc(transcriptRef);
-                    if (!transcriptSnap.exists()) throw new Error("Transcript not found for this video.");
+                    if (!transcriptSnap.exists()) throw new Error("Transcript not found for this video. Please process the video first.");
                     
                     const transcriptContent = transcriptSnap.data().content.map((t: any) => t.text).join(' ');
 
                     // 3. Generate quiz
                     const newQuiz = await generateQuiz({ transcript: transcriptContent });
 
-                    // 4. Save to Firestore
-                    const newQuizDocRef = doc(quizCollectionRef);
-                    const newQuizData = { ...newQuiz, id: newQuizDocRef.id, videoId, userId: user.uid };
-                    setDocumentNonBlocking(newQuizDocRef, newQuizData, {});
+                     if (!newQuiz || !newQuiz.questions || newQuiz.questions.length === 0) {
+                        throw new Error("The AI model failed to generate valid quiz questions.");
+                    }
+
+                    // 4. Save to Firestore with predictable ID
+                    const newQuizData = { ...newQuiz, id: videoId, videoId, userId: user.uid };
+                    setDocumentNonBlocking(predictableQuizDocRef, newQuizData, {});
                     setQuizDoc(newQuizData as QuizDoc);
-                    setQuizDocRef(newQuizDocRef);
                 }
 
                 // Fetch video title for display
@@ -200,7 +220,7 @@ function QuizGenerator() {
 
             } catch (e: any) {
                 console.error("Failed to get or create quiz:", e);
-                setError(e.message || "An unknown error occurred.");
+                setError(e.message || "An unknown error occurred while generating the quiz.");
             } finally {
                 setIsLoading(false);
             }
@@ -226,7 +246,7 @@ function QuizGenerator() {
         return (
             <Card className="w-full max-w-2xl">
                 <CardHeader>
-                    <CardTitle>Generating Quiz...</CardTitle>
+                    <CardTitle>Preparing Quiz...</CardTitle>
                     <CardDescription>Please wait while we prepare your questions.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center items-center h-40">
@@ -244,7 +264,7 @@ function QuizGenerator() {
                     <CardDescription className="text-destructive/80">{error}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p>Could not load or generate the quiz. Please try again later.</p>
+                    <p>Could not load or generate the quiz. This might happen if the video transcript is too short or if there was an issue with the AI service. Please try a different video.</p>
                 </CardContent>
             </Card>
         )
@@ -257,7 +277,7 @@ function QuizGenerator() {
                     <CardTitle>No Quiz Available</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p>We couldn't generate a quiz for this video.</p>
+                    <p>We couldn't generate a quiz for this video, it's possible the transcript was too short.</p>
                 </CardContent>
             </Card>
         )
