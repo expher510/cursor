@@ -62,7 +62,7 @@ function ReadingPracticePage() {
              <div className="space-y-2 mb-8">
                 <h1 className="text-3xl font-bold font-headline tracking-tight">{videoData.title}</h1>
                 <p className="text-muted-foreground text-lg">
-                    Read the transcript, interact with words, and manage your vocabulary.
+                    اقرأ النص وتفاعل مع الكلمات لإدارة قائمة مفرداتك.
                 </p>
             </div>
             <ReadingTabs transcript={formattedTranscript} videoId={videoData.videoId!} />
