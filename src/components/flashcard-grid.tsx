@@ -68,15 +68,6 @@ function Flashcard({ item }: { item: VocabularyItem }) {
 
         {/* Back of Card */}
         <div className="absolute w-full h-full backface-hidden rounded-lg border bg-muted text-muted-foreground shadow-lg flex flex-col items-center justify-center p-4 cursor-pointer rotate-y-180">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="absolute top-2 right-2 h-8 w-8" 
-            onClick={(e) => speak(e, item.translation, 'ar-sa')}
-          >
-            <Volume2 className="h-5 w-5" />
-            <span className="sr-only">Speak</span>
-          </Button>
           <h3 className="text-xl md:text-2xl font-semibold text-center">{item.translation || "No translation yet."}</h3>
         </div>
       </div>
