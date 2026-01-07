@@ -3,12 +3,11 @@
 import { useFirebase } from '@/firebase';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection, doc, query, where } from 'firebase/firestore';
-import { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect, useRef } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
 import { type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 import { translateWord } from '@/ai/flows/translate-word-flow';
-import { useToast } from '@/hooks/use-toast';
 
 type VocabularyItem = {
   id: string;
@@ -29,18 +28,33 @@ type WatchPageContextType = {
   setIsLoading: (loading: boolean) => void;
   error: string | null;
   setError: (error: string | null) => void;
+  notification: string | null;
+  setNotification: (message: string | null) => void;
 };
 
 const WatchPageContext = createContext<WatchPageContextType | undefined>(undefined);
 
 export function WatchPageProvider({ children }: { children: ReactNode }) {
   const { firestore, user } = useFirebase();
-  const { toast } = useToast();
 
   const [videoData, setVideoData] = useState<ProcessVideoOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notification, setNotification] = useState<string | null>(null);
+  const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   const videoId = useMemo(() => videoData?.transcript?.[0]?.videoId, [videoData]);
+
+  const showNotification = useCallback((message: string) => {
+    if (notificationTimeoutRef.current) {
+        clearTimeout(notificationTimeoutRef.current);
+    }
+    setNotification(message);
+    notificationTimeoutRef.current = setTimeout(() => {
+        setNotification(null);
+    }, 2000);
+  }, []);
+
 
   const vocabQuery = useMemoFirebase(() => {
     if (!user || !firestore || !videoId) return null;
@@ -64,17 +78,11 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     if (!cleanedWord) return;
 
     if (savedWordsSet.has(cleanedWord)) {
-        toast({
-            title: "Already Saved",
-            description: `"${cleanedWord}" is already in your vocabulary list.`,
-        })
+        showNotification(`"${cleanedWord}" is already saved.`);
         return;
     }
 
-    const { dismiss } = toast({
-        title: "Translating & Saving...",
-        description: `Adding "${cleanedWord}" to your list.`,
-    });
+    showNotification(`Saving "${cleanedWord}"...`);
 
     try {
         const { translation } = await translateWord({ word: cleanedWord, sourceLang: 'en', targetLang: 'ar' });
@@ -87,29 +95,28 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             videoId: videoId,
         });
         
-        dismiss();
-        toast({
-            title: "Word Saved!",
-            description: `"${cleanedWord}" has been translated and saved.`,
-        });
+        showNotification(`Saved!`);
 
     } catch (e: any) {
         console.error("Failed to translate or save word", e);
-        dismiss();
-        toast({
-            variant: "destructive",
-            title: "Error",
-            description: e.message || "Could not save the word. Please try again.",
-        });
+        showNotification(`Error saving word.`);
     }
 
-  }, [user, firestore, savedWordsSet, toast]);
+  }, [user, firestore, savedWordsSet, showNotification]);
 
   const removeVocabularyItem = useCallback((id: string) => {
       if (!firestore || !user) return;
       const docRef = doc(firestore, `users/${user.uid}/vocabularies`, id);
       deleteDocumentNonBlocking(docRef);
   }, [firestore, user]);
+
+  useEffect(() => {
+      return () => {
+          if(notificationTimeoutRef.current) {
+              clearTimeout(notificationTimeoutRef.current);
+          }
+      }
+  }, []);
 
 
   const value = {
@@ -123,6 +130,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     setIsLoading,
     error,
     setError,
+    notification,
+    setNotification: showNotification,
   };
 
   return (

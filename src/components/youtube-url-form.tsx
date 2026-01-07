@@ -15,8 +15,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
 import { extractYouTubeVideoId } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+
 
 const FormSchema = z.object({
   url: z.string().url({ message: "Please enter a valid URL." }),
@@ -38,11 +39,7 @@ export function YoutubeUrlForm() {
     if (videoId) {
       router.push(`/watch?v=${videoId}`);
     } else {
-      toast({
-        variant: "destructive",
-        title: "Invalid YouTube URL",
-        description: "Could not find a video ID in the provided URL. Please check the link and try again.",
-      });
+        alert("Invalid YouTube URL. Please check the link and try again.");
     }
   }
 

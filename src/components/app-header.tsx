@@ -12,9 +12,32 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useState } from "react";
+import { useWatchPage } from "@/context/watch-page-context";
+import { AnimatePresence, motion } from "framer-motion";
+
+
+function HeaderNotification() {
+    const { notification } = useWatchPage();
+
+    return (
+        <AnimatePresence>
+            {notification && (
+                <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10, transition: { duration: 0.2 } }}
+                    className="ml-4 text-sm font-medium text-muted-foreground"
+                    >
+                    {notification}
+                </motion.div>
+            )}
+        </AnimatePresence>
+    )
+}
 
 export function AppHeader() {
   const [open, setOpen] = useState(false);
+  
   return (
     <header className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center justify-between">
@@ -34,9 +57,12 @@ export function AppHeader() {
           </SheetContent>
         </Sheet>
         
-        <div className="md:hidden flex-1" />
+        <div className="hidden md:flex flex-1 items-center justify-start">
+           <Logo />
+           <HeaderNotification />
+        </div>
 
-        <div className="flex justify-center">
+        <div className="md:hidden flex-1 flex justify-center">
             <Logo />
         </div>
         
