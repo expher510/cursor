@@ -20,7 +20,7 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
   const router = useRouter();
   
   return (
-    <header className="fixed top-0 z-50 w-full border-b">
+    <header className="fixed top-0 z-50 w-full">
       <div className="container flex h-14 items-center">
         <div className="flex items-center gap-2 md:gap-4">
             {showBackButton ? (
