@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
+import { WatchPageProvider } from "@/context/watch-page-context";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -47,7 +48,9 @@ export default function WatchPage() {
       <AppHeader showBackButton={true} />
       <main className="flex-1 p-4 md:p-6 pt-20">
         <Suspense fallback={<SuspenseFallback />}>
-          <WatchPageContent />
+          <WatchPageProvider>
+            <WatchPageContent />
+          </WatchPageProvider>
         </Suspense>
       </main>
     </>
