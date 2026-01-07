@@ -11,7 +11,7 @@ function WatchPageContent() {
 
   if (!videoId) {
     return (
-      <div className="flex h-[calc(100vh-80px)] items-center justify-center">
+      <div className="flex h-screen items-center justify-center">
         <Card className="max-w-md text-center">
           <CardContent className="p-6">
             <h2 className="font-headline text-2xl font-semibold text-destructive">Invalid Video</h2>
