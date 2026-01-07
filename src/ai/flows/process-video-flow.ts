@@ -47,7 +47,7 @@ const transcriptApiTool = ai.defineTool(
       title: z.string(),
       transcript: z.array(z.object({
         text: z.string(),
-        offset: z.number(),
+        start: z.number(),
         duration: z.number(),
       })),
     }),
@@ -58,8 +58,7 @@ const transcriptApiTool = ai.defineTool(
       throw new Error(`Invalid YouTube video ID or URL: ${input.videoId}`);
     }
     
-    // Use the correct base URL for the transcript service.
-    const API_BASE_URL = 'https://api.supadata.ai/v1';
+    const API_BASE_URL = 'https://www.searchapi.io/api/v1/search';
     const API_KEYS_STRING = process.env.TRANSCRIPT_API_KEYS;
 
     if (!API_KEYS_STRING) {
@@ -68,7 +67,7 @@ const transcriptApiTool = ai.defineTool(
         const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
         // Since youtube-transcript doesn't easily provide the title, we'll have to make a compromise.
         // A more robust solution might involve another API call to YouTube's Data API for the title.
-        return { title: "YouTube Video", transcript };
+        return { title: "YouTube Video", transcript: transcript.map(t => ({...t, start: t.offset})) };
       } catch (e: any) {
         console.error('youtube-transcript fallback failed:', e);
         throw new Error(`Could not get data from youtube-transcript for video ID: ${videoId}. Reason: ${e.message}`);
@@ -79,27 +78,23 @@ const transcriptApiTool = ai.defineTool(
     if (API_KEYS.length === 0) {
       throw new Error('No API keys found in TRANSCRIPT_API_KEYS.');
     }
-
-    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
     
-    // First, get metadata like the title from youtube-transcript
-    const videoInfo = await YoutubeTranscript.fetchTranscript(videoUrl, { lang: 'en' }).catch(() => null);
+    const videoInfo = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' }).catch(() => null);
     const title = "YouTube Video";
-
-    const requestUrl = new URL(`${API_BASE_URL}/transcript`);
-    requestUrl.searchParams.append('url', videoUrl);
-    requestUrl.searchParams.append('mode', 'auto');
 
     let lastError: any = null;
 
     for (const key of API_KEYS) {
         try {
             console.log(`Trying API key: ${key.substring(0, 5)}...`);
+            
+            const requestUrl = new URL(API_BASE_URL);
+            requestUrl.searchParams.append('engine', 'youtube_transcripts');
+            requestUrl.searchParams.append('video_id', videoId);
+            requestUrl.searchParams.append('api_key', key);
+            
             const response = await fetch(requestUrl.toString(), {
                 method: 'GET',
-                headers: {
-                    'x-api-key': key,
-                },
             });
 
             if (!response.ok) {
@@ -108,7 +103,7 @@ const transcriptApiTool = ai.defineTool(
             }
 
             const result = await response.json();
-            const transcript = result.content || [];
+            const transcript = result.transcripts || [];
 
             console.log(`Successfully fetched transcript with key: ${key.substring(0, 5)}...`);
             return { title, transcript };
@@ -138,7 +133,8 @@ const processVideoFlow = ai.defineFlow(
 
     return {
       title,
-      transcript,
+      // Map 'start' to 'offset'
+      transcript: transcript.map(item => ({ ...item, offset: item.start })),
     };
   }
 );

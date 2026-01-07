@@ -26,13 +26,13 @@ Genkit is the AI framework used to integrate generative AI features into the app
 -   **Usage**: The underlying AI model used by Genkit for its generative capabilities.
 -   **Website**: [ai.google.dev](https://ai.google.dev/)
 
-## 3. SupaData API (for Transcripts)
+## 3. SearchApi.io (for Transcripts)
 
 This is a third-party service used to fetch transcripts for YouTube videos.
 
--   **Service**: SupaData.ai Transcript API
+-   **Service**: SearchApi.io YouTube Transcripts API
 -   **Usage**: The primary method for fetching video transcripts, as seen in the `processVideoFlow`.
--   **Website**: [supadata.ai](https://supadata.ai/)
+-   **Website**: [www.searchapi.io/docs/youtube-transcripts-api](https://www.searchapi.io/docs/youtube-transcripts-api)
 
 ## 4. MyMemory Translation API
 
