@@ -36,14 +36,17 @@ function Flashcard({ item }: { item: VocabularyItem }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const { firestore, user } = useFirebase();
 
-  const speak = (text: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      // Optional: Set language, pitch, rate
-      // utterance.lang = 'es'; 
-      window.speechSynthesis.speak(utterance);
+  const speak = (e: React.MouseEvent, text: string, lang: string = 'en-us') => {
+    e.stopPropagation();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        // Stop any currently playing audio
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        window.speechSynthesis.speak(utterance);
     }
   };
+
 
   const handleDelete = (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -62,11 +65,29 @@ function Flashcard({ item }: { item: VocabularyItem }) {
       >
         {/* Front of Card */}
         <div className="absolute w-full h-full backface-hidden rounded-lg border bg-card text-card-foreground shadow-lg flex flex-col items-center justify-center p-4 cursor-pointer">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute top-2 right-2 h-8 w-8" 
+            onClick={(e) => speak(e, item.word, 'en-us')}
+          >
+            <Volume2 className="h-5 w-5" />
+            <span className="sr-only">Speak</span>
+          </Button>
           <h2 className="text-2xl md:text-3xl font-bold text-center capitalize text-primary">{item.word}</h2>
         </div>
 
         {/* Back of Card */}
         <div className="absolute w-full h-full backface-hidden rounded-lg border bg-muted text-muted-foreground shadow-lg flex flex-col items-center justify-center p-4 cursor-pointer rotate-y-180">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="absolute top-2 right-2 h-8 w-8" 
+            onClick={(e) => speak(e, item.translation, 'ar-sa')}
+          >
+            <Volume2 className="h-5 w-5" />
+            <span className="sr-only">Speak</span>
+          </Button>
           <h3 className="text-xl md:text-2xl font-semibold text-center">{item.translation || "No translation yet."}</h3>
         </div>
       </div>
