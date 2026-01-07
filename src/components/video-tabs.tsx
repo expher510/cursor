@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { TranscriptView } from "./transcript-view"
 import { VocabularyList } from "./vocabulary-list"
 import { type TranscriptItem } from "@/ai/flows/process-video-flow"
-import { BookOpenText, List, Eye } from "lucide-react"
+import { BookOpenText, List, Eye, BrainCircuit } from "lucide-react"
 import {
   Collapsible,
   CollapsibleContent,
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/collapsible"
 import { Button } from "./ui/button"
 import { useState } from "react"
+import Link from "next/link"
 
 type VideoTabsProps = {
   transcript: TranscriptItem[];
@@ -64,11 +65,17 @@ export function VideoTabs({ transcript, videoId }: VideoTabsProps) {
       </TabsContent>
       <TabsContent value="vocabulary">
         <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                     <List />
                     Vocabulary
                 </CardTitle>
+                <Button asChild>
+                    <Link href={`/quiz?v=${videoId}`}>
+                        <BrainCircuit className="mr-2 h-4 w-4" />
+                        Start Quiz
+                    </Link>
+                </Button>
             </CardHeader>
             <CardContent>
                 <VocabularyList />
