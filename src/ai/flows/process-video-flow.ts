@@ -101,7 +101,7 @@ const processVideoFlow = ai.defineFlow(
     const llmResponse = await ai.generate({
       prompt: vocabularyPrompt,
       config: {
-        responseFormat: 'json',
+        responseMimeType: 'application/json',
       }
     });
 
