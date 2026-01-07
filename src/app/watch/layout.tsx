@@ -78,11 +78,11 @@ export default function WatchLayout({ children }: { children: ReactNode }) {
                 {children}
             </main>
             
-            <aside className="hidden xl:block w-[250px] sticky top-0 h-screen border-l">
+            <aside className="hidden md:block w-[250px] sticky top-0 h-screen border-l">
                 <VocabularyList />
             </aside>
 
-            <div className="xl:hidden fixed bottom-4 right-4 z-50">
+            <div className="md:hidden fixed bottom-4 right-4 z-50">
                 <Sheet>
                 <SheetTrigger asChild>
                     <Button size="icon">
