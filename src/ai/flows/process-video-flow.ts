@@ -60,8 +60,11 @@ const youtubeTranscriptTool = ai.defineTool(
         // For now, we will return a placeholder title.
         const title = "YouTube Video"; 
         return { title, transcript };
-    } catch (error) {
+    } catch (error: any) {
         console.error('Failed to fetch transcript:', error);
+        if (error.message.includes('subtitles disabled')) {
+            throw new Error(`Subtitles are disabled for this video, so a transcript could not be generated.`);
+        }
         throw new Error(`Could not fetch transcript for video ID: ${videoId}`);
     }
   }
