@@ -59,6 +59,12 @@ function ReadingPracticePage() {
 
     return (
         <div className="w-full max-w-4xl mx-auto">
+            <div className="text-center mb-8">
+                <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Reading</h1>
+                <p className="text-lg text-muted-foreground mt-2 max-w-3xl mx-auto">
+                    Click on any word in the transcript to instantly get its translation and add it to your personal vocabulary list.
+                </p>
+            </div>
             <ReadingTabs transcript={formattedTranscript} videoId={videoData.videoId!} />
         </div>
     )
