@@ -46,7 +46,7 @@ export default function WatchPage() {
   return (
     <>
       <AppHeader showBackButton={true} />
-      <main className="flex-1 p-4 md:p-6 pt-20">
+      <main className="container mx-auto flex-1 p-4 md:p-6 pt-24">
         <Suspense fallback={<SuspenseFallback />}>
           <WatchPageProvider>
             <WatchPageContent />

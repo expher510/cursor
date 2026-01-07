@@ -17,9 +17,9 @@ function ReadingPracticePage() {
 
     if (isLoading) {
         return (
-             <div className="w-full max-w-4xl mx-auto space-y-4">
+             <div className="w-full max-w-4xl mx-auto space-y-8">
                 <Skeleton className="h-10 w-1/2" />
-                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-6 w-3/4" />
                 <Card>
                     <CardHeader>
                         <Skeleton className="h-6 w-1/4" />
@@ -59,7 +59,7 @@ function ReadingPracticePage() {
 
     return (
         <div className="w-full max-w-4xl mx-auto">
-             <div className="text-left mb-6">
+             <div className="text-left mb-8 space-y-2">
                 <h1 className="text-3xl font-bold font-headline tracking-tight">{videoData.title}</h1>
                 <p className="text-muted-foreground text-lg">
                     Read the transcript, interact with words, and manage your vocabulary.
@@ -143,7 +143,7 @@ export default function ReadingPage() {
       <>
         <AppHeader showBackButton={true} />
         <main className="container mx-auto pt-24 flex flex-col items-center gap-8 px-4 pb-10">
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={<Skeleton className="h-64 w-full max-w-4xl" />}>
                 <WatchPageProvider>
                     <ReadingPageContent />
                 </WatchPageProvider>

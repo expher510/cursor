@@ -15,7 +15,7 @@ import Link from "next/link";
 
 function LoadingState() {
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto space-y-8">
         <Card>
           <CardContent className="p-4 md:p-6">
             <div className="aspect-video w-full overflow-hidden rounded-lg border">
@@ -138,7 +138,7 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6">
+    <div className="max-w-4xl mx-auto space-y-8">
       <VideoPlayer videoId={videoId} title={videoData.title} />
       <div className="flex justify-center">
         <Button asChild size="lg">
