@@ -10,9 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { extractYouTubeVideoId } from '@/lib/utils';
 import 'dotenv/config';
-import { YoutubeTranscript } from 'youtube-transcript';
 
 const ProcessVideoInputSchema = z.object({
   videoId: z.string().describe('The ID of the YouTube video to process.'),
@@ -42,83 +40,60 @@ export async function processVideo(input: ProcessVideoInput): Promise<ProcessVid
 const transcriptApiTool = ai.defineTool(
   {
     name: 'transcriptApiTool',
-    description: 'Fetches the transcript and title for a given YouTube video URL via a universal transcript API.',
+    description: 'Fetches the transcript for a given YouTube video using the Supadata API.',
     inputSchema: z.object({ videoId: z.string() }),
     outputSchema: z.object({
       title: z.string(),
       transcript: z.array(z.object({
         text: z.string(),
-        start: z.number(),
+        offset: z.number(),
         duration: z.number(),
       })),
     }),
   },
   async (input) => {
-    const videoId = extractYouTubeVideoId(input.videoId);
-    if (!videoId) {
-      throw new Error(`Invalid YouTube video ID or URL: ${input.videoId}`);
-    }
+    const { videoId } = input;
+    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
     
-    const API_BASE_URL = 'https://www.searchapi.io/api/v1/search';
-    const API_KEYS_STRING = process.env.TRANSCRIPT_API_KEYS;
+    const API_BASE_URL = 'https://api.supadata.ai/v1/transcript';
+    const API_KEY = process.env.SUPADATA_API_KEY;
 
-    if (!API_KEYS_STRING) {
-      // Fallback to youtube-transcript if API keys are not available
-      try {
-        const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
-        // Since youtube-transcript doesn't easily provide the title, we'll have to make a compromise.
-        // A more robust solution might involve another API call to YouTube's Data API for the title.
-        return { title: "YouTube Video", transcript: transcript.map(t => ({...t, start: t.offset})) };
-      } catch (e: any) {
-        console.error('youtube-transcript fallback failed:', e);
-        throw new Error(`Could not get data from youtube-transcript for video ID: ${videoId}. Reason: ${e.message}`);
-      }
+    if (!API_KEY) {
+      throw new Error('Supadata API key is not configured in .env file (SUPADATA_API_KEY).');
     }
     
-    const API_KEYS = API_KEYS_STRING.split(',').map(key => key.trim());
-    if (API_KEYS.length === 0) {
-      throw new Error('No API keys found in TRANSCRIPT_API_KEYS.');
-    }
-    
-    const videoInfo = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' }).catch(() => null);
+    // For now, we'll just use a generic title. A robust solution might fetch this separately.
     const title = "YouTube Video";
 
-    let lastError: any = null;
+    try {
+        const requestUrl = new URL(API_BASE_URL);
+        requestUrl.searchParams.append('url', youtubeUrl);
+        requestUrl.searchParams.append('lang', 'en');
+        requestUrl.searchParams.append('mode', 'native'); // Fetch existing transcripts to avoid generation costs
 
-    for (const key of API_KEYS) {
-        try {
-            console.log(`Trying API key: ${key.substring(0, 5)}...`);
-            
-            const requestUrl = new URL(API_BASE_URL);
-            requestUrl.searchParams.append('engine', 'youtube_transcripts');
-            requestUrl.searchParams.append('video_id', videoId);
-            requestUrl.searchParams.append('api_key', key);
-            
-            const response = await fetch(requestUrl.toString(), {
-                method: 'GET',
-            });
+        const response = await fetch(requestUrl.toString(), {
+            method: 'GET',
+            headers: {
+                'x-api-key': API_KEY,
+            },
+        });
 
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({ message: `API request failed with status ${response.status}` }));
-                throw new Error(errorBody.message || `API request failed with status ${response.status}`);
-            }
-
-            const result = await response.json();
-            const transcript = result.transcripts || [];
-
-            console.log(`Successfully fetched transcript with key: ${key.substring(0, 5)}...`);
-            return { title, transcript };
-
-        } catch (error: any) {
-            console.error(`API key ${key.substring(0, 5)}... failed:`, error.message);
-            lastError = error;
-            // Continue to the next key
+        if (!response.ok) {
+            const errorBody = await response.json().catch(() => ({ message: `API request failed with status ${response.status}` }));
+            throw new Error(errorBody.message || `API request failed with status ${response.status}`);
         }
+
+        const result = await response.json();
+        
+        // The Supadata API response for text=false has content as an array of objects
+        const transcript = result.content || [];
+
+        return { title, transcript };
+
+    } catch (error: any) {
+        console.error(`Supadata API failed:`, error.message);
+        throw new Error(`Could not get transcript from Supadata for video ID: ${videoId}. Reason: ${error.message}`);
     }
-    
-    // If all keys failed, throw the last error
-    console.error('All API keys failed.');
-    throw new Error(`Could not get data from transcript API for video ID: ${videoId}. Last error: ${lastError?.message}`);
   }
 );
 
@@ -134,9 +109,7 @@ const processVideoFlow = ai.defineFlow(
 
     return {
       title,
-      // Map 'start' to 'offset'
-      transcript: transcript.map(item => ({ ...item, offset: item.start })),
+      transcript: transcript,
     };
   }
 );
-
