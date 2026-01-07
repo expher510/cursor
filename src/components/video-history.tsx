@@ -22,11 +22,11 @@ type HistoryItem = {
 
 function HistoryCard({ item, firestore, userId }: { item: HistoryItem, firestore: Firestore, userId: string }) {
     
-    const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const handleDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         e.stopPropagation();
         if (window.confirm(`Are you sure you want to delete "${item.title}" and all its saved words?`)) {
-            deleteVideoAndAssociatedData(firestore, userId, item.id);
+            await deleteVideoAndAssociatedData(firestore, userId, item.id);
         }
     };
 
@@ -80,7 +80,7 @@ export function VideoHistory() {
     if (isLoading) {
         return (
             <div className="w-full max-w-4xl pt-10">
-                <Skeleton className="h-8 w-48 mb-6" />
+                <h2 className="text-2xl font-bold font-headline mb-6">Your Recent Videos</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {Array.from({ length: 4 }).map((_, i) => (
                         <div key={i} className="space-y-2">

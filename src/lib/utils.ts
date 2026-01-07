@@ -32,41 +32,38 @@ export function extractYouTubeVideoId(input: string): string | null {
   return null;
 }
 
-export function deleteVideoAndAssociatedData(firestore: Firestore, userId: string, videoId: string) {
+export async function deleteVideoAndAssociatedData(firestore: Firestore, userId: string, videoId: string): Promise<void> {
     if (!firestore || !userId || !videoId) {
         console.error("Missing required parameters for deletion.");
         return;
     }
 
-    // Use a try-catch block for the async operations inside, although the function itself is not async
-    const performDelete = async () => {
-        try {
-            const batch = writeBatch(firestore);
+    try {
+        const batch = writeBatch(firestore);
 
-            // 1. Delete the main video document
-            const videoDocRef = doc(firestore, `users/${userId}/videos/${videoId}`);
-            batch.delete(videoDocRef);
+        // 1. Delete the main video document
+        const videoDocRef = doc(firestore, `users/${userId}/videos/${videoId}`);
+        batch.delete(videoDocRef);
 
-            // 2. Delete the transcript document
-            const transcriptDocRef = doc(firestore, `users/${userId}/videos/${videoId}/transcripts/${videoId}`);
-            batch.delete(transcriptDocRef);
+        // 2. Delete the transcript document
+        const transcriptDocRef = doc(firestore, `users/${userId}/videos/${videoId}/transcripts/${videoId}`);
+        batch.delete(transcriptDocRef);
 
-            // 3. Query and delete associated vocabulary items
-            const vocabCollectionRef = collection(firestore, `users/${userId}/vocabularies`);
-            const q = query(vocabCollectionRef, where("videoId", "==", videoId));
-            const vocabQuerySnapshot = await getDocs(q);
-            
-            vocabQuerySnapshot.forEach((doc) => {
-                batch.delete(doc.ref);
-            });
+        // 3. Query and delete associated vocabulary items
+        const vocabCollectionRef = collection(firestore, `users/${userId}/vocabularies`);
+        const q = query(vocabCollectionRef, where("videoId", "==", videoId));
+        const vocabQuerySnapshot = await getDocs(q);
+        
+        vocabQuerySnapshot.forEach((doc) => {
+            batch.delete(doc.ref);
+        });
 
-            // 4. Commit the batch
-            await batch.commit();
-            console.log(`Successfully deleted video ${videoId} and all associated data.`);
-        } catch (error) {
-            console.error("Error deleting video and associated data:", error);
-        }
-    };
-
-    performDelete();
+        // 4. Commit the batch
+        await batch.commit();
+        console.log(`Successfully deleted video ${videoId} and all associated data.`);
+    } catch (error) {
+        console.error("Error deleting video and associated data:", error);
+        // Optionally, re-throw or handle the error in the UI
+        throw error;
+    }
 }
