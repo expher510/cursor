@@ -7,7 +7,7 @@ import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
 import { Skeleton } from './ui/skeleton';
 import { Button } from './ui/button';
-import { ArrowLeft, Shuffle, Volume2 } from 'lucide-react';
+import { ArrowLeft, Shuffle, Trash2, Volume2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -68,6 +68,15 @@ function Flashcard({ item }: { item: VocabularyItem }) {
 
         {/* Back of Card */}
         <div className="absolute w-full h-full backface-hidden rounded-lg border bg-muted text-muted-foreground shadow-lg flex flex-col items-center justify-center p-4 cursor-pointer rotate-y-180">
+           <Button
+            variant="destructive"
+            size="icon"
+            className="absolute top-2 right-2 h-8 w-8"
+            onClick={handleDelete}
+          >
+            <Trash2 className="h-4 w-4" />
+            <span className="sr-only">Delete</span>
+          </Button>
           <h3 className="text-xl md:text-2xl font-semibold text-center">{item.translation || "No translation yet."}</h3>
         </div>
       </div>
