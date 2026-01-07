@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
   const router = useRouter();
   
   return (
-    <header className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="fixed top-0 z-50 w-full border-b">
       <div className="container flex h-14 items-center">
         <div className="flex items-center gap-2 md:gap-4">
             {showBackButton ? (
