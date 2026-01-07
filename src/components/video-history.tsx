@@ -26,14 +26,18 @@ function HistoryCard({ item }: { item: HistoryItem }) {
 
     const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
-        if (!firestore || !user) return;
-        
-        // Using the same non-blocking delete pattern from flashcards
-        const videoDocRef = doc(firestore, `users/${user.uid}/videos`, item.id);
-        deleteDocumentNonBlocking(videoDocRef);
+        e.preventDefault();
 
-        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${item.id}/transcripts`, item.id);
-        deleteDocumentNonBlocking(transcriptDocRef);
+        if (!firestore || !user) return;
+
+        if (window.confirm("Are you sure you want to delete this video from your history?")) {
+            const videoDocRef = doc(firestore, `users/${user.uid}/videos`, item.id);
+            deleteDocumentNonBlocking(videoDocRef);
+
+            // Also delete the associated transcript
+            const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${item.id}/transcripts`, item.id);
+            deleteDocumentNonBlocking(transcriptDocRef);
+        }
     };
     
     const handleCardClick = () => {
