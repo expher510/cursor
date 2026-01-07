@@ -2,7 +2,6 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Logo } from "@/components/logo";
 import { MobileNav } from "@/components/mobile-nav";
 import { Menu, Copy, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -20,11 +19,11 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
   const router = useRouter();
   
   return (
-    <header className="fixed top-0 z-50 w-full border-b bg-background/95 shadow-sm backdrop-blur-sm">
+    <header className="fixed top-0 z-50 w-full">
       <div className="container flex h-14 items-center">
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-4" style={{minWidth: '60px'}}>
             {showBackButton ? (
-                 <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full" onClick={() => router.back()}>
+                 <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full border border-border" onClick={() => router.back()}>
                     <ArrowLeft className="h-5 w-5" />
                     <span className="sr-only">Back</span>
                  </Button>
@@ -48,7 +47,6 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
         </div>
         
         <div className="flex-1 flex items-center justify-center">
-           <Logo />
            <div className="hidden md:flex">{children}</div>
         </div>
         
