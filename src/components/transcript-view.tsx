@@ -13,14 +13,6 @@ type TranscriptViewProps = {
 
 export function TranscriptView({ transcript, videoId }: TranscriptViewProps) {
     const { addVocabularyItem } = useWatchPage();
-    
-    // Flatten the transcript into a single array of words for easier rendering
-    const words = useMemo(() => {
-        return transcript.flatMap((item) => 
-            item.text.split(" ").map(word => ({ text: word, originalLine: item.text }))
-        );
-    }, [transcript]);
-
 
   return (
     <ScrollArea className="h-[400px] md:h-auto md:flex-1">
