@@ -1,8 +1,8 @@
 'use server';
 /**
- * @fileOverview A flow for processing YouTube videos to extract transcripts and generate vocabulary.
+ * @fileOverview A flow for processing YouTube videos to extract transcripts.
  *
- * - processVideo - A function that takes a YouTube video ID and returns its title, transcript, and a vocabulary list.
+ * - processVideo - A function that takes a YouTube video ID and returns its title and transcript.
  * - ProcessVideoInput - The input type for the processVideo function.
  * - ProcessVideoOutput - The return type for the processVideo function.
  */
@@ -28,7 +28,6 @@ export type TranscriptItem = z.infer<typeof TranscriptItemSchema>;
 const ProcessVideoOutputSchema = z.object({
   title: z.string().describe('The title of the video.'),
   transcript: z.array(TranscriptItemSchema).describe('The transcript of the video with timestamps.'),
-  translations: z.record(z.string()).describe('A dictionary of words from the transcript and their translations.'),
 });
 export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
 
@@ -63,7 +62,16 @@ const transcriptApiTool = ai.defineTool(
     const API_KEYS_STRING = process.env.TRANSCRIPT_API_KEYS;
 
     if (!API_KEYS_STRING) {
-      throw new Error('TRANSCRIPT_API_KEYS is not set in the environment variables.');
+      // Fallback to youtube-transcript if API keys are not available
+      try {
+        const transcript = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
+        // Since youtube-transcript doesn't easily provide the title, we'll have to make a compromise.
+        // A more robust solution might involve another API call to YouTube's Data API for the title.
+        return { title: "YouTube Video", transcript };
+      } catch (e: any) {
+        console.error('youtube-transcript fallback failed:', e);
+        throw new Error(`Could not get data from youtube-transcript for video ID: ${videoId}. Reason: ${e.message}`);
+      }
     }
     
     const API_KEYS = API_KEYS_STRING.split(',').map(key => key.trim());
@@ -75,7 +83,7 @@ const transcriptApiTool = ai.defineTool(
     
     // First, get metadata like the title from youtube-transcript
     const videoInfo = await YoutubeTranscript.fetchTranscript(videoUrl, { lang: 'en' }).catch(() => null);
-    const title = videoInfo && Array.isArray(videoInfo) && videoInfo.length > 0 && 'videoTitle' in videoInfo[0] && videoInfo[0].videoTitle ? videoInfo[0].videoTitle : "YouTube Video";
+    const title = (videoInfo && Array.isArray(videoInfo) && videoInfo.length > 0 && 'videoTitle' in (videoInfo[0] as any) && (videoInfo[0] as any).videoTitle) ? (videoInfo[0] as any).videoTitle : "YouTube Video";
 
     const requestUrl = new URL(`${API_BASE_URL}/transcript`);
     requestUrl.searchParams.append('url', videoUrl);
@@ -130,7 +138,6 @@ const processVideoFlow = ai.defineFlow(
     return {
       title,
       transcript,
-      translations: {}, // Return empty object for now
     };
   }
 );

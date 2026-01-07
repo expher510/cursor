@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useFirebase } from '@/firebase';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
@@ -7,6 +7,8 @@ import { createContext, useContext, useState, useCallback, ReactNode, useMemo, D
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
 import { type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
+import { translateWord } from '@/ai/flows/translate-word-flow';
+import { useToast } from '@/hooks/use-toast';
 
 type VocabularyItem = {
   id: string;
@@ -32,6 +34,7 @@ const WatchPageContext = createContext<WatchPageContextType | undefined>(undefin
 
 export function WatchPageProvider({ children }: { children: ReactNode }) {
   const { firestore, user } = useFirebase();
+  const { toast } = useToast();
 
   const [videoData, setVideoData] = useState<ProcessVideoOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,27 +46,54 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     return collection(firestore, `users/${user.uid}/vocabularies`);
   }, [user, firestore]);
 
-  const { data: vocabulary, isLoading: isVocabLoading } = useCollection<VocabularyItem>(vocabQuery);
+  const { data: vocabulary } = useCollection<VocabularyItem>(vocabQuery);
 
-  const addVocabularyItem = useCallback((word: string, videoId: string) => {
+  const addVocabularyItem = useCallback(async (word: string, videoId: string) => {
     if (!user || !firestore) return;
 
     const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
     if (!cleanedWord) return;
 
     const alreadyExists = vocabulary?.some(item => item.word === cleanedWord);
-    if (alreadyExists) return;
+    if (alreadyExists) {
+        toast({
+            title: "Already Saved",
+            description: `"${cleanedWord}" is already in your vocabulary list.`,
+        })
+        return;
+    }
 
-    const translation = ""; // No translation for now
+    try {
+        toast({
+            title: "Translating & Saving...",
+            description: `Adding "${cleanedWord}" to your list.`,
+        });
 
-    const vocabCollectionRef = collection(firestore, `users/${user.uid}/vocabularies`);
-    addDocumentNonBlocking(vocabCollectionRef, {
-      word: cleanedWord,
-      translation: translation,
-      userId: user.uid,
-      videoId: videoId,
-    });
-  }, [user, firestore, vocabulary]);
+        const { translation } = await translateWord({ word: cleanedWord, sourceLang: 'en', targetLang: 'ar' });
+
+        const vocabCollectionRef = collection(firestore, `users/${user.uid}/vocabularies`);
+        addDocumentNonBlocking(vocabCollectionRef, {
+            word: cleanedWord,
+            translation: translation || 'No translation found',
+            userId: user.uid,
+            videoId: videoId,
+        });
+
+        toast({
+            title: "Word Saved!",
+            description: `"${cleanedWord}" has been translated and saved.`,
+        });
+
+    } catch (e) {
+        console.error("Failed to translate or save word", e);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not save the word. Please try again.",
+        });
+    }
+
+  }, [user, firestore, vocabulary, toast]);
 
   const removeVocabularyItem = useCallback((id: string) => {
       if (!firestore || !user) return;

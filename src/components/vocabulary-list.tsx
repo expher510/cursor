@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -14,6 +14,13 @@ import { Input } from "./ui/input";
 import { useState, useMemo } from "react";
 import { useWatchPage } from "@/context/watch-page-context";
 import Link from "next/link";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 
 type VocabularyItem = {
   id: string;
@@ -75,20 +82,29 @@ export function VocabularyList({ isSheet = false }: { isSheet?: boolean }) {
                 </p>
             </div>
           ) : (
-            <ul className="space-y-2 pb-4">
-              {filteredVocabulary.map((item) => (
-                <li key={item.id} className="flex items-center justify-between gap-2 rounded-md border p-3">
-                  <div>
-                    <p className="font-semibold capitalize text-primary">{item.word}</p>
-                    {item.translation && <p className="text-sm text-muted-foreground">{item.translation}</p>}
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => removeVocabularyItem(item.id)}>
-                    <X className="h-4 w-4" />
-                    <span className="sr-only">Remove</span>
-                  </Button>
-                </li>
-              ))}
-            </ul>
+             <TooltipProvider>
+                <ul className="space-y-2 pb-4">
+                  {filteredVocabulary.map((item) => (
+                    <li key={item.id} className="flex items-center justify-between gap-2 rounded-md border p-3">
+                      <div>
+                        <p className="font-semibold capitalize text-primary">{item.word}</p>
+                        <p className="text-sm text-muted-foreground">{item.translation}</p>
+                      </div>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => removeVocabularyItem(item.id)}>
+                                <X className="h-4 w-4" />
+                                <span className="sr-only">Remove</span>
+                           </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Remove</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </li>
+                  ))}
+                </ul>
+            </TooltipProvider>
           )}
         </ScrollArea>
     </>
