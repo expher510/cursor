@@ -9,9 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { YoutubeTranscript } from 'youtube-transcript';
 import { extractYouTubeVideoId } from '@/lib/utils';
-
 
 const ProcessVideoInputSchema = z.object({
   videoId: z.string().describe('The ID of the YouTube video to process.'),
@@ -38,10 +36,10 @@ export async function processVideo(input: ProcessVideoInput): Promise<ProcessVid
 }
 
 
-const youtubeTranscriptTool = ai.defineTool(
+const makeWebhookTool = ai.defineTool(
   {
-    name: 'youtubeTranscriptTool',
-    description: 'Fetches the transcript and title for a given YouTube video ID.',
+    name: 'makeWebhookTool',
+    description: 'Fetches the transcript and title for a given YouTube video ID via a Make.com webhook.',
     inputSchema: z.object({ videoId: z.string() }),
     outputSchema: z.object({
       title: z.string(),
@@ -54,20 +52,36 @@ const youtubeTranscriptTool = ai.defineTool(
       throw new Error(`Invalid YouTube video ID or URL: ${input.videoId}`);
     }
     
+    const webhookUrl = 'https://hook.eu1.make.com/lnfjpfzvebak4khq1klqpofkdymfib7w';
+
     try {
-        // This will try to fetch any available transcript, including auto-generated ones.
-        const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-        
-        // In a real scenario, you would fetch the title via the YouTube Data API.
-        // For now, we will return a placeholder title.
-        const title = "YouTube Video"; 
-        return { title, transcript };
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ videoId: videoId }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Webhook request failed with status ${response.status}`);
+      }
+
+      // Make.com might wrap the response, so we parse it as JSON.
+      const result = await response.json();
+
+      // Assuming Make.com returns an object with { title, transcript }
+      const { title, transcript } = result;
+
+      if (!title || !transcript) {
+        throw new Error('Invalid response from webhook. Expected { title, transcript }');
+      }
+
+      return { title, transcript };
+
     } catch (error: any) {
-        console.error('Failed to fetch transcript:', error);
-        if (error.message.includes('subtitles disabled') || error.message.includes('No transcript found')) {
-            throw new Error(`Subtitles are disabled or unavailable for this video, so a transcript could not be generated.`);
-        }
-        throw new Error(`Could not fetch transcript for video ID: ${videoId}`);
+        console.error('Failed to fetch from webhook:', error);
+        throw new Error(`Could not get data from webhook for video ID: ${videoId}. Reason: ${error.message}`);
     }
   }
 );
@@ -78,46 +92,15 @@ const processVideoFlow = ai.defineFlow(
     name: 'processVideoFlow',
     inputSchema: ProcessVideoInputSchema,
     outputSchema: ProcessVideoOutputSchema,
-    tools: [youtubeTranscriptTool],
+    tools: [makeWebhookTool],
   },
   async (input) => {
-    const { title, transcript } = await youtubeTranscriptTool(input);
+    // Call the new webhook tool
+    const { title, transcript } = await makeWebhookTool(input);
 
-    const transcriptText = transcript.map(t => t.text).join(' ');
-
-    const vocabularyPrompt = `
-      You are an expert language teacher. Given the following transcript from a video,
-      identify up to 20 key vocabulary words or short phrases that would be
-      valuable for a language learner. For each word/phrase, provide a simple translation
-      in Arabic.
-
-      Focus on words that are common, useful, or relevant to the main topic of the video.
-      Avoid proper nouns unless they are crucial.
-
-      Transcript:
-      """
-      ${transcriptText.substring(0, 2000)}
-      """
-
-      Return ONLY a JSON object with the identified words as keys and their Arabic translations as values.
-      Example: {"hello": "مرحبا", "world": "عالم"}
-    `;
-
-    const llmResponse = await ai.generate({
-      prompt: vocabularyPrompt,
-      config: {
-        responseMimeType: 'application/json',
-      }
-    });
-
-    let translations = {};
-    try {
-      const jsonResponse = llmResponse.text;
-      translations = JSON.parse(jsonResponse);
-    } catch (e) {
-      console.error("Failed to parse vocabulary JSON from LLM response", e);
-      // Return empty translations if parsing fails
-    }
+    // As requested, the AI part is disabled for now.
+    // We will return an empty object for translations.
+    const translations = {};
     
     const formattedTranscript = transcript.map(item => ({
         ...item,
