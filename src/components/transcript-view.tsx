@@ -5,6 +5,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "./ui/button";
 import { useWatchPage } from "@/context/watch-page-context";
 import { cn } from "@/lib/utils";
+import { useMemo } from "react";
+import { Skeleton } from "./ui/skeleton";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
@@ -12,7 +14,17 @@ type TranscriptViewProps = {
 };
 
 export function TranscriptView({ transcript, videoId }: TranscriptViewProps) {
-  const { addVocabularyItem } = useWatchPage();
+  const { addVocabularyItem, vocabulary, savedWordsSet } = useWatchPage();
+
+  const vocabMap = useMemo(() => {
+    const map = new Map<string, string>();
+    if (vocabulary) {
+      for (const item of vocabulary) {
+        map.set(item.word, item.translation);
+      }
+    }
+    return map;
+  }, [vocabulary]);
 
   return (
     <ScrollArea className="h-auto">
@@ -26,6 +38,20 @@ export function TranscriptView({ transcript, videoId }: TranscriptViewProps) {
               
               const cleanedWord = word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,"");
               const key = `${line.offset}-${lineIndex}-${wordIndex}`;
+              const isSaved = savedWordsSet.has(cleanedWord);
+              const translation = isSaved ? vocabMap.get(cleanedWord) : null;
+
+              if (isSaved) {
+                return (
+                   <span key={key} className="inline-block relative group mx-0.5">
+                    <span 
+                      className="inline-block px-2 py-1 rounded-md bg-destructive/10 text-destructive-foreground font-semibold cursor-pointer text-sm"
+                    >
+                      {translation ? translation : <Skeleton className="h-5 w-16 inline-block" />}
+                    </span>
+                  </span>
+                )
+              }
 
               return (
                 <Button 

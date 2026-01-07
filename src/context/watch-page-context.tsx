@@ -3,7 +3,7 @@
 import { useFirebase } from '@/firebase';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection, doc, query, where } from 'firebase/firestore';
-import { createContext, useContext, useState, useCallback, ReactNode, useMemo, Dispatch, SetStateAction, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
 import { type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
@@ -20,6 +20,7 @@ type VocabularyItem = {
 
 type WatchPageContextType = {
   vocabulary: VocabularyItem[];
+  savedWordsSet: Set<string>;
   addVocabularyItem: (word: string, videoId: string) => void;
   removeVocabularyItem: (id: string) => void;
   videoData: ProcessVideoOutput | null;
@@ -39,18 +40,22 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const [videoData, setVideoData] = useState<ProcessVideoOutput | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const currentVideoId = videoData?.transcript?.[0] ? videoData.transcript[0].videoId : null;
-
+  const videoId = useMemo(() => videoData?.transcript?.[0]?.videoId, [videoData]);
 
   const vocabQuery = useMemoFirebase(() => {
-    if (!user || !firestore || !currentVideoId) return null;
+    if (!user || !firestore || !videoId) return null;
     return query(
         collection(firestore, `users/${user.uid}/vocabularies`),
-        where("videoId", "==", currentVideoId)
+        where("videoId", "==", videoId)
     );
-  }, [user, firestore, currentVideoId]);
+  }, [user, firestore, videoId]);
 
   const { data: vocabulary } = useCollection<VocabularyItem>(vocabQuery);
+
+  const savedWordsSet = useMemo(() => {
+    return new Set(vocabulary?.map(item => item.word) ?? []);
+  }, [vocabulary]);
+
 
   const addVocabularyItem = useCallback(async (word: string, videoId: string) => {
     if (!user || !firestore) return;
@@ -58,8 +63,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
     if (!cleanedWord) return;
 
-    const alreadyExists = vocabulary?.some(item => item.word === cleanedWord);
-    if (alreadyExists) {
+    if (savedWordsSet.has(cleanedWord)) {
         toast({
             title: "Already Saved",
             description: `"${cleanedWord}" is already in your vocabulary list.`,
@@ -89,17 +93,17 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             description: `"${cleanedWord}" has been translated and saved.`,
         });
 
-    } catch (e) {
+    } catch (e: any) {
         console.error("Failed to translate or save word", e);
         dismiss();
         toast({
             variant: "destructive",
             title: "Error",
-            description: "Could not save the word. Please try again.",
+            description: e.message || "Could not save the word. Please try again.",
         });
     }
 
-  }, [user, firestore, vocabulary, toast]);
+  }, [user, firestore, savedWordsSet, toast]);
 
   const removeVocabularyItem = useCallback((id: string) => {
       if (!firestore || !user) return;
@@ -110,6 +114,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
   const value = {
     vocabulary: vocabulary ?? [],
+    savedWordsSet,
     addVocabularyItem,
     removeVocabularyItem,
     videoData,
