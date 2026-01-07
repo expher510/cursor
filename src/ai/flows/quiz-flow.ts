@@ -30,7 +30,7 @@ const generateQuizFlow = ai.defineFlow(
       You are an AI assistant designed to help language learners test their comprehension.
       Your task is to create a multiple-choice quiz based on the following video transcript.
 
-      Generate 5 questions that cover the main points of the text.
+      Generate exactly 5 questions that cover the main points of the text.
       Each question must have exactly 4 possible answers, and only one of them should be correct.
       Ensure the questions are relevant to the content and test understanding, not just word recognition.
 
@@ -65,10 +65,10 @@ const generateQuizFlow = ai.defineFlow(
     try {
       const chatCompletion = await groq.chat.completions.create({
           messages: [{ role: 'user', content: groqPrompt }],
-          model: 'llama3-8b-8192',
+          model: 'llama3-70b-8192', // Using a more powerful model
           temperature: 0.7,
           n: 1,
-          stream: false,
+          stream: false, // Must be false to get a complete JSON object
           response_format: { type: "json_object" },
       });
 
