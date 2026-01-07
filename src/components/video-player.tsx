@@ -9,7 +9,6 @@ export function VideoPlayer({ videoId, title }: VideoPlayerProps) {
   return (
     <Card>
       <CardContent className="p-4 md:p-6">
-        <h1 className="font-headline text-2xl sm:text-3xl font-bold mb-4">{title}</h1>
         <div className="aspect-video w-full overflow-hidden rounded-lg border">
           <iframe
             width="100%"
