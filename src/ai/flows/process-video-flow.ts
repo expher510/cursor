@@ -55,15 +55,17 @@ const youtubeTranscriptTool = ai.defineTool(
     }
     
     try {
+        // This will try to fetch any available transcript, including auto-generated ones.
         const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+        
         // In a real scenario, you would fetch the title via the YouTube Data API.
         // For now, we will return a placeholder title.
         const title = "YouTube Video"; 
         return { title, transcript };
     } catch (error: any) {
         console.error('Failed to fetch transcript:', error);
-        if (error.message.includes('subtitles disabled')) {
-            throw new Error(`Subtitles are disabled for this video, so a transcript could not be generated.`);
+        if (error.message.includes('subtitles disabled') || error.message.includes('No transcript found')) {
+            throw new Error(`Subtitles are disabled or unavailable for this video, so a transcript could not be generated.`);
         }
         throw new Error(`Could not fetch transcript for video ID: ${videoId}`);
     }
@@ -117,10 +119,8 @@ const processVideoFlow = ai.defineFlow(
       // Return empty translations if parsing fails
     }
     
-    // Convert transcript to a format that matches ProcessVideoOutputSchema
     const formattedTranscript = transcript.map(item => ({
         ...item,
-        timestamp: new Date(item.offset).toISOString().substr(14, 5) // Format to MM:SS
     }));
 
     return {

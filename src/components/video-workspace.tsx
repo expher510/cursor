@@ -63,6 +63,12 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
 
   useEffect(() => {
     async function processAndSetVideo() {
+      if (!videoId) {
+        setIsLoading(false);
+        setError("Invalid video ID provided.");
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
       try {
@@ -81,7 +87,6 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
 
       } catch (e: any) {
         console.error(e);
-        // Display the specific error message from the flow
         setError(e.message || "Could not process the video. The transcript might not be available.");
       } finally {
         setIsLoading(false);
