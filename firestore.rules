@@ -6,7 +6,7 @@
  * public or shared collections.
  *
  * Data Structure:
- * All user-generated content (videos, transcripts, vocabularies) is hierarchically
+ * All user-generated content (videos, transcripts, quizzes, vocabularies) is hierarchically
  * nested under the `/users/{userId}` path. This structure makes ownership implicit
  * in the document path, simplifying rules and improving performance.
  *
@@ -140,6 +140,17 @@ service cloud.firestore {
           allow create: if isOwner(userId);
           allow update: if isExistingOwner(userId);
           allow delete: if isExistingOwner(userId);
+        }
+
+        /**
+         * @description Controls access to a video's quiz, which belongs to a user.
+         * @path /users/{userId}/videos/{videoId}/quizzes/{quizId}
+         * @allow A user (auth.uid='user123') can (create) a quiz for their own video.
+         * @deny A user (auth.uid='user456') cannot (delete) a quiz owned by 'user123'.
+         * @principle Inherits ownership from the top-level user path, ensuring deep data security.
+         */
+        match /quizzes/{quizId} {
+          allow get, list, create, update, delete: if isOwner(userId);
         }
       }
 

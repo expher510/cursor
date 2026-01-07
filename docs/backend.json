@@ -117,6 +117,50 @@
         "videoId",
         "words"
       ]
+    },
+    "Quiz": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Quiz",
+      "description": "Represents a quiz with multiple-choice questions for a video.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the quiz."
+        },
+        "videoId": {
+          "type": "string",
+          "description": "The ID of the video this quiz belongs to."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who took the quiz."
+        },
+        "questions": {
+          "type": "array",
+          "description": "A list of questions in the quiz.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "questionText": {
+                "type": "string",
+                "description": "The text of the question."
+              },
+              "options": {
+                "type": "array",
+                "description": "A list of possible answers.",
+                "items": { "type": "string" }
+              },
+              "correctAnswer": {
+                "type": "string",
+                "description": "The correct answer from the options list."
+              }
+            },
+            "required": ["questionText", "options", "correctAnswer"]
+          }
+        }
+      },
+      "required": ["id", "videoId", "userId", "questions"]
     }
   },
   "auth": {
@@ -188,6 +232,30 @@
         }
       },
       {
+        "path": "/users/{userId}/videos/{videoId}/quizzes/{quizId}",
+        "definition": {
+          "entityName": "Quiz",
+          "schema": {
+            "$ref": "#/backend/entities/Quiz"
+          },
+          "description": "Stores quizzes for videos owned by a specific user. Path-based ownership ensures data isolation.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "videoId",
+              "description": "The unique identifier of the video."
+            },
+            {
+              "name": "quizId",
+              "description": "The unique identifier of the quiz."
+            }
+          ]
+        }
+      },
+      {
         "path": "/users/{userId}/vocabularies/{vocabularyId}",
         "definition": {
           "entityName": "Vocabulary",
@@ -208,6 +276,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to ensure data isolation and facilitate secure access based on user ownership. Each user has their own collection of videos, transcripts, and vocabularies, eliminating the need for complex authorization rules. This structure adheres to the principles of Authorization Independence and Structural Segregation. Specifically:\n\n1.  **Authorization Independence:** The design focuses on path-based ownership for all user-related data (videos, transcripts, vocabularies). This eliminates the need for `get()` calls in security rules because access control is directly tied to the path. This allows atomic operations and simplifies debugging.\n\n2.  **Structural Segregation:**  Each user's data is stored under their own document ID (`/users/{userId}`).  This ensures that all documents within a given collection share the same security requirements.  This simplifies security rules because they can be applied to entire collections rather than requiring filtering based on document content.\n\n3.  **QAPs (Rules are not Filters):** The structure supports secure `list` operations because each user's resources are isolated within their own path. A user can list their videos, transcripts, and vocabularies without exposing data from other users.\n\n4.  **Access Modeling:** All data is modeled using Path-Based ownership, which directly represents the `User 1:N Entity` relationships.\n\nThis design prioritizes clarity, security, and scalability by leveraging Firestore's hierarchical data model and enforcing strict ownership."
+    "reasoning": "The Firestore structure is designed to ensure data isolation and facilitate secure access based on user ownership. Each user has their own collection of videos, transcripts, quizzes, and vocabularies, eliminating the need for complex authorization rules. This structure adheres to the principles of Authorization Independence and Structural Segregation. Specifically:\n\n1.  **Authorization Independence:** The design focuses on path-based ownership for all user-related data (videos, transcripts, quizzes, vocabularies). This eliminates the need for `get()` calls in security rules because access control is directly tied to the path. This allows atomic operations and simplifies debugging.\n\n2.  **Structural Segregation:**  Each user's data is stored under their own document ID (`/users/{userId}`).  This ensures that all documents within a given collection share the same security requirements.  This simplifies security rules because they can be applied to entire collections rather than requiring filtering based on document content.\n\n3.  **QAPs (Rules are not Filters):** The structure supports secure `list` operations because each user's resources are isolated within their own path. A user can list their videos, transcripts, and vocabularies without exposing data from other users.\n\n4.  **Access Modeling:** All data is modeled using Path-Based ownership, which directly represents the `User 1:N Entity` relationships.\n\nThis design prioritizes clarity, security, and scalability by leveraging Firestore's hierarchical data model and enforcing strict ownership."
   }
 }
