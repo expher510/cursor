@@ -15,25 +15,17 @@ type ReadingTabsProps = {
 
 export function ReadingTabs({ transcript, videoId }: ReadingTabsProps) {
   return (
-    <Tabs defaultValue="transcript" className="w-full">
+    <Tabs defaultValue="reading" className="w-full">
       <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
         <TabsList>
-          <TabsTrigger value="transcript" className="gap-2"><BookOpenText/> Transcript</TabsTrigger>
+          <TabsTrigger value="reading" className="gap-2"><BookOpenText/> Reading</TabsTrigger>
           <TabsTrigger value="vocabulary" className="gap-2"><List/> Vocabulary</TabsTrigger>
         </TabsList>
       </div>
-      <TabsContent value="transcript">
-        <Card>
-          <CardHeader>
-            <CardTitle>Transcript</CardTitle>
-            <CardDescription>
-              Click a word to add it to your vocabulary list.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+      <TabsContent value="reading">
+         <div className="p-1 rounded-lg border bg-card text-card-foreground shadow-sm">
             <TranscriptView transcript={transcript} videoId={videoId} />
-          </CardContent>
-        </Card>
+        </div>
       </TabsContent>
       <TabsContent value="vocabulary">
           <VocabularyList />
