@@ -3,10 +3,9 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
 import { Youtube } from "lucide-react";
+import { useEffect } from "react";
 
-import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
@@ -15,15 +14,18 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { extractYouTubeVideoId } from "@/lib/utils";
 
 const FormSchema = z.object({
-  url: z.string().url({ message: "Please enter a valid URL." }),
+  url: z.string().optional(),
 });
 
-export function YoutubeUrlForm() {
-  const router = useRouter();
+type YoutubeUrlFormProps = {
+  onUrlChange: (url: string) => void;
+};
 
+
+export function YoutubeUrlForm({ onUrlChange }: YoutubeUrlFormProps) {
+  
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -31,18 +33,16 @@ export function YoutubeUrlForm() {
     },
   });
 
-  function onSubmit(data: z.infer<typeof FormSchema>) {
-    const videoId = extractYouTubeVideoId(data.url);
-    if (videoId) {
-      router.push(`/watch?v=${videoId}`);
-    } else {
-        alert("Invalid YouTube URL. Please check the link and try again.");
-    }
-  }
+  const urlValue = form.watch('url');
+
+  useEffect(() => {
+    onUrlChange(urlValue || '');
+  }, [urlValue, onUrlChange]);
+
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col w-full items-center gap-3">
+      <form className="flex flex-col w-full items-center gap-3">
         <FormField
           control={form.control}
           name="url"
@@ -62,9 +62,6 @@ export function YoutubeUrlForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={form.formState.isSubmitting} className="w-full">
-          {form.formState.isSubmitting ? "Loading..." : "Start Learning"}
-        </Button>
       </form>
     </Form>
   );

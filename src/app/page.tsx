@@ -1,52 +1,41 @@
 'use client';
-
+import { useState } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
 import { Logo } from "@/components/logo";
 import { VideoHistory } from "@/components/video-history";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BookOpen, Edit } from "lucide-react";
-import Link from "next/link";
+import { ArrowRight, BookOpen, Edit, Headphones } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { extractYouTubeVideoId } from "@/lib/utils";
 
-function ActivityCards() {
+function ActivityButtons({ videoId }: { videoId: string | null }) {
+  const router = useRouter();
+
+  const handleNavigation = (path: string) => {
+    if (videoId) {
+      router.push(`/${path}?v=${videoId}`);
+    }
+  };
+
   return (
     <div className="w-full max-w-4xl pt-10 text-left">
-       <h2 className="text-2xl font-bold font-headline mb-6 text-center md:text-left">Or Practice Your Skills</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+       <h2 className="text-2xl font-bold font-headline mb-6 text-center">Choose Your Practice</h2>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <Card className="hover:shadow-lg transition-shadow flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <BookOpen className="text-primary" />
-              <span>Reading Practice</span>
-            </CardTitle>
-             <CardDescription>
-              Improve comprehension by reviewing transcripts.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow flex flex-col justify-end">
-            <Button asChild>
-              <Link href="/reading">Start Reading <ArrowRight className="ml-2" /></Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <Button size="lg" disabled={!videoId} onClick={() => handleNavigation('watch')}>
+            <Headphones className="mr-2" />
+            Start Listening
+        </Button>
         
-        <Card className="hover:shadow-lg transition-shadow flex flex-col">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3">
-              <Edit className="text-primary" />
-              <span>Writing Practice</span>
-            </CardTitle>
-             <CardDescription>
-              Construct sentences with your vocabulary.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow flex flex-col justify-end">
-            <Button asChild>
-              <Link href="/writing">Start Writing <ArrowRight className="ml-2" /></Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <Button size="lg" disabled={!videoId} onClick={() => handleNavigation('reading')}>
+            <BookOpen className="mr-2" />
+            Start Reading
+        </Button>
+
+        <Button size="lg" disabled={!videoId} onClick={() => handleNavigation('writing')}>
+            <Edit className="mr-2" />
+            Start Writing
+        </Button>
       </div>
     </div>
   );
@@ -54,6 +43,9 @@ function ActivityCards() {
 
 
 export default function Home() {
+  const [url, setUrl] = useState('');
+  const videoId = extractYouTubeVideoId(url);
+
   return (
     <>
       <main className="flex min-h-screen w-full flex-col items-center bg-background p-4 pt-24">
@@ -68,9 +60,9 @@ export default function Home() {
             </p>
           </div>
           <div className="w-full max-w-lg pt-4">
-            <YoutubeUrlForm />
+            <YoutubeUrlForm onUrlChange={setUrl} />
           </div>
-          <ActivityCards />
+          <ActivityButtons videoId={videoId} />
           <VideoHistory />
         </div>
       </main>
