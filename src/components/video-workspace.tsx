@@ -81,11 +81,8 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
 
       } catch (e: any) {
         console.error(e);
-        let errorMessage = "Could not process the video. The transcript might not be available for this video.";
-        if (e.message && e.message.includes('subtitles disabled')) {
-            errorMessage = "Subtitles are disabled for this video, so a transcript could not be generated.";
-        }
-        setError(errorMessage);
+        // Display the specific error message from the flow
+        setError(e.message || "Could not process the video. The transcript might not be available.");
       } finally {
         setIsLoading(false);
       }
