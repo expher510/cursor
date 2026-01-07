@@ -8,6 +8,7 @@ import Link from "next/link";
 import {
   Sheet,
   SheetContent,
+  SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useState } from "react";
@@ -32,6 +33,7 @@ export function AppHeader() {
               </Button>
           </SheetTrigger>
            <SheetContent side="left" className="pr-0">
+             <SheetTitle className="sr-only">Main Menu</SheetTitle>
             <MobileNav setOpen={setOpen} />
           </SheetContent>
         </Sheet>
