@@ -51,9 +51,9 @@ const translateWordFlow = ai.defineFlow(
         throw new Error('Invalid response structure from MyMemory API');
       }
     } catch (error: any) {
-        console.error("Translation failed:", error);
-        // Return an empty translation or handle the error as needed
-        return { translation: '' };
+        console.error("Translation flow failed:", error);
+        // Re-throw the error to ensure the server action fails clearly
+        throw error;
     }
   }
 );

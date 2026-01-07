@@ -63,12 +63,12 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         return;
     }
 
-    try {
-        toast({
-            title: "Translating & Saving...",
-            description: `Adding "${cleanedWord}" to your list.`,
-        });
+    const { dismiss } = toast({
+        title: "Translating & Saving...",
+        description: `Adding "${cleanedWord}" to your list.`,
+    });
 
+    try {
         const { translation } = await translateWord({ word: cleanedWord, sourceLang: 'en', targetLang: 'ar' });
 
         const vocabCollectionRef = collection(firestore, `users/${user.uid}/vocabularies`);
@@ -78,7 +78,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             userId: user.uid,
             videoId: videoId,
         });
-
+        
+        dismiss();
         toast({
             title: "Word Saved!",
             description: `"${cleanedWord}" has been translated and saved.`,
@@ -86,6 +87,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
     } catch (e) {
         console.error("Failed to translate or save word", e);
+        dismiss();
         toast({
             variant: "destructive",
             title: "Error",
