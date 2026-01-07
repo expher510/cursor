@@ -1,39 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useDraggable } from "@dnd-kit/core";
 import { type TranscriptItem } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BookOpenText } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
   translations: Record<string, string>;
-  onAddToVocabulary: (word: string, translation: string) => void;
 };
 
-export function TranscriptView({ transcript, translations, onAddToVocabulary }: TranscriptViewProps) {
-  const [translatedWords, setTranslatedWords] = useState<Set<string>>(new Set());
+function DraggableWord({ word, translation, lineIndex, wordIndex }: { word: string; translation: string; lineIndex: number; wordIndex: number; }) {
+  const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: `draggable-${lineIndex}-${wordIndex}`,
+    data: {
+      word: cleanedWord,
+      translation: translation,
+    },
+  });
 
-  const toggleTranslation = (key: string) => {
-    setTranslatedWords(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(key)) {
-        newSet.delete(key);
-      } else {
-        newSet.add(key);
-      }
-      return newSet;
-    });
-  };
+  return (
+    <span
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        "cursor-grab font-medium text-primary hover:bg-primary/10 rounded-md px-1 py-0.5 transition-colors",
+        isDragging && "opacity-50"
+      )}
+    >
+      {word}
+    </span>
+  );
+}
 
-  const handleWordDoubleClick = (word: string) => {
-    const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
-    const translation = translations[cleanedWord];
-    if (translation) {
-      onAddToVocabulary(word, translation);
-    }
-  };
+
+export function TranscriptView({ transcript, translations }: TranscriptViewProps) {
 
   return (
     <Card>
@@ -51,21 +56,19 @@ export function TranscriptView({ transcript, translations, onAddToVocabulary }: 
                 <span className="font-mono text-sm text-muted-foreground pt-1">{item.timestamp}</span>
                 <p className="text-lg leading-relaxed">
                   {item.text.split(" ").map((word, wordIndex) => {
-                    const key = `${lineIndex}-${wordIndex}`;
                     const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
                     const translation = translations[cleanedWord];
-                    const isTranslated = translatedWords.has(key);
-
+                    
                     if (translation) {
                       return (
-                        <span key={wordIndex} className="relative">
-                          <span
-                            onClick={() => toggleTranslation(key)}
-                            onDoubleClick={() => handleWordDoubleClick(word)}
-                            className="cursor-pointer font-medium text-primary hover:bg-primary/10 rounded-md px-1 py-0.5 transition-colors"
-                          >
-                            {isTranslated ? translation : word}
-                          </span>{' '}
+                        <span key={wordIndex}>
+                          <DraggableWord
+                            word={word}
+                            translation={translation}
+                            lineIndex={lineIndex}
+                            wordIndex={wordIndex}
+                          />
+                          {' '}
                         </span>
                       );
                     }

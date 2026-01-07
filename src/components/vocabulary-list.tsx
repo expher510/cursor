@@ -3,13 +3,15 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "./ui/button";
-import { X, List } from "lucide-react";
+import { X, List, Droplets } from "lucide-react";
 import { useFirebase } from "@/firebase";
-import { useCollection, WithId } from "@/firebase/firestore/use-collection";
+import { useCollection } from "@/firebase/firestore/use-collection";
 import { collection, doc } from "firebase/firestore";
 import { deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useMemoFirebase } from "@/firebase/provider";
 import { Skeleton } from "./ui/skeleton";
+import { useDroppable } from "@dnd-kit/core";
+import { cn } from "@/lib/utils";
 
 type VocabularyItem = {
   word: string;
@@ -20,6 +22,9 @@ type VocabularyItem = {
 
 export function VocabularyList() {
   const { firestore, user } = useFirebase();
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'vocabulary-drop-area',
+  });
 
   const vocabQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -35,13 +40,19 @@ export function VocabularyList() {
   };
 
   return (
-    <Card className="sticky top-0 h-screen border-none shadow-none rounded-none">
+    <Card 
+      ref={setNodeRef}
+      className={cn(
+        "sticky top-0 h-screen border-none shadow-none rounded-none transition-colors",
+        isOver && "bg-accent/20"
+      )}
+    >
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-headline">
           <List className="h-6 w-6" />
           Vocabulary
         </CardTitle>
-        <CardDescription>Double-click a word in the transcript to add it here.</CardDescription>
+        <CardDescription>Drag a word from the transcript to add it here.</CardDescription>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[calc(100vh-150px)] pr-4">
@@ -51,9 +62,11 @@ export function VocabularyList() {
                <Skeleton className="h-16 w-full" />
                <Skeleton className="h-16 w-full" />
             </div>
-          ) :!vocabulary || vocabulary.length === 0 ? (
-            <div className="flex h-40 items-center justify-center rounded-md border border-dashed">
-              <p className="text-sm text-muted-foreground">Your saved words will appear here.</p>
+          ) : !vocabulary || vocabulary.length === 0 ? (
+            <div className="flex h-40 flex-col items-center justify-center rounded-md border border-dashed text-center p-4">
+                <Droplets className="h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-sm font-medium text-muted-foreground">Drop Zone</p>
+                <p className="text-xs text-muted-foreground">Drag words here to save them.</p>
             </div>
           ) : (
             <ul className="space-y-2">
