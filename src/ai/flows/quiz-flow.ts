@@ -27,7 +27,7 @@ const generateQuizFlow = ai.defineFlow(
     
     // --- Step 1: Define the prompt for Groq ---
     const groqPrompt = `
-      You are an AI assistant designed to help language learners test their comprehension.
+      You are an AI assistant that ONLY returns valid, minified JSON.
       Your task is to create a multiple-choice quiz based on the following video transcript.
 
       Generate exactly 5 questions that cover the main points of the text.
@@ -48,6 +48,8 @@ const generateQuizFlow = ai.defineFlow(
       }
       \`\`\`
 
+      Do not include any other text, explanations, or markdown formatting. The entire response must be the JSON object itself.
+
       Here is the transcript:
       ---
       ${input.transcript}
@@ -65,11 +67,10 @@ const generateQuizFlow = ai.defineFlow(
     try {
       const chatCompletion = await groq.chat.completions.create({
           messages: [{ role: 'user', content: groqPrompt }],
-          model: 'llama3-70b-8192', // Using a more powerful model
-          temperature: 0.7,
+          model: 'llama3-70b-8192',
+          temperature: 0.2, // Lower temperature for more predictable JSON output
           n: 1,
-          stream: false, // Must be false to get a complete JSON object
-          response_format: { type: "json_object" },
+          stream: false,
       });
 
       const content = JSON.parse(chatCompletion.choices[0].message.content || '{}');
@@ -79,7 +80,7 @@ const generateQuizFlow = ai.defineFlow(
       return validatedOutput;
 
     } catch (error) {
-      console.error("Error calling Groq API:", error);
+      console.error("Error calling Groq API or parsing response:", error);
       throw new Error("Failed to generate quiz from Groq API.");
     }
   }
