@@ -25,8 +25,9 @@ function HistoryCard({ item, firestore, userId }: { item: HistoryItem, firestore
     const router = useRouter();
     
     const handleDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
-        e.stopPropagation(); // Prevent the card's onClick from firing
-        if (window.confirm(`Are you sure you want to delete "${item.title}" and all its saved words?`)) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (window.confirm(`Are you sure you want to delete this video from your history?`)) {
             try {
                 await deleteVideoAndAssociatedData(firestore, userId, item.id);
             } catch (error) {
@@ -43,22 +44,20 @@ function HistoryCard({ item, firestore, userId }: { item: HistoryItem, firestore
     return (
         <div className="group relative">
             <Card 
-                className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer"
+                className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full"
                 onClick={handleCardClick}
             >
-                <CardContent className="p-0">
-                    <div className="relative aspect-video">
-                        <Image
-                            src={`https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`}
-                            alt={item.title}
-                            fill
-                            className="object-cover transition-transform group-hover:scale-105"
-                        />
-                    </div>
-                    <div className="p-3">
-                        <p className="font-semibold text-sm truncate group-hover:text-primary">{item.title}</p>
-                    </div>
-                </CardContent>
+                <div className="relative aspect-video">
+                    <Image
+                        src={`https://i.ytimg.com/vi/${item.id}/hqdefault.jpg`}
+                        alt={item.title}
+                        fill
+                        className="object-cover transition-transform group-hover:scale-105"
+                    />
+                </div>
+                <div className="p-3">
+                    <p className="font-semibold text-sm truncate group-hover:text-primary">{item.title}</p>
+                </div>
             </Card>
             <Button
                 variant="destructive"

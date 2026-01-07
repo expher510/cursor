@@ -49,18 +49,9 @@ export async function deleteVideoAndAssociatedData(firestore: Firestore, userId:
         const transcriptDocRef = doc(firestore, `users/${userId}/videos/${videoId}/transcripts/${videoId}`);
         batch.delete(transcriptDocRef);
 
-        // 3. Query and delete associated vocabulary items
-        const vocabCollectionRef = collection(firestore, `users/${userId}/vocabularies`);
-        const q = query(vocabCollectionRef, where("videoId", "==", videoId));
-        const vocabQuerySnapshot = await getDocs(q);
-        
-        vocabQuerySnapshot.forEach((doc) => {
-            batch.delete(doc.ref);
-        });
-
-        // 4. Commit the batch
+        // 3. Commit the batch
         await batch.commit();
-        console.log(`Successfully deleted video ${videoId} and all associated data.`);
+        console.log(`Successfully deleted video ${videoId} and its transcript.`);
     } catch (error) {
         console.error("Error deleting video and associated data:", error);
         // Optionally, re-throw or handle the error in the UI
