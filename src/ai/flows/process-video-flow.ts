@@ -111,11 +111,18 @@ const processVideoFlow = ai.defineFlow(
     name: 'processVideoFlow',
     inputSchema: ProcessVideoInputSchema,
     outputSchema: ProcessVideoOutputSchema,
-    tools: [transcriptApiTool],
   },
   async (input) => {
-    // Call the new transcript API tool
-    const { title, transcript } = await transcriptApiTool(input);
+    
+    const videoUrl = `https://www.youtube.com/watch?v=${input.videoId}`;
+    // Fetch title and transcript in parallel
+    const [videoInfo, transcriptResult] = await Promise.all([
+      YoutubeTranscript.fetchTranscript(videoUrl, { lang: 'en' }).then(res => res?.[0]?.videoTitle).catch(() => "YouTube Video"),
+      transcriptApiTool(input)
+    ]);
+
+    const title = videoInfo || transcriptResult.title;
+    const transcript = transcriptResult.transcript;
 
     // As requested, the AI part is disabled for now.
     // We will return an empty object for translations.
