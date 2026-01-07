@@ -19,18 +19,14 @@ export type ProcessVideoInput = z.infer<typeof ProcessVideoInputSchema>;
 
 const TranscriptItemSchema = z.object({
   text: z.string(),
-  start: z.number(),
-  end: z.number(),
+  offset: z.number(),
+  duration: z.number(),
 });
 export type TranscriptItem = z.infer<typeof TranscriptItemSchema>;
 
 const ProcessVideoOutputSchema = z.object({
   title: z.string().describe('The title of the video.'),
-  transcript: z.array(z.object({
-    text: z.string(),
-    offset: z.number(),
-    duration: z.number(),
-  })).describe('The transcript of the video with timestamps.'),
+  transcript: z.array(TranscriptItemSchema).describe('The transcript of the video with timestamps.'),
   translations: z.record(z.string()).describe('A dictionary of words from the transcript and their translations.'),
 });
 export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
@@ -48,7 +44,11 @@ const transcriptApiTool = ai.defineTool(
     inputSchema: z.object({ videoId: z.string() }),
     outputSchema: z.object({
       title: z.string(),
-      transcript: z.array(TranscriptItemSchema),
+      transcript: z.array(z.object({
+        text: z.string(),
+        offset: z.number(),
+        duration: z.number(),
+      })),
     }),
   },
   async (input) => {
@@ -58,7 +58,7 @@ const transcriptApiTool = ai.defineTool(
     }
     
     // Use the correct base URL for the transcript service.
-    const API_BASE_URL = 'https://api.oneai.com/api/v0';
+    const API_BASE_URL = 'https://api.supadata.ai/v1';
     const API_KEY = process.env.TRANSCRIPT_API_KEY;
 
     if (!API_KEY) {
@@ -86,15 +86,12 @@ const transcriptApiTool = ai.defineTool(
 
       const result = await response.json();
       
-      // The API returns a `transcription` object which contains the transcript segments.
-      const transcript = result.transcription?.utterances.map((utt: any) => ({
-        text: utt.text,
-        start: utt.start, // API returns start/end in seconds
-        end: utt.end,
-      })) || [];
-
-      // The API may return a title, otherwise use a placeholder.
-      const title = result.title || "YouTube Video";
+      // The Supadata API returns a `content` array with transcript segments.
+      const transcript = result.content || [];
+      
+      // The API does not return a title, so use a placeholder for now.
+      // In a real app, you might use the YouTube Data API to get the title.
+      const title = "YouTube Video";
 
       return { title, transcript };
 
@@ -120,17 +117,10 @@ const processVideoFlow = ai.defineFlow(
     // As requested, the AI part is disabled for now.
     // We will return an empty object for translations.
     const translations = {};
-    
-    // The new API provides 'start' and 'end' in seconds. We need to convert it to the offset/duration format expected by the rest of the app.
-    const formattedTranscript = transcript.map(item => ({
-        text: item.text,
-        offset: item.start * 1000, // convert seconds to milliseconds
-        duration: (item.end - item.start) * 1000, // calculate duration in milliseconds
-    }));
 
     return {
-      title: title,
-      transcript: formattedTranscript,
+      title,
+      transcript,
       translations,
     };
   }
