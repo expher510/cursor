@@ -7,15 +7,36 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { Groq } from "groq-sdk";
 import { QuizInputSchema, QuizOutputSchema, type QuizInput, type QuizOutput } from '@/ai/schemas/quiz-schema';
 import 'dotenv/config';
-
 
 // This is a wrapper function that we will call from our components.
 export async function generateQuiz(input: QuizInput): Promise<QuizOutput> {
   return generateQuizFlow(input);
 }
+
+const quizGenerationPrompt = ai.definePrompt({
+    name: 'quizGenerationPrompt',
+    input: { schema: QuizInputSchema },
+    output: { schema: QuizOutputSchema },
+    prompt: `
+        You are an AI assistant designed to create educational content.
+        Your task is to generate a multiple-choice quiz based on the provided video transcript.
+
+        Please adhere to the following instructions:
+        1.  Generate exactly 5 multiple-choice questions.
+        2.  Each question must have exactly 4 possible answers.
+        3.  Only one answer per question can be correct.
+        4.  The questions should test comprehension of the main topics in the transcript, not just simple word recall.
+        5.  The entire output must be a valid JSON object, conforming to the specified output schema. Do not include any extra text, explanations, or markdown.
+
+        Here is the transcript:
+        ---
+        {{{transcript}}}
+        ---
+    `,
+});
+
 
 const generateQuizFlow = ai.defineFlow(
   {
@@ -25,63 +46,18 @@ const generateQuizFlow = ai.defineFlow(
   },
   async (input) => {
     
-    // --- Step 1: Define the prompt for Groq ---
-    const groqPrompt = `
-      You are an AI assistant that ONLY returns valid, minified JSON.
-      Your task is to create a multiple-choice quiz based on the following video transcript.
-
-      Generate exactly 5 questions that cover the main points of the text.
-      Each question must have exactly 4 possible answers, and only one of them should be correct.
-      Ensure the questions are relevant to the content and test understanding, not just word recognition.
-
-      Respond with ONLY a valid JSON object that strictly follows this Zod schema:
-      
-      \`\`\`json
-      {
-          "questions": [
-              {
-                  "questionText": "string",
-                  "options": ["string", "string", "string", "string"],
-                  "correctAnswer": "string"
-              }
-          ]
-      }
-      \`\`\`
-
-      Do not include any other text, explanations, or markdown formatting. The entire response must be the JSON object itself.
-
-      Here is the transcript:
-      ---
-      ${input.transcript}
-      ---
-    `;
-
-    // --- Step 2: Make the API call to Groq ---
-    const GROQ_API_KEY = process.env.GROQ_API_KEY;
-    if (!GROQ_API_KEY) {
-      throw new Error('GROQ_API_KEY is not defined in your .env file.');
-    }
-
-    const groq = new Groq({ apiKey: GROQ_API_KEY });
-
     try {
-      const chatCompletion = await groq.chat.completions.create({
-          messages: [{ role: 'user', content: groqPrompt }],
-          model: 'llama3-70b-8192',
-          temperature: 0.2, // Lower temperature for more predictable JSON output
-          n: 1,
-          stream: false,
-      });
+        const { output } = await quizGenerationPrompt(input);
+        
+        if (!output) {
+            throw new Error("The AI model did not return any output.");
+        }
 
-      const content = JSON.parse(chatCompletion.choices[0].message.content || '{}');
-      
-      // Validate the response with Zod before returning
-      const validatedOutput = QuizOutputSchema.parse(content);
-      return validatedOutput;
+        return output;
 
     } catch (error) {
-      console.error("Error calling Groq API or parsing response:", error);
-      throw new Error("Failed to generate quiz from Groq API.");
+      console.error("Error calling Gemini API for quiz generation:", error);
+      throw new Error("Failed to generate quiz from Gemini API.");
     }
   }
 );
