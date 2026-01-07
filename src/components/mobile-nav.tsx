@@ -3,12 +3,10 @@
 import * as React from 'react';
 import Link, { LinkProps } from 'next/link';
 import { useRouter } from 'next/navigation';
-import { History, LogOut, PlusCircle } from 'lucide-react';
+import { History, LogOut, PlusCircle, Video } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirebase } from '@/firebase';
-import { Logo } from './logo';
-import { HistoryMenu } from './history-menu';
-import { Separator } from './ui/separator';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
 
 interface MobileLinkProps extends LinkProps {
   onOpenChange?: (open: boolean) => void;
@@ -51,24 +49,23 @@ export function MobileNav({ setOpen }: { setOpen: (open: boolean) => void }) {
     }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-4 border-b">
-         <Logo />
+    <div className="flex flex-col h-full mt-4">
+      <div className="flex flex-col gap-1 p-4">
+        <MobileLink href="/" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+          <PlusCircle className="w-5 h-5" />
+          <span>New Video</span>
+        </MobileLink>
+        <button onClick={handleLogout} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted w-full text-left">
+          <LogOut className="w-5 h-5" />
+          <span>Logout</span>
+        </button>
       </div>
-       <div className='flex flex-col gap-1 p-4'>
-            <MobileLink href="/" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
-                <PlusCircle className="w-5 h-5" />
-                <span>New Video</span>
-            </MobileLink>
-            <button onClick={handleLogout} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted w-full text-left">
-                <LogOut className="w-5 h-5" />
-                <span>Logout</span>
-            </button>
+      <div className="p-4">
+        <div className="flex items-center gap-2 text-lg font-semibold">
+            <History className="h-5 w-5" />
+            <span>History</span>
         </div>
-        <Separator />
-        <div className="flex-1">
-             <HistoryMenu isMobile={true} onLinkClick={() => setOpen(false)} />
-        </div>
+      </div>
     </div>
   );
 }
