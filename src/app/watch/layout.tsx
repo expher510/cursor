@@ -54,7 +54,7 @@ export default function WatchLayout({ children }: { children: ReactNode }) {
       <WatchLayoutDndWrapper>
         <SidebarProvider>
           <div className="flex min-h-screen bg-background">
-            <Sidebar>
+            <Sidebar className="w-[250px]">
               <SidebarHeader className="p-4">
                 <Logo />
               </SidebarHeader>
@@ -78,11 +78,11 @@ export default function WatchLayout({ children }: { children: ReactNode }) {
               {children}
             </main>
 
-            <aside className="hidden lg:block w-[250px] sticky top-0 h-screen border-l">
+            <aside className="hidden xl:block w-[250px] sticky top-0 h-screen border-l">
               <VocabularyList />
             </aside>
 
-            <div className="lg:hidden fixed bottom-4 right-4 z-50">
+            <div className="xl:hidden fixed bottom-4 right-4 z-50">
               <Sheet>
                 <SheetTrigger asChild>
                   <Button size="icon">
