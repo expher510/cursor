@@ -168,6 +168,16 @@ service cloud.firestore {
         allow update: if isExistingOwner(userId) && hasValidChildUpdateData();
         allow delete: if isExistingOwner(userId);
       }
+      
+      /**
+       * @description Controls access to a user's writing exercise attempts.
+       * @path /users/{userId}/writingAttempts/{attemptId}
+       * @allow A signed-in user can manage their own writing exercise attempts.
+       * @principle Enforces path-based ownership for all user attempts.
+       */
+      match /writingAttempts/{attemptId} {
+        allow get, list, create, update, delete: if isOwner(userId);
+      }
     }
   }
 }

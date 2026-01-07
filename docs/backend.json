@@ -172,6 +172,36 @@
         }
       },
       "required": ["id", "videoId", "userId", "questions"]
+    },
+    "WritingExerciseAttempt": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Writing Exercise Attempt",
+      "description": "Represents a user's attempt at a writing exercise.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the writing exercise attempt."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who took the exercise."
+        },
+        "score": {
+          "type": "number",
+          "description": "The user's score for this attempt (e.g., percentage)."
+        },
+        "wordsUsed": {
+          "type": "array",
+          "description": "A list of the vocabulary words used in this exercise.",
+          "items": { "type": "string" }
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "The timestamp when the exercise was completed."
+        }
+      },
+      "required": ["id", "userId", "score", "wordsUsed", "timestamp"]
     }
   },
   "auth": {
@@ -282,6 +312,26 @@
             {
               "name": "vocabularyId",
               "description": "The unique identifier of the vocabulary list."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/writingAttempts/{attemptId}",
+        "definition": {
+          "entityName": "WritingExerciseAttempt",
+          "schema": {
+            "$ref": "#/backend/entities/WritingExerciseAttempt"
+          },
+          "description": "Stores a user's writing exercise attempts. Path-based ownership ensures data isolation.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "attemptId",
+              "description": "The unique identifier of the exercise attempt."
             }
           ]
         }
