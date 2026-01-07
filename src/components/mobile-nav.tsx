@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link, { LinkProps } from 'next/link';
 import { useRouter } from 'next/navigation';
-import { History, LogOut, PlusCircle } from 'lucide-react';
+import { History, LogOut, PlusCircle, Copy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirebase } from '@/firebase';
 import { HistoryMenu } from './history-menu';
@@ -54,10 +54,17 @@ export function MobileNav({ setOpen }: { setOpen: (open: boolean) => void }) {
 
   return (
     <div className="flex flex-col h-full mt-4">
+       <div className="p-4 border-b">
+         <Logo />
+       </div>
       <div className="flex flex-col gap-1 p-4 border-b">
         <MobileLink href="/" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
           <PlusCircle className="w-5 h-5" />
           <span>New Video</span>
+        </MobileLink>
+        <MobileLink href="/flashcards" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+          <Copy className="w-5 h-5" />
+          <span>Flashcards</span>
         </MobileLink>
         <button onClick={handleLogout} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted w-full text-left">
           <LogOut className="w-5 h-5" />

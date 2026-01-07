@@ -101,12 +101,6 @@ export function VocabularyList({ isSheet = false }: { isSheet?: boolean }) {
           <h2 className="text-lg font-semibold flex items-center gap-2">
               <List className="h-5 w-5"/> Vocabulary
           </h2>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/flashcards">
-                <Copy className="mr-2 h-4 w-4" />
-                Flashcards
-            </Link>
-          </Button>
         </div>
         {content}
       </div>
@@ -120,12 +114,6 @@ export function VocabularyList({ isSheet = false }: { isSheet?: boolean }) {
               <List />
               <CardTitle>Vocabulary</CardTitle>
             </div>
-             <Button asChild variant="outline">
-                <Link href="/flashcards">
-                    <Copy className="mr-2 h-4 w-4" />
-                    Flashcards
-                </Link>
-            </Button>
         </CardHeader>
         <CardContent className="p-0">
           {content}
