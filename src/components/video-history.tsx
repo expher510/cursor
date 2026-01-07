@@ -12,6 +12,7 @@ import { Button } from './ui/button';
 import { Trash2 } from 'lucide-react';
 import type { Firestore } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
 type HistoryItem = {
     id: string;
@@ -19,35 +20,20 @@ type HistoryItem = {
     timestamp: number;
 };
 
-function HistoryCard({ item, firestore, userId }: { item: HistoryItem, firestore: Firestore, userId: string }) {
+function HistoryCard({ item }: { item: HistoryItem }) {
     const router = useRouter();
-    
-    const handleDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    const { firestore, user } = useFirebase();
+
+    const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
-        if (window.confirm(`Are you sure you want to delete this video from your history?`)) {
-            try {
-                if (!firestore || !userId || !item.id) {
-                    console.error("Missing required parameters for deletion.");
-                    return;
-                }
+        if (!firestore || !user) return;
+        
+        // Using the same non-blocking delete pattern from flashcards
+        const videoDocRef = doc(firestore, `users/${user.uid}/videos`, item.id);
+        deleteDocumentNonBlocking(videoDocRef);
 
-                const batch = writeBatch(firestore);
-
-                // 1. Delete the main video document
-                const videoDocRef = doc(firestore, `users/${userId}/videos/${item.id}`);
-                batch.delete(videoDocRef);
-
-                // 2. Delete the transcript document
-                const transcriptDocRef = doc(firestore, `users/${userId}/videos/${item.id}/transcripts/${item.id}`);
-                batch.delete(transcriptDocRef);
-
-                // 3. Commit the batch
-                await batch.commit();
-                console.log(`Successfully deleted video ${item.id} and its transcript.`);
-            } catch (error) {
-                console.error("Error deleting video and associated data:", error);
-            }
-        }
+        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${item.id}/transcripts`, item.id);
+        deleteDocumentNonBlocking(transcriptDocRef);
     };
     
     const handleCardClick = () => {
@@ -125,7 +111,7 @@ export function VideoHistory() {
              <h2 className="text-2xl font-bold font-headline mb-6">Your Recent Videos</h2>
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {history.map((item) => (
-                    user && firestore && <HistoryCard key={item.id} item={item} firestore={firestore} userId={user.uid} />
+                    user && firestore && <HistoryCard key={item.id} item={item} />
                 ))}
              </div>
         </div>
