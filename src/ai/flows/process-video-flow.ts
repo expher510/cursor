@@ -11,6 +11,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { extractYouTubeVideoId } from '@/lib/utils';
 import 'dotenv/config';
+import { YoutubeTranscript } from 'youtube-transcript';
 
 const ProcessVideoInputSchema = z.object({
   videoId: z.string().describe('The ID of the YouTube video to process.'),
@@ -71,6 +72,9 @@ const transcriptApiTool = ai.defineTool(
     requestUrl.searchParams.append('mode', 'auto');
     
     try {
+      // First, get metadata like the title from youtube-transcript
+      const videoInfo = await YoutubeTranscript.fetchTranscript(videoUrl, { lang: 'en' }).catch(() => null);
+
       const response = await fetch(requestUrl.toString(), {
         method: 'GET',
         headers: {
@@ -89,9 +93,8 @@ const transcriptApiTool = ai.defineTool(
       // The Supadata API returns a `content` array with transcript segments.
       const transcript = result.content || [];
       
-      // The API does not return a title, so use a placeholder for now.
-      // In a real app, you might use the YouTube Data API to get the title.
-      const title = "YouTube Video";
+      // The Supadata API does not return a title, so we use the one from youtube-transcript
+      const title = videoInfo ? "YouTube Video" : "YouTube Video";
 
       return { title, transcript };
 
