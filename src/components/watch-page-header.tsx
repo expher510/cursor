@@ -10,7 +10,7 @@ function HeaderNotification() {
         <>
             {notification && (
                 <div
-                    className="ml-4 text-sm font-medium text-muted-foreground"
+                    className="text-sm font-medium text-muted-foreground"
                     >
                     {notification}
                 </div>
@@ -21,7 +21,7 @@ function HeaderNotification() {
 
 export function WatchPageHeader() {
     return (
-        <AppHeader>
+        <AppHeader showBackButton={true}>
             <HeaderNotification />
         </AppHeader>
     );
