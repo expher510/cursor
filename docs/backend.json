@@ -121,7 +121,7 @@
     "Quiz": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Quiz",
-      "description": "Represents a quiz with multiple-choice questions for a video.",
+      "description": "Represents a quiz for a video, including user answers and score for a specific attempt.",
       "type": "object",
       "properties": {
         "id": {
@@ -157,6 +157,17 @@
               }
             },
             "required": ["questionText", "options", "correctAnswer"]
+          }
+        },
+        "score": {
+          "type": "number",
+          "description": "The user's score (number of correct answers) for this quiz attempt. Optional."
+        },
+        "userAnswers": {
+          "type": "array",
+          "description": "The user's selected answers for each question. The index corresponds to the questions array. Optional.",
+          "items": {
+            "type": "string"
           }
         }
       },

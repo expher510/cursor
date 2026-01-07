@@ -9,10 +9,10 @@ import { Loader2, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useFirebase } from '@/firebase';
-import { doc, getDoc, collection, getDocs, query, limit } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, query, limit, DocumentReference } from 'firebase/firestore';
 import { generateQuiz } from '@/ai/flows/quiz-flow';
 import { type Question, type QuizOutput } from '@/ai/schemas/quiz-schema';
-import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -21,11 +21,14 @@ type AnswerState = {
     isCorrect: boolean | null;
 };
 
-function QuizView({ questions, videoTitle }: { questions: Question[], videoTitle: string }) {
+type QuizDoc = QuizOutput & { id: string };
+
+function QuizView({ quizDoc, videoTitle, onQuizFinish }: { quizDoc: QuizDoc, videoTitle: string, onQuizFinish: (score: number, answers: AnswerState[]) => void }) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [answers, setAnswers] = useState<AnswerState[]>(Array(questions.length).fill({ selectedAnswer: null, isCorrect: null }));
+    const [answers, setAnswers] = useState<AnswerState[]>(Array(quizDoc.questions.length).fill({ selectedAnswer: null, isCorrect: null }));
     const [isFinished, setIsFinished] = useState(false);
 
+    const questions = quizDoc.questions;
     const currentQuestion = questions[currentQuestionIndex];
     const currentAnswer = answers[currentQuestionIndex];
 
@@ -42,17 +45,31 @@ function QuizView({ questions, videoTitle }: { questions: Question[], videoTitle
         if (currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex(currentQuestionIndex + 1);
         } else {
+            const finalScore = newAnswers.filter(a => a.isCorrect).length;
+            onQuizFinish(finalScore, newAnswers);
             setIsFinished(true);
         }
     };
     
+    // Also call onQuizFinish when the last question is answered
+    useEffect(() => {
+        const lastAnswer = answers[questions.length - 1];
+        if (lastAnswer.selectedAnswer !== null && !isFinished) {
+            const finalScore = answers.filter(a => a.isCorrect).length;
+            onQuizFinish(finalScore, answers);
+            // We don't set finished here, handleNext does that.
+        }
+    }, [answers, questions.length, onQuizFinish, isFinished]);
+
+
+    const newAnswers = useMemo(() => answers, [answers]);
+    const score = useMemo(() => newAnswers.filter(a => a.isCorrect).length, [newAnswers]);
+
     const restartQuiz = () => {
         setCurrentQuestionIndex(0);
         setAnswers(Array(questions.length).fill({ selectedAnswer: null, isCorrect: null }));
         setIsFinished(false);
     }
-
-    const score = useMemo(() => answers.filter(a => a.isCorrect).length, [answers]);
 
     if (isFinished) {
         return (
@@ -129,10 +146,11 @@ function QuizGenerator() {
     const videoId = searchParams.get('v');
     const { firestore, user } = useFirebase();
 
-    const [quizData, setQuizData] = useState<QuizOutput | null>(null);
+    const [quizDoc, setQuizDoc] = useState<QuizDoc | null>(null);
     const [videoTitle, setVideoTitle] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [quizDocRef, setQuizDocRef] = useState<DocumentReference | null>(null);
 
     useEffect(() => {
         if (!videoId || !user || !firestore) {
@@ -144,13 +162,15 @@ function QuizGenerator() {
         async function getOrCreateQuiz() {
             try {
                 // 1. Check for existing quiz
-                const quizQuery = query(collection(firestore, `users/${user!.uid}/videos/${videoId}/quizzes`), limit(1));
+                const quizCollectionRef = collection(firestore, `users/${user!.uid}/videos/${videoId}/quizzes`);
+                const quizQuery = query(quizCollectionRef, limit(1));
                 const quizSnaps = await getDocs(quizQuery);
 
                 if (!quizSnaps.empty) {
-                    const existingQuiz = quizSnaps.docs[0].data() as QuizOutput;
+                    const existingQuizDoc = quizSnaps.docs[0];
                     console.log("Found existing quiz in Firestore.");
-                    setQuizData(existingQuiz);
+                    setQuizDoc({ id: existingQuizDoc.id, ...existingQuizDoc.data() } as QuizDoc);
+                    setQuizDocRef(existingQuizDoc.ref);
                 } else {
                     console.log("No existing quiz. Generating a new one.");
                     // 2. Fetch transcript
@@ -164,9 +184,11 @@ function QuizGenerator() {
                     const newQuiz = await generateQuiz({ transcript: transcriptContent });
 
                     // 4. Save to Firestore
-                    const quizDocRef = doc(collection(firestore, `users/${user!.uid}/videos/${videoId}/quizzes`));
-                    setDocumentNonBlocking(quizDocRef, { ...newQuiz, id: quizDocRef.id, videoId, userId: user.uid }, {});
-                    setQuizData(newQuiz);
+                    const newQuizDocRef = doc(quizCollectionRef);
+                    const newQuizData = { ...newQuiz, id: newQuizDocRef.id, videoId, userId: user.uid };
+                    setDocumentNonBlocking(newQuizDocRef, newQuizData, {});
+                    setQuizDoc(newQuizData as QuizDoc);
+                    setQuizDocRef(newQuizDocRef);
                 }
 
                 // Fetch video title for display
@@ -187,6 +209,18 @@ function QuizGenerator() {
         getOrCreateQuiz();
 
     }, [videoId, user, firestore]);
+
+    const handleQuizFinish = (score: number, answers: AnswerState[]) => {
+        if (!quizDocRef) return;
+
+        const userAnswers = answers.map(a => a.selectedAnswer || "");
+        console.log("Saving score to Firestore:", { score, userAnswers });
+
+        updateDocumentNonBlocking(quizDocRef, {
+            score: score,
+            userAnswers: userAnswers,
+        });
+    };
 
     if (isLoading) {
         return (
@@ -216,7 +250,7 @@ function QuizGenerator() {
         )
     }
     
-    if (!quizData || !quizData.questions || quizData.questions.length === 0) {
+    if (!quizDoc || !quizDoc.questions || quizDoc.questions.length === 0) {
         return (
              <Card className="w-full max-w-2xl">
                 <CardHeader>
@@ -229,7 +263,7 @@ function QuizGenerator() {
         )
     }
 
-    return <QuizView questions={quizData.questions} videoTitle={videoTitle} />;
+    return <QuizView quizDoc={quizDoc} videoTitle={videoTitle} onQuizFinish={handleQuizFinish} />;
 }
 
 
