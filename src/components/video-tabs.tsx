@@ -48,9 +48,6 @@ export function VideoTabs({ transcript, videoId }: VideoTabsProps) {
                     <List />
                     Vocabulary
                 </CardTitle>
-                 <CardDescription>
-                    Your saved words for all videos.
-                </CardDescription>
             </CardHeader>
             <CardContent>
                 <VocabularyList />
