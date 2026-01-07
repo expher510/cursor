@@ -1,7 +1,7 @@
 "use client";
 
 import { useDraggable } from "@dnd-kit/core";
-import { type TranscriptItem } from "@/lib/data";
+import { type TranscriptItem } from "@/ai/flows/process-video-flow";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BookOpenText } from "lucide-react";
@@ -52,33 +52,27 @@ export function TranscriptView({ transcript, translations, videoId }: Transcript
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[400px] pr-4">
-          <div className="space-y-6">
+          <div className="space-y-4">
             {transcript.map((item, lineIndex) => (
-              <div key={lineIndex} className="flex gap-4">
-                <span className="font-mono text-sm text-muted-foreground pt-1">{item.timestamp}</span>
-                <p className="text-lg leading-relaxed">
-                  {item.text.split(" ").map((word, wordIndex) => {
-                    const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
-                    const translation = translations[cleanedWord];
-                    
-                    if (translation) {
-                      return (
-                        <span key={wordIndex}>
-                          <DraggableWord
-                            word={word}
-                            translation={translation}
-                            lineIndex={lineIndex}
-                            wordIndex={wordIndex}
-                            videoId={videoId}
-                          />
-                          {' '}
-                        </span>
-                      );
-                    }
-                    return <span key={wordIndex}>{word} </span>;
-                  })}
-                </p>
-              </div>
+              <p key={lineIndex} className="text-lg leading-relaxed">
+                {item.text.split(" ").map((word, wordIndex) => {
+                  const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
+                  const translation = translations[cleanedWord] || "";
+                  
+                  return (
+                    <span key={wordIndex}>
+                      <DraggableWord
+                        word={word}
+                        translation={translation}
+                        lineIndex={lineIndex}
+                        wordIndex={wordIndex}
+                        videoId={videoId}
+                      />
+                      {' '}
+                    </span>
+                  );
+                })}
+              </p>
             ))}
           </div>
         </ScrollArea>

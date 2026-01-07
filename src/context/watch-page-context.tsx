@@ -68,7 +68,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     const optimisticItem: VocabularyItem = {
       id: `temp-${Date.now()}`,
       word: cleanedWord,
-      translation,
+      translation: translation || "", // Ensure translation is not undefined
       videoId,
       userId: user.uid,
     };
@@ -78,7 +78,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     const vocabCollectionRef = collection(firestore, `users/${user.uid}/vocabularies`);
     const newVocabItem = {
       word: cleanedWord,
-      translation,
+      translation: translation || "",
       userId: user.uid,
       videoId: videoId,
     };
