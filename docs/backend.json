@@ -66,8 +66,17 @@
           "description": "Reference to Video. (Relationship: Video 1:1 Transcript)"
         },
         "content": {
-          "type": "string",
-          "description": "The full text content of the video transcript."
+          "type": "array",
+          "description": "The full text content of the video transcript as an array of segments.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "offset": { "type": "number" },
+              "duration": { "type": "number" }
+            },
+            "required": ["text", "offset", "duration"]
+          }
         }
       },
       "required": [

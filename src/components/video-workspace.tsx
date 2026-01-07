@@ -76,6 +76,7 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
         setVideoData(result);
         
         if (user && firestore) {
+            // Save video metadata
             const videoDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}`);
             setDocumentNonBlocking(videoDocRef, {
               id: videoId,
@@ -83,6 +84,14 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
               userId: user.uid,
               timestamp: Date.now(),
             }, { merge: true });
+
+            // Save transcript
+            const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}/transcripts`, videoId);
+             setDocumentNonBlocking(transcriptDocRef, {
+                id: videoId,
+                videoId: videoId,
+                content: result.transcript,
+             }, { merge: true });
           }
 
       } catch (e: any) {
@@ -109,7 +118,7 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
   
   const formattedTranscript = videoData.transcript.map(item => ({
     ...item,
-    timestamp: new Date(item.offset).toISOString().substr(14, 5) // Format to MM:SS
+    text: item.text,
   }));
 
   return (

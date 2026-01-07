@@ -93,8 +93,7 @@ const transcriptApiTool = ai.defineTool(
       // The Supadata API returns a `content` array with transcript segments.
       const transcript = result.content || [];
       
-      // The Supadata API does not return a title, so we use the one from youtube-transcript
-      const title = videoInfo ? "YouTube Video" : "YouTube Video";
+      const title = videoInfo && Array.isArray(videoInfo) && videoInfo.length > 0 && 'videoTitle' in videoInfo[0] ? videoInfo[0].videoTitle : "YouTube Video";
 
       return { title, transcript };
 
@@ -105,6 +104,25 @@ const transcriptApiTool = ai.defineTool(
   }
 );
 
+const translatePrompt = ai.definePrompt({
+  name: 'translatePrompt',
+  input: {
+    schema: z.object({
+      words: z.array(z.string()),
+    }),
+  },
+  output: {
+    schema: z.record(z.string()),
+  },
+  prompt: `Translate the following English words into Arabic. Return the translations as a JSON object where the keys are the original English words (in lowercase) and the values are their Arabic translations.
+
+Words to translate:
+{{#each words}}- {{{this}}}{{/each}}
+
+Do not include any other text, only the JSON object.
+`,
+});
+
 
 const processVideoFlow = ai.defineFlow(
   {
@@ -114,24 +132,19 @@ const processVideoFlow = ai.defineFlow(
   },
   async (input) => {
     
-    const videoUrl = `https://www.youtube.com/watch?v=${input.videoId}`;
-    // Fetch title and transcript in parallel
-    const [videoInfo, transcriptResult] = await Promise.all([
-      YoutubeTranscript.fetchTranscript(videoUrl, { lang: 'en' }).then(res => res?.[0]?.videoTitle).catch(() => "YouTube Video"),
-      transcriptApiTool(input)
-    ]);
+    const { title, transcript } = await transcriptApiTool(input);
 
-    const title = videoInfo || transcriptResult.title;
-    const transcript = transcriptResult.transcript;
-
-    // As requested, the AI part is disabled for now.
-    // We will return an empty object for translations.
-    const translations = {};
+    // Extract unique words from the transcript
+    const allText = transcript.map(item => item.text).join(' ');
+    const uniqueWords = Array.from(new Set(allText.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, '').split(/\s+/).filter(Boolean)));
+    
+    // Get translations
+    const { output: translations } = await translatePrompt({ words: uniqueWords });
 
     return {
       title,
       transcript,
-      translations,
+      translations: translations || {},
     };
   }
 );
