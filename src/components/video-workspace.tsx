@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { VideoPlayer } from "./video-player";
 import { useFirebase } from "@/firebase";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { doc } from "firebase/firestore";
-import { processVideo, ProcessVideoOutput } from "@/ai/flows/process-video-flow";
+import { doc, getDoc, getDocs, query, collection } from "firebase/firestore";
+import { processVideo, ProcessVideoOutput, TranscriptItem } from "@/ai/flows/process-video-flow";
 import { Skeleton } from "./ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { AlertTriangle } from "lucide-react";
@@ -61,14 +61,37 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
   
   useEffect(() => {
     async function processAndSetVideo() {
-      if (!videoId) {
-        setError("No video ID provided.");
+      if (!videoId || !user || !firestore) {
+        setError("User or video information is missing.");
         return;
       }
       
       setIsLoading(true);
+      setError(null);
       
       try {
+        // 1. Try to fetch from Firestore first
+        const videoDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}`);
+        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}/transcripts`, videoId);
+        
+        const videoDocSnap = await getDoc(videoDocRef);
+        const transcriptDocSnap = await getDoc(transcriptDocRef);
+
+        if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
+          console.log("Found video and transcript in Firestore. Loading from cache.");
+          const videoInfo = videoDocSnap.data();
+          const transcriptInfo = transcriptDocSnap.data();
+          
+          setVideoData({
+              title: videoInfo.title,
+              transcript: transcriptInfo.content,
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        // 2. If not in Firestore, call the API
+        console.log("Video not in Firestore. Fetching from API.");
         const result = await processVideo({ videoId });
         const videoDataWithId = {
             ...result,
@@ -77,24 +100,19 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
 
         setVideoData(videoDataWithId);
         
-        if (user && firestore) {
-            // Save video metadata to history
-            const videoDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}`);
-            setDocumentNonBlocking(videoDocRef, {
-              id: videoId,
-              title: result.title,
-              userId: user.uid,
-              timestamp: Date.now(),
-            }, { merge: true });
+        // 3. Save the new data to Firestore (non-blocking)
+        setDocumentNonBlocking(videoDocRef, {
+          id: videoId,
+          title: result.title,
+          userId: user.uid,
+          timestamp: Date.now(),
+        }, { merge: true });
 
-            // Save transcript
-            const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}/transcripts`, videoId);
-             setDocumentNonBlocking(transcriptDocRef, {
-                id: videoId,
-                videoId: videoId,
-                content: result.transcript,
-             }, { merge: true });
-          }
+        setDocumentNonBlocking(transcriptDocRef, {
+            id: videoId,
+            videoId: videoId,
+            content: result.transcript,
+        }, { merge: true });
 
       } catch (e: any) {
         console.error("Error processing video:", e);

@@ -20,7 +20,7 @@ type VocabularyItem = {
 type WatchPageContextType = {
   vocabulary: VocabularyItem[];
   savedWordsSet: Set<string>;
-  addVocabularyItem: (word: string, videoId: string) => void;
+  addVocabularyItem: (word: string) => void;
   removeVocabularyItem: (id: string) => void;
   videoData: ProcessVideoOutput | null;
   setVideoData: (data: ProcessVideoOutput | null) => void;
@@ -29,7 +29,6 @@ type WatchPageContextType = {
   error: string | null;
   setError: (error: string | null) => void;
   notification: string | null;
-  setNotification: (message: string | null) => void;
 };
 
 const WatchPageContext = createContext<WatchPageContextType | undefined>(undefined);
@@ -71,8 +70,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   }, [vocabulary]);
 
 
-  const addVocabularyItem = useCallback(async (word: string, videoId: string) => {
-    if (!user || !firestore) return;
+  const addVocabularyItem = useCallback(async (word: string) => {
+    if (!user || !firestore || !videoId) return;
 
     const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
     if (!cleanedWord) return;
@@ -102,7 +101,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         showNotification(`Error saving word.`);
     }
 
-  }, [user, firestore, savedWordsSet, showNotification]);
+  }, [user, firestore, videoId, savedWordsSet, showNotification]);
 
   const removeVocabularyItem = useCallback((id: string) => {
       if (!firestore || !user) return;
@@ -131,7 +130,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     error,
     setError,
     notification,
-    setNotification: showNotification,
   };
 
   return (

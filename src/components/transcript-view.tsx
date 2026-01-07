@@ -59,7 +59,7 @@ export function TranscriptView({ transcript, videoId }: TranscriptViewProps) {
                   variant="ghost" 
                   size="sm" 
                   className="h-auto px-1 py-0.5 font-medium text-base hover:bg-primary/10 text-foreground"
-                  onClick={() => addVocabularyItem(cleanedWord, videoId)}
+                  onClick={() => addVocabularyItem(cleanedWord)}
                   disabled={!cleanedWord}
                 >
                   {word}
