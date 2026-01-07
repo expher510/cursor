@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { MobileNav } from "@/components/mobile-nav";
-import { Menu, PlusCircle, Copy } from "lucide-react";
+import { Menu, Copy } from "lucide-react";
 import Link from "next/link";
 import {
   Sheet,
@@ -34,25 +34,17 @@ export function AppHeader() {
           </SheetContent>
         </Sheet>
         
-        <div className="hidden md:flex">
-          <Logo />
-        </div>
-        
-        <div className="md:hidden absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div className="md:hidden flex-1" />
+
+        <div className="flex justify-center">
             <Logo />
         </div>
-
-        <nav className="flex items-center gap-2">
-            <Button asChild variant="ghost" className="gap-2">
+        
+        <nav className="flex flex-1 items-center justify-end gap-2">
+            <Button asChild variant="default" className="gap-2">
                 <Link href="/flashcards">
                     <Copy className="h-5 w-5" />
                     <span className="hidden sm:inline">Flashcards</span>
-                </Link>
-            </Button>
-             <Button asChild variant="default" className="gap-2">
-                <Link href="/">
-                <PlusCircle className="h-5 w-5" />
-                <span className="hidden sm:inline">New Video</span>
                 </Link>
             </Button>
         </nav>
