@@ -19,14 +19,18 @@ export type ProcessVideoInput = z.infer<typeof ProcessVideoInputSchema>;
 
 const TranscriptItemSchema = z.object({
   text: z.string(),
-  offset: z.number(),
-  duration: z.number(),
+  start: z.number(),
+  end: z.number(),
 });
 export type TranscriptItem = z.infer<typeof TranscriptItemSchema>;
 
 const ProcessVideoOutputSchema = z.object({
   title: z.string().describe('The title of the video.'),
-  transcript: z.array(TranscriptItemSchema).describe('The transcript of the video with timestamps.'),
+  transcript: z.array(z.object({
+    text: z.string(),
+    offset: z.number(),
+    duration: z.number(),
+  })).describe('The transcript of the video with timestamps.'),
   translations: z.record(z.string()).describe('A dictionary of words from the transcript and their translations.'),
 });
 export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
@@ -53,8 +57,8 @@ const transcriptApiTool = ai.defineTool(
       throw new Error(`Invalid YouTube video ID or URL: ${input.videoId}`);
     }
     
-    // IMPORTANT: Replace this with the actual base URL of the transcript service.
-    const API_BASE_URL = 'https://api.transcriptservice.com';
+    // Use the correct base URL for the transcript service.
+    const API_BASE_URL = 'https://api.oneai.com/api/v0';
     const API_KEY = process.env.TRANSCRIPT_API_KEY;
 
     if (!API_KEY) {
@@ -75,22 +79,22 @@ const transcriptApiTool = ai.defineTool(
       });
 
       if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+        const errorBody = await response.json();
+        const errorMessage = errorBody.message || `API request failed with status ${response.status}`;
+        throw new Error(errorMessage);
       }
 
       const result = await response.json();
       
-      // The new API might return a job ID for longer videos. This basic implementation
-      // doesn't handle polling for results, it assumes a synchronous response.
-      if (result.jobId) {
-        throw new Error('Video is too large for a synchronous response. Asynchronous polling is not yet implemented.');
-      }
+      // The API returns a `transcription` object which contains the transcript segments.
+      const transcript = result.transcription?.utterances.map((utt: any) => ({
+        text: utt.text,
+        start: utt.start, // API returns start/end in seconds
+        end: utt.end,
+      })) || [];
 
-      // Assuming the API returns a `content` array for the transcript.
-      // And we'll use a placeholder for the title as the API doesn't seem to return it.
-      const transcript = result.content || [];
-      const title = "YouTube Video"; // Placeholder title
+      // The API may return a title, otherwise use a placeholder.
+      const title = result.title || "YouTube Video";
 
       return { title, transcript };
 
@@ -117,8 +121,11 @@ const processVideoFlow = ai.defineFlow(
     // We will return an empty object for translations.
     const translations = {};
     
+    // The new API provides 'start' and 'end' in seconds. We need to convert it to the offset/duration format expected by the rest of the app.
     const formattedTranscript = transcript.map(item => ({
-        ...item,
+        text: item.text,
+        offset: item.start * 1000, // convert seconds to milliseconds
+        duration: (item.end - item.start) * 1000, // calculate duration in milliseconds
     }));
 
     return {
