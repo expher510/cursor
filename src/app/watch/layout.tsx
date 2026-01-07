@@ -54,7 +54,7 @@ export default function WatchLayout({ children }: { children: ReactNode }) {
       <WatchLayoutDndWrapper>
         <SidebarProvider>
           <div className="flex min-h-screen bg-background">
-            <Sidebar className="w-[250px]">
+            <Sidebar>
               <SidebarHeader className="p-4">
                 <Logo />
               </SidebarHeader>
@@ -73,27 +73,27 @@ export default function WatchLayout({ children }: { children: ReactNode }) {
                 <HistoryMenu />
               </SidebarContent>
             </Sidebar>
-            
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
-              {children}
-            </main>
 
+            <main className="flex-1 p-4 md:p-6 lg:p-8">
+                {children}
+            </main>
+            
             <aside className="hidden xl:block w-[250px] sticky top-0 h-screen border-l">
-              <VocabularyList />
+                <VocabularyList />
             </aside>
 
             <div className="xl:hidden fixed bottom-4 right-4 z-50">
-              <Sheet>
+                <Sheet>
                 <SheetTrigger asChild>
-                  <Button size="icon">
+                    <Button size="icon">
                     <List />
                     <span className="sr-only">Open Vocabulary</span>
-                  </Button>
+                    </Button>
                 </SheetTrigger>
                 <SheetContent side="right" className="w-[250px] p-0">
-                  <VocabularyList />
+                    <VocabularyList />
                 </SheetContent>
-              </Sheet>
+                </Sheet>
             </div>
           </div>
         </SidebarProvider>
