@@ -16,8 +16,6 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { extractYouTubeVideoId } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-
 
 const FormSchema = z.object({
   url: z.string().url({ message: "Please enter a valid URL." }),
@@ -25,7 +23,6 @@ const FormSchema = z.object({
 
 export function YoutubeUrlForm() {
   const router = useRouter();
-  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -45,17 +42,17 @@ export function YoutubeUrlForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex w-full items-start gap-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col w-full items-center gap-3">
         <FormField
           control={form.control}
           name="url"
           render={({ field }) => (
-            <FormItem className="flex-1">
+            <FormItem className="w-full">
               <FormControl>
                 <div className="relative">
                   <Youtube className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                   <Input 
-                    placeholder="Enter a YouTube video URL..." 
+                    placeholder="Enter YouTube URL..." 
                     className="pl-10"
                     {...field} 
                   />
@@ -65,7 +62,7 @@ export function YoutubeUrlForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={form.formState.isSubmitting}>
+        <Button type="submit" disabled={form.formState.isSubmitting} className="w-full">
           {form.formState.isSubmitting ? "Loading..." : "Start Learning"}
         </Button>
       </form>
