@@ -1,0 +1,162 @@
+/**
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model where all data is private
+ * to the user who created it. The security model is designed for data isolation,
+ * ensuring that a user can only ever access their own information. There are no
+ * public or shared collections.
+ *
+ * Data Structure:
+ * All user-generated content (videos, transcripts, vocabularies) is hierarchically
+ * nested under the `/users/{userId}` path. This structure makes ownership implicit
+ * in the document path, simplifying rules and improving performance.
+ *
+ * Key Security Decisions:
+ * - Path-Based Ownership: Authorization is determined by the `{userId}` wildcard
+ *   in the document path, eliminating the need for slow and costly `get()` calls
+ *   to check ownership on related documents.
+ * - No Public Listing: Listing all users from the top-level `/users` collection
+ *   is explicitly disallowed to protect user privacy.
+ * - Default Deny: Access is denied by default. Rules only grant permission if
+ *   the requesting user is the authenticated owner of the data tree.
+ * - Relational Integrity: On document creation, rules validate that the internal
+ *   `userId` field matches the `{userId}` in the path, ensuring data consistency.
+ *   This field is immutable on updates.
+ *
+ * Denormalization for Authorization:
+ * This ruleset's design is built on the principle of structural ownership.
+ * By nesting all user data under `/users/{userId}`, the need to denormalize
+ * an `ownerId` field onto every single sub-document for simple checks is avoided.
+ * The path itself serves as the authorization credential.
+ *
+ * Structural Segregation:
+ * The data model perfectly segregates private user data. Each user's content
+ * resides in a separate document tree, preventing any possibility of data leakage
+ * between users and enabling secure list operations within a user's own collections.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------------------
+    // Helper Functions
+    // ------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is signed in.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the requesting user's UID matches the provided userId.
+     * This is the foundation of the ownership model.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Ensures an operation is performed by the owner on an existing document.
+     * Prevents modifying or deleting data that doesn't exist.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+    
+    /**
+     * Validates that the user document being created has an 'id' field
+     * that matches the document's ID (which is the user's UID).
+     */
+    function hasValidUserCreateData(userId) {
+      return request.resource.data.id == userId;
+    }
+
+    /**
+     * Validates that the 'id' field of a user document is not changed on update.
+     */
+    function hasValidUserUpdateData() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * Validates that a subcollection document being created has a 'userId' field
+     * that correctly links back to the parent user path.
+     */
+    function hasValidChildCreateData(userId) {
+      return request.resource.data.userId == userId;
+    }
+    
+    /**
+     * Validates that the 'userId' field of a subcollection document is not
+     * changed on update, preventing re-assignment of ownership.
+     */
+    function hasValidChildUpdateData() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    // ------------------------------------------------------------------------
+    // Collection Rules
+    // ------------------------------------------------------------------------
+
+    /**
+     * @description Controls access to a user's own profile document.
+     * @path /users/{userId}
+     * @allow A signed-in user (auth.uid='user123') can (create) their own profile at `/users/user123`.
+     * @deny A user (auth.uid='user456') cannot (get) or (update) the profile at `/users/user123`.
+     * @principle Restricts access to a user's own data tree and prevents user enumeration.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && hasValidUserCreateData(userId);
+      allow update: if isExistingOwner(userId) && hasValidUserUpdateData();
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Controls access to a user's private collection of videos.
+       * @path /users/{userId}/videos/{videoId}
+       * @allow A signed-in user (auth.uid='user123') can (list) all documents in `/users/user123/videos`.
+       * @deny An anonymous user cannot (get) any video document.
+       * @principle Enforces path-based ownership for all nested user content.
+       */
+      match /videos/{videoId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidChildCreateData(userId);
+        allow update: if isExistingOwner(userId) && hasValidChildUpdateData();
+        allow delete: if isExistingOwner(userId);
+
+        /**
+         * @description Controls access to a video's transcript, which belongs to a user.
+         * @path /users/{userId}/videos/{videoId}/transcripts/{transcriptId}
+         * @allow A user (auth.uid='user123') can (create) a transcript for their own video.
+         * @deny A user (auth.uid='user456') cannot (delete) a transcript owned by 'user123'.
+         * @principle Inherits ownership from the top-level user path, ensuring deep data security.
+         */
+        match /transcripts/{transcriptId} {
+          allow get: if isOwner(userId);
+          allow list: if isOwner(userId);
+          allow create: if isOwner(userId);
+          allow update: if isExistingOwner(userId);
+          allow delete: if isExistingOwner(userId);
+        }
+      }
+
+      /**
+       * @description Controls access to a user's private collection of vocabulary lists.
+       * @path /users/{userId}/vocabularies/{vocabularyId}
+       * @allow A signed-in user (auth.uid='user123') can (update) their own vocabulary list.
+       * @deny An anonymous user cannot (list) any vocabulary lists.
+       * @principle Enforces path-based ownership and validates relational integrity on create/update.
+       */
+      match /vocabularies/{vocabularyId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+        allow create: if isOwner(userId) && hasValidChildCreateData(userId);
+        allow update: if isExistingOwner(userId) && hasValidChildUpdateData();
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+  }
+}

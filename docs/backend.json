@@ -1,0 +1,204 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the LinguaStream application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        }
+      },
+      "required": [
+        "id",
+        "email"
+      ]
+    },
+    "Video": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Video",
+      "type": "object",
+      "description": "Represents a YouTube video that the user has interacted with.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the video entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Video)"
+        },
+        "youtubeUrl": {
+          "type": "string",
+          "description": "The URL of the YouTube video."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the YouTube video."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "youtubeUrl",
+        "title"
+      ]
+    },
+    "Transcript": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Transcript",
+      "type": "object",
+      "description": "Represents the transcript of a YouTube video.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the transcript entity."
+        },
+        "videoId": {
+          "type": "string",
+          "description": "Reference to Video. (Relationship: Video 1:1 Transcript)"
+        },
+        "content": {
+          "type": "string",
+          "description": "The full text content of the video transcript."
+        }
+      },
+      "required": [
+        "id",
+        "videoId",
+        "content"
+      ]
+    },
+    "Vocabulary": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Vocabulary",
+      "type": "object",
+      "description": "Represents a custom vocabulary list created by the user for a specific video.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the vocabulary entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Vocabulary)"
+        },
+        "videoId": {
+          "type": "string",
+          "description": "Reference to Video. (Relationship: Video 1:N Vocabulary)"
+        },
+        "words": {
+          "type": "array",
+          "description": "A list of vocabulary words/phrases.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "videoId",
+        "words"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profiles.  Path-based ownership, allowing access only to the user themselves.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/videos/{videoId}",
+        "definition": {
+          "entityName": "Video",
+          "schema": {
+            "$ref": "#/backend/entities/Video"
+          },
+          "description": "Stores videos associated with a specific user. Path-based ownership, so only the user can access their own videos.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "videoId",
+              "description": "The unique identifier of the video."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/videos/{videoId}/transcripts/{transcriptId}",
+        "definition": {
+          "entityName": "Transcript",
+          "schema": {
+            "$ref": "#/backend/entities/Transcript"
+          },
+          "description": "Stores transcripts for videos owned by a specific user. Path-based ownership ensures data isolation.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "videoId",
+              "description": "The unique identifier of the video."
+            },
+            {
+              "name": "transcriptId",
+              "description": "The unique identifier of the transcript."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/vocabularies/{vocabularyId}",
+        "definition": {
+          "entityName": "Vocabulary",
+          "schema": {
+            "$ref": "#/backend/entities/Vocabulary"
+          },
+          "description": "Stores vocabulary lists created by a user. Path-based ownership ensures data isolation.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "vocabularyId",
+              "description": "The unique identifier of the vocabulary list."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure data isolation and facilitate secure access based on user ownership. Each user has their own collection of videos, transcripts, and vocabularies, eliminating the need for complex authorization rules. This structure adheres to the principles of Authorization Independence and Structural Segregation. Specifically:\n\n1.  **Authorization Independence:** The design focuses on path-based ownership for all user-related data (videos, transcripts, vocabularies). This eliminates the need for `get()` calls in security rules because access control is directly tied to the path. This allows atomic operations and simplifies debugging.\n\n2.  **Structural Segregation:**  Each user's data is stored under their own document ID (`/users/{userId}`).  This ensures that all documents within a given collection share the same security requirements.  This simplifies security rules because they can be applied to entire collections rather than requiring filtering based on document content.\n\n3.  **QAPs (Rules are not Filters):** The structure supports secure `list` operations because each user's resources are isolated within their own path. A user can list their videos, transcripts, and vocabularies without exposing data from other users.\n\n4.  **Access Modeling:** All data is modeled using Path-Based ownership, which directly represents the `User 1:N Entity` relationships.\n\nThis design prioritizes clarity, security, and scalability by leveraging Firestore's hierarchical data model and enforcing strict ownership."
+  }
+}
