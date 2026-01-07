@@ -7,7 +7,6 @@ import { collection, query, orderBy, limit } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from './ui/button';
 import { Trash2 } from 'lucide-react';
@@ -32,7 +31,6 @@ function HistoryCard({ item, firestore, userId }: { item: HistoryItem, firestore
                 await deleteVideoAndAssociatedData(firestore, userId, item.id);
             } catch (error) {
                 console.error("Deletion failed:", error);
-                // Optionally show a toast notification for the error
             }
         }
     };
@@ -62,7 +60,7 @@ function HistoryCard({ item, firestore, userId }: { item: HistoryItem, firestore
             <Button
                 variant="destructive"
                 size="icon"
-                className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                className="absolute top-2 right-2 h-8 w-8 z-10"
                 onClick={handleDelete}
             >
                 <Trash2 className="h-4 w-4" />
