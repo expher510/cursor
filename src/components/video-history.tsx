@@ -22,9 +22,7 @@ type HistoryItem = {
 
 function HistoryCard({ item, firestore, userId }: { item: HistoryItem, firestore: Firestore, userId: string }) {
     
-    const handleDelete = (e: React.MouseEvent) => {
-        e.preventDefault();
-        e.stopPropagation();
+    const handleDelete = () => {
         if (window.confirm(`Are you sure you want to delete "${item.title}" and all its saved words?`)) {
             deleteVideoAndAssociatedData(firestore, userId, item.id);
         }
@@ -51,7 +49,11 @@ function HistoryCard({ item, firestore, userId }: { item: HistoryItem, firestore
                 variant="destructive"
                 size="icon"
                 className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={handleDelete}
+                onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDelete();
+                }}
             >
                 <Trash2 className="h-4 w-4" />
                 <span className="sr-only">Delete video</span>
