@@ -1,33 +1,13 @@
+
 'use server';
 /**
  * @fileOverview A flow for generating a multiple-choice quiz from a video transcript.
  *
  * - generateQuiz - A function that takes a video transcript and returns a set of quiz questions.
- * - QuizInput - The input type for the generateQuiz function.
- * - QuizOutput - The return type for the generateQuiz function.
- * - Question - The type for a single quiz question.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
-
-const QuestionSchema = z.object({
-  questionText: z.string().describe('The text of the multiple-choice question.'),
-  options: z.array(z.string()).length(4).describe('A list of exactly 4 possible answers.'),
-  correctAnswer: z.string().describe('The correct answer from the options list.'),
-});
-
-export const QuizInputSchema = z.object({
-  transcript: z.string().describe('The full transcript of the video.'),
-});
-
-export const QuizOutputSchema = z.object({
-  questions: z.array(QuestionSchema).describe('A list of generated quiz questions.'),
-});
-
-export type Question = z.infer<typeof QuestionSchema>;
-export type QuizInput = z.infer<typeof QuizInputSchema>;
-export type QuizOutput = z.infer<typeof QuizOutputSchema>;
+import { QuizInputSchema, QuizOutputSchema, type QuizInput, type QuizOutput } from '@/ai/schemas/quiz-schema';
 
 
 /**

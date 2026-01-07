@@ -1,3 +1,4 @@
+
 'use client';
 import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
@@ -9,7 +10,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useFirebase } from '@/firebase';
 import { doc, getDoc, collection, getDocs, query, limit } from 'firebase/firestore';
-import { generateQuiz, type Question, type QuizOutput } from '@/ai/flows/quiz-flow';
+import { generateQuiz } from '@/ai/flows/quiz-flow';
+import { type Question, type QuizOutput } from '@/ai/schemas/quiz-schema';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
