@@ -45,7 +45,7 @@ export function TranscriptView({ transcript, videoId }: TranscriptViewProps) {
                 return (
                    <span key={key} className="inline-block relative group mx-0.5">
                     <span 
-                      className="inline-block px-2 py-1 rounded-md bg-destructive/10 text-destructive-foreground font-semibold cursor-pointer text-sm"
+                      className="inline-block px-2 py-1 rounded-md bg-destructive/10 text-destructive font-semibold cursor-pointer text-sm"
                     >
                       {translation ? translation : <Skeleton className="h-5 w-16 inline-block" />}
                     </span>
