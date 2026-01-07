@@ -7,14 +7,14 @@ export default function Home() {
       <div className="flex flex-col items-center gap-8 text-center max-w-2xl">
         <Logo />
         <div className="flex flex-col gap-2">
-          <h1 className="font-headline text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
+          <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
             Unlock Languages with YouTube
           </h1>
           <p className="text-muted-foreground md:text-xl">
             Paste a YouTube URL to begin your interactive language learning journey. Turn any video into a lesson.
           </p>
         </div>
-        <div className="w-full max-w-xl">
+        <div className="w-full max-w-lg">
           <YoutubeUrlForm />
         </div>
       </div>

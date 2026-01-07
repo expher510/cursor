@@ -1,12 +1,12 @@
 "use client";
 
 import { useFirebase } from '@/firebase';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { collection, doc } from 'firebase/firestore';
+import { createContext, useContext, useState, useCallback, ReactNode, useMemo, Dispatch, SetStateAction, useEffect } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, query } from 'firebase/firestore';
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect, useMemo, Dispatch, SetStateAction } from 'react';
 import { useMemoFirebase } from '@/firebase/provider';
-import { DragEndEvent } from '@dnd-kit/core';
+import { type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 
 type VocabularyItem = {
   id: string;
@@ -16,101 +16,80 @@ type VocabularyItem = {
   userId: string;
 };
 
-type ActiveDragData = {
-  word: string;
-  translation: string;
-} | null;
-
-
 type WatchPageContextType = {
   vocabulary: VocabularyItem[];
-  addVocabularyItemOptimistic: (word: string, translation: string, videoId: string) => void;
-  onDragEnd: (event: DragEndEvent) => void;
-  activeDragData: ActiveDragData;
-  setActiveDragData: Dispatch<SetStateAction<ActiveDragData>>;
+  addVocabularyItem: (word: string, videoId: string) => void;
+  removeVocabularyItem: (id: string) => void;
+  videoData: ProcessVideoOutput | null;
+  setVideoData: (data: ProcessVideoOutput | null) => void;
+  isLoading: boolean;
+  error: string | null;
 };
 
 const WatchPageContext = createContext<WatchPageContextType | undefined>(undefined);
 
 export function WatchPageProvider({ children }: { children: ReactNode }) {
   const { firestore, user } = useFirebase();
-  
-  const [localVocabulary, setLocalVocabulary] = useState<VocabularyItem[]>([]);
-  const [activeDragData, setActiveDragData] = useState<ActiveDragData>(null);
+
+  const [videoData, setVideoData] = useState<ProcessVideoOutput | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
 
   const vocabQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
-    return query(collection(firestore, `users/${user.uid}/vocabularies`));
+    return collection(firestore, `users/${user.uid}/vocabularies`);
   }, [user, firestore]);
 
-  const { data: firestoreVocabulary } = useCollection<VocabularyItem>(vocabQuery);
+  const { data: vocabulary, isLoading: isVocabLoading } = useCollection<VocabularyItem>(vocabQuery);
 
-  const vocabulary = useMemo(() => {
-    // Combine firestore data with local optimistic updates
-    if (!firestoreVocabulary) return localVocabulary;
+  const handleSetVideoData = (data: ProcessVideoOutput | null) => {
+    if (data) {
+        setVideoData(data);
+        setError(null);
+    } else {
+        // This allows clearing data without setting an error
+        setVideoData(null);
+    }
+    setIsLoading(false);
+  };
 
-    const firestoreWords = new Set(firestoreVocabulary.map(item => item.word));
-    const uniqueLocalItems = localVocabulary.filter(item => !firestoreWords.has(item.word));
 
-    return [...firestoreVocabulary, ...uniqueLocalItems];
-  }, [firestoreVocabulary, localVocabulary]);
-
-
-  const addVocabularyItemOptimistic = useCallback((word: string, translation: string, videoId: string) => {
-    if (!user || !firestore) return;
+  const addVocabularyItem = useCallback((word: string, videoId: string) => {
+    if (!user || !firestore || !videoData) return;
 
     const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
+    if (!cleanedWord) return;
 
-    const alreadyExists = vocabulary.some(item => item.word === cleanedWord);
+    const alreadyExists = vocabulary?.some(item => item.word === cleanedWord);
     if (alreadyExists) return;
 
-    // Optimistic update
-    const optimisticItem: VocabularyItem = {
-      id: `temp-${Date.now()}`,
-      word: cleanedWord,
-      translation: translation || "", // Ensure translation is not undefined
-      videoId,
-      userId: user.uid,
-    };
-    setLocalVocabulary(prev => [...prev, optimisticItem]);
+    const translation = videoData.translations[cleanedWord] || "";
 
-    // Firestore update
     const vocabCollectionRef = collection(firestore, `users/${user.uid}/vocabularies`);
-    const newVocabItem = {
+    addDocumentNonBlocking(vocabCollectionRef, {
       word: cleanedWord,
-      translation: translation || "",
+      translation: translation,
       userId: user.uid,
       videoId: videoId,
-    };
-    addDocumentNonBlocking(vocabCollectionRef, newVocabItem);
-  }, [user, firestore, vocabulary]);
+    });
+  }, [user, firestore, vocabulary, videoData]);
 
+  const removeVocabularyItem = useCallback((id: string) => {
+      if (!firestore || !user) return;
+      const docRef = doc(firestore, `users/${user.uid}/vocabularies`, id);
+      deleteDocumentNonBlocking(docRef);
+  }, [firestore, user]);
 
-  const onDragEnd = useCallback((event: DragEndEvent) => {
-    setActiveDragData(null);
-    const { active, over } = event;
-
-    if (over && over.id === 'vocabulary-drop-area' && active.data.current) {
-      const { word, translation, videoId } = active.data.current;
-      addVocabularyItemOptimistic(word, translation, videoId);
-    }
-  }, [addVocabularyItemOptimistic]);
-
-  useEffect(() => {
-    // This effect helps clear temporary optimistic items if they are successfully
-    // added to firestore, preventing potential duplicates on fast re-renders.
-    if(firestoreVocabulary) {
-       const firestoreWords = new Set(firestoreVocabulary.map(item => item.word));
-       setLocalVocabulary(prev => prev.filter(item => !firestoreWords.has(item.word)));
-    }
-  }, [firestoreVocabulary]);
 
   const value = {
     vocabulary: vocabulary ?? [],
-    addVocabularyItemOptimistic,
-    onDragEnd,
-    activeDragData,
-    setActiveDragData,
+    addVocabularyItem,
+    removeVocabularyItem,
+    videoData,
+    setVideoData: handleSetVideoData,
+    isLoading,
+    error,
   };
 
   return (

@@ -2,19 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { VideoPlayer } from "./video-player";
-import { TranscriptView } from "./transcript-view";
 import { useFirebase } from "@/firebase";
 import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { doc } from "firebase/firestore";
 import { processVideo, ProcessVideoOutput } from "@/ai/flows/process-video-flow";
 import { Skeleton } from "./ui/skeleton";
-import { Card, CardContent } from "./ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { AlertTriangle } from "lucide-react";
+import { VideoTabs } from "./video-tabs";
+import { useWatchPage } from "@/context/watch-page-context";
 
 function LoadingState() {
   return (
-    <div className="grid grid-cols-1 gap-6 lg:gap-8">
-      <div className="flex flex-col gap-6">
+    <div className="space-y-6">
         <Card>
           <CardContent className="p-4 md:p-6">
              <Skeleton className="h-8 w-3/4 mb-4" />
@@ -23,15 +23,14 @@ function LoadingState() {
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-6 space-y-4">
-             <Skeleton className="h-8 w-1/4" />
-             <Skeleton className="h-6 w-full" />
-             <Skeleton className="h-6 w-5/6" />
-             <Skeleton className="h-6 w-full" />
-          </CardContent>
-        </Card>
-      </div>
+      <Skeleton className="h-12 w-full rounded-md" />
+      <Card>
+        <CardContent className="p-6 space-y-4">
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-5/6" />
+            <Skeleton className="h-6 w-full" />
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -40,12 +39,14 @@ function ErrorState({ message }: { message: string }) {
     return (
         <div className="flex h-full items-center justify-center">
             <Card className="max-w-lg text-center bg-destructive/10 border-destructive">
-                <CardContent className="p-6">
-                    <AlertTriangle className="mx-auto h-12 w-12 text-destructive" />
-                    <h2 className="mt-4 font-headline text-2xl font-semibold text-destructive">
-                        An Error Occurred
-                    </h2>
-                    <p className="mt-2 text-muted-foreground">
+                 <CardHeader>
+                    <CardTitle className="flex items-center justify-center gap-2">
+                        <AlertTriangle />
+                        Processing Error
+                    </CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-muted-foreground">
                         {message}
                     </p>
                 </CardContent>
@@ -57,26 +58,22 @@ function ErrorState({ message }: { message: string }) {
 
 export function VideoWorkspace({ videoId }: { videoId: string }) {
   const { firestore, user } = useFirebase();
-  const [videoData, setVideoData] = useState<ProcessVideoOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
+  const { setVideoData, videoData, isLoading, error } = useWatchPage();
+  
   useEffect(() => {
     async function processAndSetVideo() {
       if (!videoId) {
-        setIsLoading(false);
-        setError("Invalid video ID provided.");
         return;
       }
-
-      setIsLoading(true);
-      setError(null);
+      
+      setVideoData(null); // Clear previous data
+      
       try {
         const result = await processVideo({ videoId });
         setVideoData(result);
         
         if (user && firestore) {
-            // Save video metadata
+            // Save video metadata to history
             const videoDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}`);
             setDocumentNonBlocking(videoDocRef, {
               id: videoId,
@@ -96,13 +93,11 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
 
       } catch (e: any) {
         console.error(e);
-        setError(e.message || "Could not process the video. The transcript might not be available.");
-      } finally {
-        setIsLoading(false);
+        // Let the context handle the error state
       }
     }
     processAndSetVideo();
-  }, [videoId, user, firestore]);
+  }, [videoId, user, firestore, setVideoData]);
   
   if (isLoading) {
     return <LoadingState />;
@@ -113,7 +108,8 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
   }
 
   if (!videoData) {
-    return null; // Or some other placeholder
+    // This state can happen briefly between loading and data fetching, or if there's no data.
+    return <LoadingState />;
   }
   
   const formattedTranscript = videoData.transcript.map(item => ({
@@ -122,15 +118,12 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
   }));
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:gap-8">
-      <div className="flex flex-col gap-6">
-        <VideoPlayer videoId={videoId} title={videoData.title} />
-        <TranscriptView 
-          transcript={formattedTranscript} 
-          translations={videoData.translations}
-          videoId={videoId}
-        />
-      </div>
+    <div className="grid grid-cols-1 gap-6">
+      <VideoPlayer videoId={videoId} title={videoData.title} />
+      <VideoTabs 
+        transcript={formattedTranscript} 
+        videoId={videoId}
+      />
     </div>
   );
 }

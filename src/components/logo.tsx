@@ -3,8 +3,8 @@ import Link from 'next/link';
 
 export function Logo() {
   return (
-    <Link href="/" className="flex items-center gap-2 text-2xl font-bold font-headline text-primary">
-      <BookHeart className="h-7 w-7 text-accent" />
+    <Link href="/" className="flex items-center gap-2 text-xl font-bold font-headline text-primary">
+      <BookHeart className="h-6 w-6" />
       <span>LinguaStream</span>
     </Link>
   );

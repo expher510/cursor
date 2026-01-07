@@ -3,7 +3,8 @@
 import { VideoWorkspace } from "@/components/video-workspace";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle } from "lucide-react";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -11,11 +12,16 @@ function WatchPageContent() {
 
   if (!videoId) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Card className="max-w-md text-center">
-          <CardContent className="p-6">
-            <h2 className="font-headline text-2xl font-semibold text-destructive">Invalid Video</h2>
-            <p className="mt-2 text-muted-foreground">The video URL is missing or invalid. Please go back to the homepage and try again.</p>
+      <div className="container mx-auto mt-10">
+        <Card className="max-w-md mx-auto text-center border-destructive bg-destructive/10">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-center gap-2 text-destructive">
+                <AlertTriangle />
+                Invalid Video URL
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground">The video URL is missing or invalid. Please go back to the homepage and try again.</p>
           </CardContent>
         </Card>
       </div>
