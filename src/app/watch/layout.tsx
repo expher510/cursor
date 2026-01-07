@@ -74,11 +74,11 @@ export default function WatchLayout({ children }: { children: ReactNode }) {
               </SidebarContent>
             </Sidebar>
             
-            <main className="flex-1 p-4 lg:p-6">
+            <main className="flex-1 p-4 md:p-6 lg:p-8">
               {children}
             </main>
 
-            <aside className="hidden lg:block w-[300px] sticky top-0 h-screen border-l">
+            <aside className="hidden lg:block w-[250px] sticky top-0 h-screen border-l">
               <VocabularyList />
             </aside>
 
@@ -90,7 +90,7 @@ export default function WatchLayout({ children }: { children: ReactNode }) {
                     <span className="sr-only">Open Vocabulary</span>
                   </Button>
                 </SheetTrigger>
-                <SheetContent side="right" className="w-[300px] p-0">
+                <SheetContent side="right" className="w-[250px] p-0">
                   <VocabularyList />
                 </SheetContent>
               </Sheet>
