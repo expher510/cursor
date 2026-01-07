@@ -31,10 +31,18 @@ export function VideoTabs({ transcript, videoId }: VideoTabsProps) {
 
   return (
     <Tabs defaultValue="transcript" className="w-full">
-      <TabsList className="grid w-full grid-cols-2">
-        <TabsTrigger value="transcript"><BookOpenText className="h-4 w-4 mr-2"/>Transcript</TabsTrigger>
-        <TabsTrigger value="vocabulary"><List className="h-4 w-4 mr-2"/>Vocabulary</TabsTrigger>
-      </TabsList>
+      <div className="flex items-center justify-between mb-4">
+        <TabsList className="grid w-full grid-cols-2 max-w-sm">
+          <TabsTrigger value="transcript"><BookOpenText className="h-4 w-4 mr-2"/>Transcript</TabsTrigger>
+          <TabsTrigger value="vocabulary"><List className="h-4 w-4 mr-2"/>Vocabulary</TabsTrigger>
+        </TabsList>
+        <Button asChild>
+            <Link href={`/quiz?v=${videoId}`}>
+                <BrainCircuit className="mr-2 h-4 w-4" />
+                Start Quiz
+            </Link>
+        </Button>
+      </div>
       <TabsContent value="transcript">
         <Collapsible open={isTranscriptOpen} onOpenChange={setIsTranscriptOpen}>
             <Card>
@@ -65,17 +73,11 @@ export function VideoTabs({ transcript, videoId }: VideoTabsProps) {
       </TabsContent>
       <TabsContent value="vocabulary">
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <List />
                     Vocabulary
                 </CardTitle>
-                <Button asChild>
-                    <Link href={`/quiz?v=${videoId}`}>
-                        <BrainCircuit className="mr-2 h-4 w-4" />
-                        Start Quiz
-                    </Link>
-                </Button>
             </CardHeader>
             <CardContent>
                 <VocabularyList />
