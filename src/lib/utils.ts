@@ -5,28 +5,28 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function extractYouTubeVideoId(url: string): string | null {
-  if (!url) return null;
-  let videoId: string | null = null;
-  try {
-    // Trim any trailing punctuation that might be accidentally included
-    const cleanedUrl = url.trim().replace(/[.,/#!$%^&*;:{}=\-_`~()]$/, '');
-    const urlObj = new URL(cleanedUrl);
-    
-    if (urlObj.hostname === "youtu.be") {
-      videoId = urlObj.pathname.slice(1);
-    }
-    if (urlObj.hostname.includes("youtube.com")) {
-      videoId = urlObj.searchParams.get("v");
-    }
-  } catch (error) {
-    // Fallback for non-URL strings or invalid URLs
-    const regex =
-      /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-    const match = url.match(regex);
-    videoId = match ? match[1] : null;
-  }
+export function extractYouTubeVideoId(input: string): string | null {
+  if (!input) return null;
   
-  // Final cleanup on the extracted ID
-  return videoId ? videoId.split('&')[0] : null;
+  // Already a video ID (11 characters, alphanumeric + _ -)
+  if (/^[a-zA-Z0-9_-]{11}$/.test(input)) {
+    return input;
+  }
+
+  // Standard YouTube URL patterns
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+  ];
+
+  for (const pattern of patterns) {
+    const match = input.match(pattern);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  return null;
 }

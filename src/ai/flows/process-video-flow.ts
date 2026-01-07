@@ -10,6 +10,8 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { YoutubeTranscript } from 'youtube-transcript';
+import { extractYouTubeVideoId } from '@/lib/utils';
+
 
 const ProcessVideoInputSchema = z.object({
   videoId: z.string().describe('The ID of the YouTube video to process.'),
@@ -47,11 +49,21 @@ const youtubeTranscriptTool = ai.defineTool(
     }),
   },
   async (input) => {
-    const transcript = await YoutubeTranscript.fetchTranscript(input.videoId);
-    // In a real scenario, you would fetch the title via the YouTube Data API.
-    // For now, we will return a placeholder title.
-    const title = "YouTube Video"; 
-    return { title, transcript };
+    const videoId = extractYouTubeVideoId(input.videoId);
+    if (!videoId) {
+      throw new Error(`Invalid YouTube video ID or URL: ${input.videoId}`);
+    }
+    
+    try {
+        const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+        // In a real scenario, you would fetch the title via the YouTube Data API.
+        // For now, we will return a placeholder title.
+        const title = "YouTube Video"; 
+        return { title, transcript };
+    } catch (error) {
+        console.error('Failed to fetch transcript:', error);
+        throw new Error(`Could not fetch transcript for video ID: ${videoId}`);
+    }
   }
 );
 
