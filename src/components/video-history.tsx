@@ -3,14 +3,13 @@
 
 import { useFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, orderBy, limit, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from './ui/button';
 import { Trash2 } from 'lucide-react';
-import type { Firestore } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 
@@ -27,17 +26,14 @@ function HistoryCard({ item }: { item: HistoryItem }) {
     const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
         e.preventDefault();
-
+        
         if (!firestore || !user) return;
 
-        if (window.confirm("Are you sure you want to delete this video from your history?")) {
-            const videoDocRef = doc(firestore, `users/${user.uid}/videos`, item.id);
-            deleteDocumentNonBlocking(videoDocRef);
+        const videoDocRef = doc(firestore, `users/${user.uid}/videos`, item.id);
+        deleteDocumentNonBlocking(videoDocRef);
 
-            // Also delete the associated transcript
-            const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${item.id}/transcripts`, item.id);
-            deleteDocumentNonBlocking(transcriptDocRef);
-        }
+        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${item.id}/transcripts`, item.id);
+        deleteDocumentNonBlocking(transcriptDocRef);
     };
     
     const handleCardClick = () => {
@@ -115,7 +111,7 @@ export function VideoHistory() {
              <h2 className="text-2xl font-bold font-headline mb-6">Your Recent Videos</h2>
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {history.map((item) => (
-                    user && firestore && <HistoryCard key={item.id} item={item} />
+                    <HistoryCard key={item.id} item={item} />
                 ))}
              </div>
         </div>
