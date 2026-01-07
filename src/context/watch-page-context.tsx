@@ -4,7 +4,7 @@ import { useFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { addDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { collection, query } from 'firebase/firestore';
-import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect, useMemo, Dispatch, SetStateAction } from 'react';
 import { useMemoFirebase } from '@/firebase/provider';
 import { DragEndEvent } from '@dnd-kit/core';
 
@@ -27,6 +27,7 @@ type WatchPageContextType = {
   addVocabularyItemOptimistic: (word: string, translation: string, videoId: string) => void;
   onDragEnd: (event: DragEndEvent) => void;
   activeDragData: ActiveDragData;
+  setActiveDragData: Dispatch<SetStateAction<ActiveDragData>>;
 };
 
 const WatchPageContext = createContext<WatchPageContextType | undefined>(undefined);
@@ -42,10 +43,16 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     return query(collection(firestore, `users/${user.uid}/vocabularies`));
   }, [user, firestore]);
 
-  const { data: firestoreVocabulary, isLoading } = useCollection<VocabularyItem>(vocabQuery);
+  const { data: firestoreVocabulary } = useCollection<VocabularyItem>(vocabQuery);
 
-  const vocabulary = useMemoFirebase(() => {
-    return firestoreVocabulary ?? localVocabulary;
+  const vocabulary = useMemo(() => {
+    // Combine firestore data with local optimistic updates
+    if (!firestoreVocabulary) return localVocabulary;
+
+    const firestoreWords = new Set(firestoreVocabulary.map(item => item.word));
+    const uniqueLocalItems = localVocabulary.filter(item => !firestoreWords.has(item.word));
+
+    return [...firestoreVocabulary, ...uniqueLocalItems];
   }, [firestoreVocabulary, localVocabulary]);
 
 
@@ -54,7 +61,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
     const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
 
-    const alreadyExists = (firestoreVocabulary ?? []).some(item => item.word === cleanedWord);
+    const alreadyExists = vocabulary.some(item => item.word === cleanedWord);
     if (alreadyExists) return;
 
     // Optimistic update
@@ -76,7 +83,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
       videoId: videoId,
     };
     addDocumentNonBlocking(vocabCollectionRef, newVocabItem);
-  }, [user, firestore, firestoreVocabulary]);
+  }, [user, firestore, vocabulary]);
 
 
   const onDragEnd = useCallback((event: DragEndEvent) => {
@@ -90,10 +97,11 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   }, [addVocabularyItemOptimistic]);
 
   useEffect(() => {
-    // This effect ensures that optimistic updates are cleared
-    // once Firestore data is loaded or re-fetched.
+    // This effect helps clear temporary optimistic items if they are successfully
+    // added to firestore, preventing potential duplicates on fast re-renders.
     if(firestoreVocabulary) {
-      setLocalVocabulary([]);
+       const firestoreWords = new Set(firestoreVocabulary.map(item => item.word));
+       setLocalVocabulary(prev => prev.filter(item => !firestoreWords.has(item.word)));
     }
   }, [firestoreVocabulary]);
 
@@ -101,7 +109,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     vocabulary: vocabulary ?? [],
     addVocabularyItemOptimistic,
     onDragEnd,
-    activeDragData
+    activeDragData,
+    setActiveDragData,
   };
 
   return (

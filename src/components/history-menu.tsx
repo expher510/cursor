@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { History, Trash2, Video } from "lucide-react";
-import { useHistory } from "@/hooks/use-history";
 import { Button } from "./ui/button";
 import { SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "./ui/sidebar";
 import { ScrollArea } from "./ui/scroll-area";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useFirebase } from "@/firebase";
 import { useCollection } from "@/firebase/firestore/use-collection";
-import { collection, query, orderBy, limit, writeBatch } from "firebase/firestore";
+import { collection, query, orderBy, limit, writeBatch, doc } from "firebase/firestore";
 import { useMemoFirebase } from "@/firebase/provider";
 import { Skeleton } from "./ui/skeleton";
 
@@ -48,8 +47,8 @@ export function HistoryMenu() {
 
 
   return (
-    <SidebarGroup>
-      <SidebarGroupLabel className="flex items-center justify-between">
+    <SidebarGroup className="p-0">
+      <SidebarGroupLabel className="flex items-center justify-between px-2">
         <div className="flex items-center gap-2">
           <History />
           <span>History</span>
@@ -64,7 +63,7 @@ export function HistoryMenu() {
       <SidebarGroupContent>
         <ScrollArea className="h-[calc(100vh-200px)]">
           {isLoading ? (
-             <div className="space-y-2 p-2">
+             <div className="space-y-1 px-2">
                <Skeleton className="h-8 w-full" />
                <Skeleton className="h-8 w-full" />
                <Skeleton className="h-8 w-full" />

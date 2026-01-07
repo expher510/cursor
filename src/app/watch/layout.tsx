@@ -3,15 +3,16 @@
 import type { ReactNode } from "react";
 import { HistoryMenu } from "@/components/history-menu";
 import { Logo } from "@/components/logo";
-import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider } from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent, SidebarHeader, SidebarProvider, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { WatchPageProvider, useWatchPage } from "@/context/watch-page-context";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { List } from "lucide-react";
+import { List, PlusCircle } from "lucide-react";
 import { DndContext, DragEndEvent, DragOverlay } from "@dnd-kit/core";
 import { Card } from "@/components/ui/card";
+import Link from "next/link";
 
 function DraggableWord({ word, translation }: { word: string, translation: string }) {
   return (
@@ -24,10 +25,19 @@ function DraggableWord({ word, translation }: { word: string, translation: strin
 
 
 function WatchLayoutDndWrapper({ children }: { children: ReactNode }) {
-  const { onDragEnd, activeDragData } = useWatchPage();
+  const { onDragEnd, activeDragData, setActiveDragData } = useWatchPage();
 
   return (
-     <DndContext onDragEnd={onDragEnd}>
+     <DndContext 
+      onDragStart={(event) => {
+        if (event.active.data.current) {
+          const { word, translation } = event.active.data.current;
+          setActiveDragData({ word, translation });
+        }
+      }}
+      onDragEnd={onDragEnd}
+      onDragCancel={() => setActiveDragData(null)}
+    >
         {children}
         <DragOverlay>
           {activeDragData ? (
@@ -48,8 +58,18 @@ export default function WatchLayout({ children }: { children: ReactNode }) {
               <SidebarHeader className="p-4">
                 <Logo />
               </SidebarHeader>
-              <Separator />
-              <SidebarContent>
+              <SidebarContent className="p-2">
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <Link href="/">
+                        <PlusCircle />
+                        <span>New Video</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+                <Separator className="my-2" />
                 <HistoryMenu />
               </SidebarContent>
             </Sidebar>
