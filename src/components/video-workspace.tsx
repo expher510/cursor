@@ -14,6 +14,10 @@ import { CaptionView } from "./caption-view";
 function LoadingState() {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
+       <div className="text-center mb-8">
+            <Skeleton className="h-10 w-3/4 mx-auto" />
+            <Skeleton className="h-6 w-full max-w-2xl mx-auto mt-4" />
+        </div>
       <Card>
         <CardContent className="p-4 md:p-6">
           <div className="aspect-video w-full overflow-hidden rounded-lg border">
@@ -68,6 +72,13 @@ export function VideoWorkspace() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
+        <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Listening</h1>
+            <p className="text-lg text-muted-foreground mt-2 max-w-3xl mx-auto">
+                Listen to the video and follow along with the synchronized transcript below. Switch to the reading page to save new words.
+            </p>
+        </div>
+
       <Card>
         <CardContent className="p-4 md:p-6">
             <div className="aspect-video w-full overflow-hidden rounded-lg border">
@@ -97,7 +108,7 @@ export function VideoWorkspace() {
         <Button asChild size="lg">
           <Link href={`/quiz?v=${videoData.videoId}`}>
             <BrainCircuit className="mr-2 h-5 w-5" />
-            Start Quiz
+            Test Your Comprehension
           </Link>
         </Button>
       </div>
