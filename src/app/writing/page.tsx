@@ -102,7 +102,6 @@ function WritingWorkspace() {
         <div className="w-full max-w-4xl space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle>Your Words</CardTitle>
                     <CardDescription>Click a word bubble to use it in your text. It will disappear from the list once used.</CardDescription>
                 </CardHeader>
                 <CardContent className="min-h-[6rem]">
