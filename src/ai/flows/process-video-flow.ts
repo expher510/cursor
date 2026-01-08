@@ -128,8 +128,8 @@ const youtubeDataApiTool = ai.defineTool(
         })
     },
     async ({ videoId }) => {
-        const API_KEY = process.env.YOUTUBE_API_KEY;
-        if (!API_KEY) {
+        const API_KEY = process.env.YOUTUBE_DATA_API_KEY;
+        if (!API_KEY || API_KEY === '<your_youtube_api_key>') {
             console.warn("YouTube Data API key not configured. Skipping metadata fetch.");
             return { title: null, description: null, stats: null };
         }
