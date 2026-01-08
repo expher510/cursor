@@ -7,12 +7,15 @@ import { AlertTriangle, Mic } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { Logo } from "@/components/logo";
+import { useState } from "react";
 
 
 function ReadingPracticePage() {
     const { videoData, isLoading, error } = useWatchPage();
+    const [isRecording, setIsRecording] = useState(false);
+    const [showRecordingUI, setShowRecordingUI] = useState(false);
+
 
     if (isLoading) {
         return (
@@ -63,23 +66,36 @@ function ReadingPracticePage() {
                     <Logo />
                 </div>
                 <p className="text-lg text-muted-foreground mt-2 max-w-3xl mx-auto">
-                    Click on any word in the transcript to instantly get its translation and add it to your personal vocabulary list.
+                    Practice your pronunciation by recording yourself reading the text below and get AI feedback.
                 </p>
                 <div className="mt-6 flex justify-center">
-                    <Button asChild size="lg" className="rounded-full">
-                        <Link href={`/quiz?v=${videoData.videoId}`}>
-                            <Mic className="mr-2 h-5 w-5" />
-                            Reading Quiz
-                        </Link>
+                    <Button onClick={() => setShowRecordingUI(prev => !prev)} size="lg" className="rounded-full">
+                        <Mic className="mr-2 h-5 w-5" />
+                        {showRecordingUI ? 'Cancel Test' : 'Start Speaking Test'}
                     </Button>
                 </div>
             </div>
-            
-            <VocabularyList layout="scroll" />
 
-            <Card>
-                <TranscriptView transcript={formattedTranscript} videoId={videoData.videoId} />
-            </Card>
+            {showRecordingUI ? (
+                <Card className="p-6 flex flex-col items-center gap-4">
+                    <h3 className="text-lg font-semibold">Recording...</h3>
+                    <Button
+                        onClick={() => setIsRecording(prev => !prev)}
+                        size="lg"
+                        variant={isRecording ? 'destructive' : 'default'}
+                    >
+                        {isRecording ? 'Stop Recording' : 'Start Recording'}
+                    </Button>
+                    <p className="text-sm text-muted-foreground">Click "Start Recording" and read the text aloud.</p>
+                </Card>
+            ) : (
+                <>
+                    <VocabularyList layout="scroll" />
+                    <Card>
+                        <TranscriptView transcript={formattedTranscript} videoId={videoData.videoId} />
+                    </Card>
+                </>
+            )}
 
         </div>
     )
