@@ -51,7 +51,7 @@ function WritingWorkspace() {
     };
 
     const handleWordClick = (word: string) => {
-        setWritingContent(prev => prev ? `${prev} ${word}` : word);
+        setWritingContent(prev => prev ? `${prev.trim()} ${word}` : word);
         setAvailableWords(prev => prev.filter(w => w !== word));
     };
     
@@ -145,7 +145,9 @@ export default function WritingPage() {
       <AppHeader showBackButton={true} />
       <main className="container mx-auto pt-24 flex flex-col items-center gap-8 px-4 pb-10">
         <div className="text-center">
-            <Logo />
+            <div className="flex justify-center">
+                <Logo />
+            </div>
             <p className="text-muted-foreground max-w-2xl mt-2">
                 Use the selected words to practice your writing skills. When you've used all the words, you can get AI feedback.
             </p>
