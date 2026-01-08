@@ -23,11 +23,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} ${plusJakartaSans.variable} font-body antialiased`}>
         <FirebaseClientProvider>
-          <AuthProvider>
-            <div className="flex min-h-screen w-full flex-col">
+          <div className="flex min-h-screen w-full flex-col">
+            <AuthProvider>
               {children}
-            </div>
-          </AuthProvider>
+            </AuthProvider>
+          </div>
         </FirebaseClientProvider>
         <Toaster />
       </body>

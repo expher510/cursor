@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
 const PUBLIC_PATHS = ['/login', '/signup'];
+const DEFAULT_AUTHENTICATED_ROUTE = '/home';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useFirebase();
@@ -17,20 +18,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const isPublicPath = PUBLIC_PATHS.includes(pathname);
 
-    // If user is not logged in and not on a public page, redirect to login
+    // If user is not logged in and is trying to access a protected page
     if (!user && !isPublicPath) {
       router.replace(`/login?from=${pathname}`);
     }
     
-    // If user is logged in and on a public page, redirect to home
+    // If user is logged in and is on a public page (like /login or /signup)
     if (user && isPublicPath) {
-      router.replace('/');
+      router.replace(DEFAULT_AUTHENTICATED_ROUTE);
     }
+    
+    // If the user is logged in and tries to access the root, redirect to home
+    if (user && pathname === '/') {
+       router.replace(DEFAULT_AUTHENTICATED_ROUTE);
+    }
+
 
   }, [user, isUserLoading, pathname, router]);
 
   // Show a loader while determining auth state or if a redirect is imminent.
-  if (isUserLoading || (!user && !PUBLIC_PATHS.includes(pathname)) || (user && PUBLIC_PATHS.includes(pathname))) {
+  const showLoader = isUserLoading || 
+                     (!user && !PUBLIC_PATHS.includes(pathname)) || 
+                     (user && PUBLIC_PATHS.includes(pathname)) ||
+                     (pathname === '/');
+
+
+  if (showLoader) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">
