@@ -18,11 +18,7 @@ export function VocabularyList() {
   const { vocabulary, removeVocabularyItem, isLoading } = useWatchPage();
   
   return (
-    <div className="flex flex-col h-full rounded-lg border bg-card text-card-foreground shadow-sm">
-        <div className="p-4 border-b">
-             <h2 className="text-lg font-semibold tracking-tight">Vocabulary</h2>
-             <p className="text-sm text-muted-foreground">Words you save will appear here.</p>
-        </div>
+    <div className="flex flex-col h-full rounded-lg border bg-card text-card-foreground shadow-sm flex-1">
         <ScrollArea className="flex-1 p-4">
           {isLoading ? (
              <div className="space-y-2">
@@ -31,16 +27,16 @@ export function VocabularyList() {
                <Skeleton className="h-16 w-full" />
             </div>
           ) : !vocabulary || vocabulary.length === 0 ? (
-            <div className="flex h-full min-h-[200px] items-center justify-center rounded-md border border-dashed text-center p-4">
+            <div className="flex h-full min-h-[200px] items-center justify-center rounded-md text-center p-4">
                 <p className="text-sm text-muted-foreground">
-                    Click on words in the transcript to add them.
+                    Words you save will appear here.
                 </p>
             </div>
           ) : (
              <TooltipProvider>
                 <ul className="space-y-2">
                   {vocabulary.map((item) => (
-                    <li key={item.id} className="flex items-center justify-between gap-2 rounded-md border p-3">
+                    <li key={item.id} className="flex items-center justify-between gap-2 rounded-md border p-3 bg-background">
                       <div>
                         <p className="font-semibold capitalize text-primary">{item.word}</p>
                         <p className="text-sm text-muted-foreground">{item.translation}</p>

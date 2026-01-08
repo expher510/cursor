@@ -109,7 +109,8 @@ export function VideoWorkspace() {
         </div>
       </div>
       
-      <div className="h-full">
+      <div className="h-full flex flex-col gap-4">
+        <h2 className="text-lg font-semibold tracking-tight">Vocabulary</h2>
         <VocabularyList />
       </div>
     </div>
