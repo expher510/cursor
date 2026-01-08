@@ -50,46 +50,44 @@ export async function processVideo(input: ProcessVideoInput): Promise<ProcessVid
 }
 
 
-// Fallback Tool: youtube-transcript library
+// Fallback Tool: youtube-transcript library logic
 const youtubeTranscriptTool = ai.defineTool(
     {
         name: 'youtubeTranscriptTool',
-        description: 'Fetches the transcript for a given YouTube video ID directly. This is a fallback if other services fail.',
+        description: 'Fetches the transcript for a given YouTube video ID directly.',
         inputSchema: z.object({ videoId: z.string() }),
         outputSchema: z.array(TranscriptItemSchema),
     },
     async ({ videoId }) => {
         try {
-            console.log("Attempting to fetch transcript using youtube-transcript library...");
+            console.log("Attempting to fetch transcript using direct scraping method...");
             
-            // This logic is equivalent to the YoutubeTranscript.fetchTranscript method
             const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
             const html = await response.text();
-            const innerTubeApiKeyMatch = html.match(/"innerTubeApiKey":"(.*?)"/);
             
-            if (!innerTubeApiKeyMatch) {
-              throw new Error("Could not find innerTubeApiKey. The video may not have a transcript.");
-            }
-            const innerTubeApiKey = innerTubeApiKeyMatch[1];
-            
-            const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
+            const playerResponseMatch = html.match(/var ytInitialPlayerResponse = ({.*?});/);
             if (!playerResponseMatch) {
-              throw new Error('Could not find ytInitialPlayerResponse. The video may not have a transcript.');
+              throw new Error('Could not find ytInitialPlayerResponse in the YouTube page. The video may not be available or the page structure has changed.');
             }
+            
             const playerResponse = JSON.parse(playerResponseMatch[1]);
-            const captionTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+            const captionTracks = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
 
             if (!captionTracks || captionTracks.length === 0) {
-              throw new Error('No caption tracks found for this video.');
+              throw new Error('No caption tracks found for this video. It might not have subtitles enabled.');
             }
-
-            const transcriptTrack = captionTracks.find((track: any) => track.kind === 'asr' && track.languageCode === 'en') || captionTracks[0];
+            
+            // Prefer an English track, but fall back to the first available if no English track is found.
+            const transcriptTrack = captionTracks.find((track: any) => track.languageCode === 'en') || captionTracks[0];
 
             if (!transcriptTrack?.baseUrl) {
-                throw new Error("Could not find a valid transcript track URL.");
+                throw new Error("Could not find a valid transcript track URL. Subtitles might be disabled for this video.");
             }
 
             const transcriptResponse = await fetch(transcriptTrack.baseUrl);
+            if (!transcriptResponse.ok) {
+                throw new Error(`Failed to fetch transcript XML. Status: ${transcriptResponse.status}`);
+            }
             const transcriptXml = await transcriptResponse.text();
 
             const transcriptItems = Array.from(transcriptXml.matchAll(/<text start="(.*?)" dur="(.*?)">(.*?)<\/text>/g))
@@ -102,15 +100,21 @@ const youtubeTranscriptTool = ai.defineTool(
                       .replace(/&#39;/g, "'")
                       .replace(/&lt;/g, '<')
                       .replace(/&gt;/g, '>')
-              }));
+                      .replace(/<[^>]*>/g, '') // Strip any remaining HTML tags from subtitles
+                      .trim()
+              })).filter(item => item.text); // Filter out empty text items
 
 
-            console.log("Successfully fetched from youtube-transcript.");
+            if (transcriptItems.length === 0) {
+                 throw new Error("Transcript was found but contained no text content.");
+            }
+
+            console.log(`Successfully fetched and parsed ${transcriptItems.length} transcript lines.`);
             return transcriptItems;
         } catch (error: any) {
-            console.error(`youtube-transcript failed: ${error.message}`);
-            // If this also fails, we throw a final error that the user will see.
-            throw new Error(`Could not retrieve transcript. The video may not have one available in English, or it might be disabled.`);
+            console.error(`Transcript fetching failed: ${error.message}`);
+            // Re-throw the specific error message to be displayed to the user.
+            throw new Error(`Could not retrieve transcript: ${error.message}`);
         }
     }
 );
@@ -134,8 +138,6 @@ const pipedApiTool = ai.defineTool(
             console.log("Fetching metadata from Piped API...");
             const response = await fetch(url);
             
-            console.log("Piped API Response Status:", response.status);
-
             if (!response.ok) {
                 const errorBody = await response.json().catch(() => ({}));
                 console.error("Piped API Error Body:", errorBody);
