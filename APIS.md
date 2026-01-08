@@ -7,37 +7,29 @@ This document provides a summary of the external APIs and services used in this 
 Firebase is the primary backend platform for this application, providing authentication and database services.
 
 -   **Service**: Firebase Authentication
--   **Usage**: Manages user sign-in, currently using anonymous authentication.
+-   **Usage**: Manages user sign-in with Google and Email/Password. This requires the **Identity Toolkit API** to be enabled in your Google Cloud project.
 -   **Website**: [firebase.google.com/docs/auth](https://firebase.google.com/docs/auth)
 
 -   **Service**: Firestore
 -   **Usage**: A NoSQL database used to store all user data, including video history, transcripts, and saved vocabulary lists.
 -   **Website**: [firebase.google.com/docs/firestore](https://firebase.google.com/docs/firestore)
 
-## 2. Genkit with Google AI
+## 2. Google Cloud for YouTube Data
 
-Genkit is the AI framework used to integrate generative AI features into the application. It is configured to use Google's Gemini models.
+-   **Service**: YouTube Data API v3
+-   **Usage**: Used to fetch essential video metadata, such as the title and description. This requires a **YouTube Data API Key** to be added to your `.env` file. Without this key, video titles will not be fetched.
+-   **Website**: [developers.google.com/youtube/v3](https://developers.google.com/youtube/v3)
 
--   **Service**: Genkit
--   **Usage**: Orchestrates AI flows for tasks like processing videos and translating words.
--   **Website**: [firebase.google.com/docs/genkit](https://firebase.google.com/docs/genkit)
-
--   **Service**: Google AI (Gemini)
--   **Usage**: The underlying AI model used by Genkit for its generative capabilities.
--   **Website**: [ai.google.dev](https://ai.google.dev/)
-
-## 3. Supadata (for Transcripts)
-
-This is a third-party service used to fetch transcripts for YouTube videos.
-
--   **Service**: Supadata Transcript API
--   **Usage**: The primary method for fetching video transcripts, as seen in the `processVideoFlow`.
--   **Website**: [docs.supadata.ai/reference/transcript](https://docs.supadata.ai/reference/transcript)
-
-## 4. MyMemory Translation API
-
-A free, public API used for translating individual words for the vocabulary list.
+## 3. Translation and AI
 
 -   **Service**: MyMemory API
--   **Usage**: Translates saved vocabulary words from English to Arabic.
+-   **Usage**: A free, public API used for translating individual words for the vocabulary list. No API key is required.
 -   **Website**: [mymemory.translated.net/doc/spec.php](https://mymemory.translated.net/doc/spec.php)
+
+-   **Service**: youtube-transcript (Library)
+-   **Usage**: An open-source library used to scrape and fetch transcripts for YouTube videos directly. It does not require an API key.
+
+## Deprecated APIs (No Longer Used)
+
+-   **Supadata**: This service was previously considered but has been replaced by a direct implementation using `youtube-transcript` and the YouTube Data API.
+-   **Genkit**: AI features were temporarily removed to resolve dependency conflicts.
