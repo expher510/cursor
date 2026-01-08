@@ -3,7 +3,7 @@ import { useState } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
 import { VideoHistory } from "@/components/video-history";
 import { Button } from "@/components/ui/button";
-import { Headphones, BookOpen, Edit, Loader2, Youtube, Book } from "lucide-react";
+import { Headphones, BookOpen, Edit, Loader2, Youtube, Book, Copy } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { extractYouTubeVideoId } from "@/lib/utils";
 import { useFirebase } from "@/firebase";
@@ -13,6 +13,7 @@ import { processVideo } from "@/ai/flows/process-video-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 
 function ActivityButtons({ videoIdToUse, isProcessing, onActivitySelect }: { videoIdToUse: string | null, isProcessing: boolean, onActivitySelect: (path: string, videoId: string) => void }) {
@@ -27,7 +28,7 @@ function ActivityButtons({ videoIdToUse, isProcessing, onActivitySelect }: { vid
   return (
     <div className="w-full max-w-4xl pt-10 text-left">
        <h2 className="text-2xl font-bold font-headline mb-6 text-center">Choose Your Practice</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
         <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleNavigation('watch')}>
             {isProcessing && <Loader2 className="mr-2 animate-spin" />}
@@ -45,6 +46,13 @@ function ActivityButtons({ videoIdToUse, isProcessing, onActivitySelect }: { vid
             {isProcessing && <Loader2 className="mr-2 animate-spin" />}
             <Edit className="mr-2" />
             Start Writing
+        </Button>
+
+        <Button size="lg" asChild>
+            <Link href="/flashcards">
+                <Copy className="mr-2" />
+                My Flashcards
+            </Link>
         </Button>
       </div>
     </div>

@@ -112,14 +112,6 @@ export function VocabularyList() {
               </div>
             )}
           </div>
-           {vocabulary && vocabulary.length > 0 && (
-                <Button asChild variant="outline" size="icon" className="rounded-full">
-                    <Link href="/flashcards">
-                        <Copy className="h-5 w-5" />
-                        <span className="sr-only">Flashcards</span>
-                    </Link>
-                </Button>
-            )}
         </div>
     </div>
   );
