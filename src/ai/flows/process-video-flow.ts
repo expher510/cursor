@@ -124,6 +124,59 @@ const youtubeTranscriptTool = ai.defineTool(
     }
 );
 
+// Tool: YouTube Data API (for metadata)
+const youtubeDataApiTool = ai.defineTool(
+    {
+        name: 'youtubeDataApiTool',
+        description: 'Fetches video metadata (title, description, stats) from the YouTube Data API.',
+        inputSchema: z.object({ videoId: z.string() }),
+        outputSchema: z.object({
+            title: z.string().nullable(),
+            description: z.string().nullable(),
+            stats: VideoStatsSchema.nullable(),
+        })
+    },
+    async ({ videoId }) => {
+        const API_KEY = process.env.YOUTUBE_API_KEY;
+        if (!API_KEY) {
+            console.warn("YouTube Data API key not configured. Skipping metadata fetch.");
+            return { title: null, description: null, stats: null };
+        }
+        
+        const url = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet,statistics&key=${API_KEY}`;
+
+        try {
+            console.log("Fetching metadata from YouTube Data API...");
+            const response = await fetch(url);
+            if (!response.ok) {
+                const errorBody = await response.json().catch(() => ({}));
+                throw new Error(errorBody?.error?.message || `YouTube API request failed with status ${response.status}`);
+            }
+            const data = await response.json();
+            const item = data.items?.[0];
+
+            if (!item) {
+                return { title: null, description: null, stats: null };
+            }
+            console.log("Successfully fetched metadata from YouTube.");
+
+            return {
+                title: item.snippet?.title || null,
+                description: item.snippet?.description || null,
+                stats: item.statistics ? {
+                    viewCount: item.statistics.viewCount,
+                    likeCount: item.statistics.likeCount,
+                    commentCount: item.statistics.commentCount,
+                } : null,
+            };
+
+        } catch (error: any) {
+            console.warn(`YouTube Data API failed: ${error.message}`);
+            return { title: null, description: null, stats: null };
+        }
+    }
+);
+
 
 // The Main Flow
 const processVideoFlow = ai.defineFlow(
@@ -134,28 +187,33 @@ const processVideoFlow = ai.defineFlow(
   },
   async ({ videoId }) => {
 
-    // 1. Try primary source
-    let { title, transcript } = await supadataApiTool({ videoId });
+    // Fetch transcript and metadata in parallel
+    const [supadataResult, youtubeApiResult] = await Promise.all([
+      supadataApiTool({ videoId }),
+      youtubeDataApiTool({ videoId })
+    ]);
+
+    let transcript = supadataResult.transcript;
     
-    // 2. If primary source fails for transcript, try fallback
+    // If Supadata fails for transcript, try the library fallback
     if (transcript.length === 0) {
         console.log("Supadata returned no transcript, trying youtube-transcript fallback...");
         transcript = await youtubeTranscriptTool({ videoId });
     }
 
-    // 3. Ensure transcript exists after all attempts, otherwise it's a critical failure
+    // Ensure transcript exists after all attempts
     if (transcript.length === 0) {
         throw new Error("Failed to retrieve transcript. The video may not have one available.");
     }
     
-    // Use a default title if none was fetched
-    const finalTitle = title || 'YouTube Video';
+    // Combine titles, preferring YouTube API's title
+    const finalTitle = youtubeApiResult.title || supadataResult.title || 'YouTube Video';
     
     return {
       title: finalTitle,
-      description: null, // No description source for now
+      description: youtubeApiResult.description,
       transcript,
-      stats: null, // No stats source for now
+      stats: youtubeApiResult.stats,
     };
   }
 );
