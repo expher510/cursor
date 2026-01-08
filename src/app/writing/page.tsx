@@ -9,6 +9,7 @@ import { Loader2, Sparkles } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Logo } from "@/components/logo";
 
 function WritingWorkspace() {
@@ -16,18 +17,19 @@ function WritingWorkspace() {
     const [wordCount, setWordCount] = useState(10);
     const [exerciseWords, setExerciseWords] = useState<string[]>([]);
     const [availableWords, setAvailableWords] = useState<string[]>([]);
-    const [selectedWords, setSelectedWords] = useState<string[]>([]);
+    const [writtenText, setWrittenText] = useState("");
     const [isStarted, setIsStarted] = useState(false);
     const [isGettingFeedback, setIsGettingFeedback] = useState(false);
     
     const transcriptText = useMemo(() => {
         if (!videoData?.transcript) return [];
         const fullText = videoData.transcript.map(t => t.text).join(' ');
-        return fullText.toLowerCase().match(/\b(\w+)\b/g) || [];
+        // Get unique words from transcript
+        return Array.from(new Set(fullText.toLowerCase().match(/\b(\w+)\b/g) || []));
     }, [videoData]);
     
     const startExercise = () => {
-        const vocabWords = [...new Set(vocabulary.map(v => v.word))];
+        const vocabWords = [...new Set(vocabulary.map(v => v.word.toLowerCase()))];
         const shuffledVocab = vocabWords.sort(() => 0.5 - Math.random());
         
         let words = shuffledVocab.slice(0, wordCount);
@@ -36,7 +38,7 @@ function WritingWorkspace() {
 
         if (wordsNeeded > 0) {
             const vocabSet = new Set(words);
-            const transcriptWords = Array.from(new Set(transcriptText)).filter(w => !vocabSet.has(w));
+            const transcriptWords = transcriptText.filter(w => !vocabSet.has(w));
             const shuffledTranscript = transcriptWords.sort(() => 0.5 - Math.random());
             
             words = [...words, ...shuffledTranscript.slice(0, wordsNeeded)];
@@ -45,20 +47,18 @@ function WritingWorkspace() {
         const finalWords = words.sort(() => 0.5 - Math.random());
         setExerciseWords(finalWords);
         setAvailableWords(finalWords);
-        setSelectedWords([]);
+        setWrittenText("");
         setIsStarted(true);
     };
 
     const handleWordClick = (word: string) => {
-        setSelectedWords(prev => [...prev, word]);
+        setWrittenText(prev => `${prev}${prev ? " " : ""}${word}`);
         setAvailableWords(prev => prev.filter(w => w !== word));
     };
     
     const resetExercise = () => {
-        setIsStarted(false);
-        setSelectedWords([]);
-        setExerciseWords([]);
-        setAvailableWords([]);
+        setWrittenText("");
+        setAvailableWords(exerciseWords);
     }
 
     const getFeedback = async () => {
@@ -112,32 +112,26 @@ function WritingWorkspace() {
                 ))}
             </div>
 
-            <div className="w-full min-h-[10rem] rounded-md border border-input bg-background p-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 flex flex-wrap gap-2 items-start content-start">
-                 {selectedWords.length > 0 ? (
-                    selectedWords.map((word, index) => (
-                         <Badge 
-                            key={`${word}-${index}`}
-                            variant="outline"
-                            className="border-primary text-primary text-base font-semibold capitalize px-3 py-1"
-                        >
-                            {word}
-                        </Badge>
-                    ))
-                 ) : (
-                    <span className="text-muted-foreground">Your selected words will appear here...</span>
-                 )}
-            </div>
+            <Textarea
+                placeholder="Start writing your text here or click the words above..."
+                value={writtenText}
+                onChange={(e) => setWrittenText(e.target.value)}
+                className="min-h-[10rem] text-base"
+            />
             
             <div className="flex justify-between">
-                <Button variant="outline" onClick={resetExercise}>Reset</Button>
-                <Button onClick={getFeedback} disabled={isGettingFeedback || availableWords.length > 0}>
-                    {isGettingFeedback ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <Sparkles className="mr-2 h-4 w-4" />
-                    )}
-                    Get Feedback
-                </Button>
+                <Button variant="outline" onClick={() => setIsStarted(false)}>Back to Settings</Button>
+                <div>
+                  <Button variant="outline" onClick={resetExercise} className="mr-2">Reset</Button>
+                  <Button onClick={getFeedback} disabled={isGettingFeedback || availableWords.length > 0}>
+                      {isGettingFeedback ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                          <Sparkles className="mr-2 h-4 w-4" />
+                      )}
+                      Get Feedback
+                  </Button>
+                </div>
             </div>
         </div>
     );
@@ -148,14 +142,12 @@ export default function WritingPage() {
     <>
       <AppHeader showBackButton={true} />
       <main className="container mx-auto pt-24 flex flex-col items-center gap-8 px-4 pb-10">
-        <div className="text-center">
-            <div className="flex justify-center">
-                <Logo />
-            </div>
-            <p className="text-muted-foreground max-w-2xl mt-2">
-                Use the selected words to practice your writing skills. When you've used all the words, you can get AI feedback.
-            </p>
+         <div className="flex justify-center">
+            <Logo />
         </div>
+        <p className="text-muted-foreground max-w-2xl text-center">
+            Use the selected words to practice your writing skills. When you've used all the words, you can get AI feedback.
+        </p>
         <WatchPageProvider>
             <WritingWorkspace />
         </WatchPageProvider>
