@@ -26,7 +26,7 @@ import {
 } from '@/firebase/non-blocking-login';
 import { useFirebase } from '@/firebase';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2, Mail, KeyRound, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -50,11 +50,17 @@ function GoogleIcon() {
 
 
 export default function LoginPage() {
-  const { auth } = useFirebase();
+  const { auth, user, isUserLoading } = useFirebase();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      router.replace('/');
+    }
+  }, [user, isUserLoading, router]);
 
   const form = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
@@ -97,6 +103,14 @@ export default function LoginPage() {
         setIsSubmitting(false);
     }
   };
+  
+    if (isUserLoading || user) {
+        return (
+            <div className="flex h-screen w-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-gray-50 p-4">
