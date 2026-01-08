@@ -7,11 +7,11 @@ import {
   signInWithPopup,
   UserCredential,
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, writeBatch } from 'firebase/firestore';
 
 
 /**
- * Ensures a user document exists in Firestore.
+ * Ensures a user document and their essential subcollections are created in Firestore.
  * This is a blocking operation to prevent race conditions on initial login/signup.
  * @param authInstance The Firebase Auth instance.
  * @param user The user object from the credential.
@@ -19,14 +19,23 @@ import { getFirestore, doc, setDoc } from 'firebase/firestore';
 async function ensureUserDocument(authInstance: Auth, user: UserCredential['user']) {
     if (user) {
         const firestore = getFirestore(authInstance.app);
+        const batch = writeBatch(firestore);
+
+        // 1. Reference to the main user document
         const userDocRef = doc(firestore, `users/${user.uid}`);
-        
-        // Use await to ensure this completes before proceeding.
-        // Use { merge: true } to safely create or update without overwriting existing data.
-        await setDoc(userDocRef, {
+        batch.set(userDocRef, {
             id: user.uid,
             email: user.email,
         }, { merge: true });
+
+        // 2. Proactively create a placeholder document in the 'videos' subcollection
+        // This ensures the subcollection exists and is readable immediately after signup,
+        // preventing "Missing or insufficient permissions" errors for new users.
+        const videosPlaceholderRef = doc(firestore, `users/${user.uid}/videos`, '_placeholder');
+        batch.set(videosPlaceholderRef, { initializedAt: Date.now() });
+        
+        // Commit the batch operation atomically
+        await batch.commit();
     }
 }
 

@@ -12,6 +12,7 @@ import { Button } from './ui/button';
 import { Trash2 } from 'lucide-react';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
 
 type HistoryItem = {
     id: string;
@@ -87,6 +88,12 @@ export function VideoHistory({ selectedVideoId, onVideoSelect }: VideoHistoryPro
     }, [user, firestore]);
 
     const { data: history, isLoading } = useCollection<HistoryItem>(historyQuery);
+    
+    // Filter out the placeholder document from the UI
+    const displayHistory = useMemo(() => {
+        return history?.filter(item => item.id !== '_placeholder') || [];
+    }, [history]);
+
 
     if (isLoading) {
         return (
@@ -104,7 +111,7 @@ export function VideoHistory({ selectedVideoId, onVideoSelect }: VideoHistoryPro
         );
     }
     
-    if (!history || history.length === 0) {
+    if (!displayHistory || displayHistory.length === 0) {
         return null; 
     }
 
@@ -112,7 +119,7 @@ export function VideoHistory({ selectedVideoId, onVideoSelect }: VideoHistoryPro
         <div className="w-full max-w-4xl pt-10 text-left">
              <h2 className="text-2xl font-bold font-headline mb-6">Your Recent Videos</h2>
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {history.map((item) => (
+                {displayHistory.map((item) => (
                     <HistoryCard 
                         key={item.id} 
                         item={item}
