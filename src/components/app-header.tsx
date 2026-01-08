@@ -59,12 +59,6 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
         </div>
         
         <nav className="flex items-center justify-end gap-2" style={{minWidth: '150px'}}>
-            <Button asChild variant="default">
-                <Link href="/flashcards">
-                    <Copy className="h-5 w-5" />
-                    <span className="hidden sm:inline">Flashcards</span>
-                </Link>
-            </Button>
              {user ? (
                 <Button variant="outline" size="icon" onClick={handleLogout} className="h-10 w-10">
                     <LogOut className="h-5 w-5" />
