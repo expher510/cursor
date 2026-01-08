@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
 const PUBLIC_PATHS = ['/login', '/signup'];
-const DEFAULT_AUTHENTICATED_ROUTE = '/home';
+const DEFAULT_AUTHENTICATED_ROUTE = '/';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { user, isUserLoading } = useFirebase();
@@ -28,19 +28,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       router.replace(DEFAULT_AUTHENTICATED_ROUTE);
     }
     
-    // If the user is logged in and tries to access the root, redirect to home
-    if (user && pathname === '/') {
-       router.replace(DEFAULT_AUTHENTICATED_ROUTE);
-    }
-
-
   }, [user, isUserLoading, pathname, router]);
 
   // Show a loader while determining auth state or if a redirect is imminent.
   const showLoader = isUserLoading || 
                      (!user && !PUBLIC_PATHS.includes(pathname)) || 
-                     (user && PUBLIC_PATHS.includes(pathname)) ||
-                     (pathname === '/');
+                     (user && PUBLIC_PATHS.includes(pathname));
 
 
   if (showLoader) {
