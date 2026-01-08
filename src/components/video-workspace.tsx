@@ -2,7 +2,7 @@
 
 import { Skeleton } from "./ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { AlertTriangle, BrainCircuit, Copy } from "lucide-react";
+import { AlertTriangle, BrainCircuit } from "lucide-react";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
 import Link from "next/link";
@@ -71,9 +71,9 @@ export function VideoWorkspace() {
   return (
     <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
       <div className="md:col-span-2 space-y-8">
-        <div className="space-y-2 text-center">
+        <div className="space-y-2 text-center md:text-left">
             <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Listening</h1>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-3xl">
                 Listen to the video and follow along with the synchronized transcript. Click any word to save it.
             </p>
         </div>
@@ -110,7 +110,7 @@ export function VideoWorkspace() {
       </div>
       
       <div className="h-full">
-        <VocabularyList isSheet={false} />
+        <VocabularyList />
       </div>
     </div>
   );
