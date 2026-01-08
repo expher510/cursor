@@ -85,7 +85,7 @@ export default function SignUpPage() {
       if (error.code === 'auth/email-already-in-use') {
         setAuthError('This email is already in use. Please log in or use a different email.');
       } else {
-        setAuthError('An unexpected error occurred during sign up. Please try again.');
+        setAuthError(error.message || 'An unexpected error occurred during sign up. Please try again.');
       }
       setIsSubmitting(false);
     }
