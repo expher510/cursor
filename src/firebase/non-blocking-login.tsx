@@ -6,38 +6,15 @@ import {
   signInWithEmailAndPassword,
 } from 'firebase/auth';
 
-/**
- * Attempts to sign in with fixed credentials. If the user doesn't exist, it creates it first.
- * This is a workaround for environments where new user sign-ups might be restricted.
- */
-export function initiateFixedUserSignIn(authInstance: Auth): void {
-  const email = 'user@example.com';
-  const password = 'password123';
-
-  signInWithEmailAndPassword(authInstance, email, password)
-    .catch((error) => {
-      // If the user does not exist, create them.
-      if (error.code === 'auth/user-not-found') {
-        console.log("Fixed user not found, attempting to create...");
-        createUserWithEmailAndPassword(authInstance, email, password)
-          .catch((creationError) => {
-             // If creation also fails, it's likely a configuration issue.
-             console.error("Failed to create the fixed user:", creationError);
-          });
-      } else if (error.code === 'auth/wrong-password') {
-          console.error("Warning: The password for the fixed user is incorrect. This may happen if the project was re-created.");
-      } else {
-        // Log other sign-in errors
-        console.error("Error signing in the fixed user:", error);
-      }
-    });
-}
-
-
 /** Initiate anonymous sign-in (non-blocking). */
 export function initiateAnonymousSignIn(authInstance: Auth): void {
   // CRITICAL: Call signInAnonymously directly. Do NOT use 'await signInAnonymously(...)'.
-  signInAnonymously(authInstance);
+  signInAnonymously(authInstance).catch((error) => {
+    // This is a common error when the Identity Toolkit API is not enabled.
+    // We log it here for debugging but the user will see a more prominent error
+    // from the AuthProvider or error boundary.
+    console.error("Anonymous sign-in failed:", error);
+  });
   // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 

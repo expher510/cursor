@@ -1,7 +1,7 @@
 'use client';
 
 import { useFirebase } from '@/firebase/provider';
-import { initiateFixedUserSignIn } from '@/firebase/non-blocking-login';
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 
@@ -10,8 +10,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!user && !isUserLoading && auth) {
-      // Use the new fixed user sign-in function to bypass signup restrictions
-      initiateFixedUserSignIn(auth);
+      // Use anonymous sign-in
+      initiateAnonymousSignIn(auth);
     }
   }, [user, isUserLoading, auth]);
 
