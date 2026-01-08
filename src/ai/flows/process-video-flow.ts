@@ -2,7 +2,7 @@
 'use server';
 /**
  * @fileOverview A flow for processing YouTube videos to extract transcripts and metadata.
- * It uses Piped API for metadata and youtube-transcript library for transcripts.
+ * It uses the youtube-transcript library for transcripts.
  *
  * - processVideo - A function that takes a YouTube video ID and returns its title, transcript, and other metadata.
  * - ProcessVideoInput - The input type for the processVideo function.
@@ -77,16 +77,9 @@ const processVideoFlow = ai.defineFlow(
     let transcript;
     try {
         transcript = await YoutubeTranscript.fetchTranscript(videoId);
-
-        // FOR DEBUGGING: Throw the raw response to show it in the UI
-        throw new Error("Transcript API Response: \n" + JSON.stringify(transcript, null, 2));
-
     } catch (e: any) {
          console.error("Failed to fetch transcript:", e.message);
          // Re-throw with a more user-friendly message
-         if (e.message.includes('Transcript API Response')) {
-             throw e; // Re-throw the debug error as is
-         }
          throw new Error("Could not retrieve transcript. The video may not have subtitles enabled.");
     }
     
