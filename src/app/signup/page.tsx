@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -51,7 +50,7 @@ function GoogleIcon() {
 }
 
 export default function SignUpPage() {
-  const { auth, user, isUserLoading } = useFirebase();
+  const { auth, firestore, user, isUserLoading } = useFirebase();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -72,11 +71,11 @@ export default function SignUpPage() {
   });
 
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
-    if (!auth) return;
+    if (!auth || !firestore) return;
     setIsSubmitting(true);
     setAuthError(null);
     try {
-      await initiateEmailSignUp(auth, data.email, data.password);
+      await initiateEmailSignUp(auth, firestore, data.email, data.password);
       // AuthProvider will handle redirection
     } catch (error: any) {
       console.error("Sign up error:", error);
@@ -90,11 +89,11 @@ export default function SignUpPage() {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!auth) return;
+    if (!auth || !firestore) return;
     setIsSubmitting(true);
     setAuthError(null);
      try {
-      await initiateGoogleSignIn(auth);
+      await initiateGoogleSignIn(auth, firestore);
       // AuthProvider will handle redirection
     } catch (error: any) {
         console.error("Google sign in error:", error);
