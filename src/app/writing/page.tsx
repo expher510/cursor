@@ -9,13 +9,11 @@ import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Loader2, Sparkles } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
 
 function WritingWorkspace() {
     const { videoData, vocabulary, isLoading: isContextLoading } = useWatchPage();
     const [wordCount, setWordCount] = useState(10);
-    const [wordSource, setWordSource] = useState<'vocabulary' | 'transcript'>('vocabulary');
     const [exerciseWords, setExerciseWords] = useState<string[]>([]);
     const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
     const [writingContent, setWritingContent] = useState("");
@@ -27,15 +25,22 @@ function WritingWorkspace() {
     }, [videoData]);
     
     const startExercise = () => {
-        let sourceWords: string[] = [];
-        if (wordSource === 'vocabulary' && vocabulary.length > 0) {
-            sourceWords = vocabulary.map(v => v.word);
-        } else {
-            sourceWords = Array.from(new Set(transcriptText));
+        const vocabWords = [...new Set(vocabulary.map(v => v.word))];
+        const shuffledVocab = vocabWords.sort(() => 0.5 - Math.random());
+        
+        let words = shuffledVocab.slice(0, wordCount);
+        
+        const wordsNeeded = wordCount - words.length;
+
+        if (wordsNeeded > 0) {
+            const vocabSet = new Set(words);
+            const transcriptWords = Array.from(new Set(transcriptText)).filter(w => !vocabSet.has(w));
+            const shuffledTranscript = transcriptWords.sort(() => 0.5 - Math.random());
+            
+            words = [...words, ...shuffledTranscript.slice(0, wordsNeeded)];
         }
 
-        const shuffled = sourceWords.sort(() => 0.5 - Math.random());
-        setExerciseWords(shuffled.slice(0, wordCount));
+        setExerciseWords(words.sort(() => 0.5 - Math.random()));
         setWritingContent("");
         setUsedWords(new Set());
         setIsStarted(true);
@@ -57,6 +62,7 @@ function WritingWorkspace() {
 
         const newUsedWords = new Set<string>();
         exerciseWords.forEach(word => {
+            // A simple includes check is sufficient here
             if (currentText.toLowerCase().includes(word.toLowerCase())) {
                 newUsedWords.add(word);
             }
@@ -80,7 +86,7 @@ function WritingWorkspace() {
             <Card className="w-full max-w-2xl">
                 <CardHeader>
                     <CardTitle>Configure Your Writing Exercise</CardTitle>
-                    <CardDescription>Choose your words and how many you want to practice with.</CardDescription>
+                    <CardDescription>Choose how many words to practice with. We'll use words from your vocabulary list first.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
                     <div className="space-y-4">
@@ -94,20 +100,6 @@ function WritingWorkspace() {
                             onValueChange={(value) => setWordCount(value[0])}
                         />
                     </div>
-                     <div className="space-y-3">
-                         <Label>Word Source</Label>
-                         <RadioGroup defaultValue="vocabulary" onValueChange={(value: 'vocabulary' | 'transcript') => setWordSource(value)}>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="vocabulary" id="r1" disabled={vocabulary.length === 0} />
-                                <Label htmlFor="r1">From My Vocabulary List</Label>
-                                {vocabulary.length === 0 && <span className="text-xs text-muted-foreground">(No words saved yet)</span>}
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <RadioGroupItem value="transcript" id="r2" />
-                                <Label htmlFor="r2">Random Words from Transcript</Label>
-                            </div>
-                        </RadioGroup>
-                     </div>
                     <Button onClick={startExercise} className="w-full">Start Exercise</Button>
                 </CardContent>
             </Card>
