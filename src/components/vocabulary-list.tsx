@@ -12,10 +12,46 @@ import {
 } from "@/components/ui/tooltip";
 import Link from "next/link";
 import { ScrollArea, ScrollBar } from "./ui/scroll-area";
+import React, { useRef, useState } from "react";
 
 
 export function VocabularyList() {
   const { vocabulary, removeVocabularyItem, isLoading } = useWatchPage();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [startX, setStartX] = useState(0);
+  const [scrollLeft, setScrollLeft] = useState(0);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (scrollRef.current) {
+      setIsDragging(true);
+      setStartX(e.pageX - scrollRef.current.offsetLeft);
+      setScrollLeft(scrollRef.current.scrollLeft);
+      scrollRef.current.style.cursor = 'grabbing';
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (isDragging && scrollRef.current) {
+      setIsDragging(false);
+      scrollRef.current.style.cursor = 'grab';
+    }
+  };
+
+  const handleMouseUp = () => {
+    if (isDragging && scrollRef.current) {
+      setIsDragging(false);
+      scrollRef.current.style.cursor = 'grab';
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX) * 2; // the *2 makes the scroll faster
+    scrollRef.current.scrollLeft = scrollLeft - walk;
+  };
   
   return (
     <div className="flex h-full rounded-lg border bg-card text-card-foreground shadow-sm flex-1 p-4">
@@ -34,15 +70,23 @@ export function VocabularyList() {
                   </p>
               </div>
             ) : (
-              <ScrollArea className="w-full whitespace-nowrap">
+              <div 
+                className="w-full overflow-x-auto cursor-grab"
+                ref={scrollRef}
+                onMouseDown={handleMouseDown}
+                onMouseLeave={handleMouseLeave}
+                onMouseUp={handleMouseUp}
+                onMouseMove={handleMouseMove}
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
                 <TooltipProvider>
-                  <div className="flex w-max space-x-3 pb-2">
+                  <div className="flex w-max space-x-3 pb-2 select-none">
                     {vocabulary.map((item) => (
                       <div 
                         key={item.id} 
                         className="group relative flex items-center gap-2 rounded-full border border-primary bg-secondary/50 pr-2 pl-4 py-1 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-secondary"
                       >
-                        <div className="flex flex-col text-left">
+                        <div className="flex flex-col text-left pointer-events-none">
                           <span className="capitalize">{item.word}</span>
                           <span className="text-xs text-muted-foreground font-normal">{item.translation}</span>
                         </div>
@@ -65,8 +109,7 @@ export function VocabularyList() {
                     ))}
                   </div>
                 </TooltipProvider>
-                <ScrollBar orientation="horizontal" />
-              </ScrollArea>
+              </div>
             )}
           </div>
            {vocabulary && vocabulary.length > 0 && (
