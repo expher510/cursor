@@ -1,3 +1,4 @@
+
 'use client';
 import { useState } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
@@ -51,7 +52,7 @@ function ActivityButtons({ videoIdToUse, isProcessing, onActivitySelect }: { vid
         <Button size="lg" asChild>
             <Link href="/flashcards">
                 <Copy className="mr-2" />
-                My Flashcards
+                My Cards
             </Link>
         </Button>
       </div>

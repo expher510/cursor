@@ -110,7 +110,7 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
                   <Button asChild variant="outline" className="border-primary/80 hover:bg-primary/10 text-primary">
                       <Link href="/flashcards">
                           <Copy className="h-5 w-5" />
-                          <span className="hidden sm:inline">Flashcards</span>
+                          <span className="hidden sm:inline">Cards</span>
                       </Link>
                   </Button>
              )}

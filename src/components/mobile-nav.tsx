@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -65,7 +66,7 @@ export function MobileNav({ setOpen }: { setOpen: (open: boolean) => void }) {
         </MobileLink>
         <MobileLink href="/flashcards" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
           <Copy className="w-5 h-5" />
-          <span>Flashcards</span>
+          <span>Cards</span>
         </MobileLink>
          {user ? (
             <button onClick={handleLogout} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted w-full text-left">
