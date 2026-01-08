@@ -101,7 +101,6 @@ function WritingWorkspace() {
     return (
         <div className="w-full max-w-4xl space-y-6">
             <div className="min-h-[6rem]">
-                <p className="text-sm text-muted-foreground mb-4">Click a word bubble to use it in your text. It will disappear from the list once used.</p>
                 <div className="flex flex-wrap gap-3 justify-center">
                     {availableWords.map(word => (
                          <Badge 
