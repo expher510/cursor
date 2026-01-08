@@ -2,9 +2,9 @@
 'use server';
 /**
  * @fileOverview A flow for processing YouTube videos to extract transcripts and metadata.
- * It uses the youtube-transcript library for transcripts.
+ * It uses the youtube-caption-extractor library for transcripts and details.
  *
- * - processVideo - A function that takes a YouTube video ID and returns its title, transcript, and other metadata.
+ * - processVideo - A function that takes a YouTube video ID and returns its title, description, transcript, and stats.
  * - ProcessVideoInput - The input type for the processVideo function.
  * - ProcessVideoOutput - The return type for the processVideo function.
  */
@@ -12,8 +12,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import 'dotenv/config';
-import { YoutubeTranscript } from 'youtube-transcript';
-
+import { getVideoDetails, type Subtitle } from 'youtube-caption-extractor';
 
 // Schema Definitions
 
@@ -61,42 +60,31 @@ const processVideoFlow = ai.defineFlow(
   },
   async ({ videoId }) => {
     
-    // Step 1: Fetch the transcript using the youtube-transcript library
-    let transcript;
     try {
-        transcript = await YoutubeTranscript.fetchTranscript(videoId);
-    } catch (e: any) {
-         console.error("Failed to fetch transcript:", e.message);
-         // Re-throw with a more user-friendly message
-         throw new Error("Could not retrieve transcript. The video may not have subtitles enabled or is private.");
-    }
-    
-    if (!transcript || transcript.length === 0) {
-        throw new Error("The retrieved transcript was empty. It might be in an unsupported format or disabled for this video.");
-    }
-    
-    // Step 2: Try to fetch the title from the YouTube page (best-effort)
-    let title = 'YouTube Video';
-    try {
-        const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
-        if (response.ok) {
-            const html = await response.text();
-            const match = html.match(/<title>(.*?)<\/title>/);
-            if (match && match[1]) {
-                title = match[1].replace(' - YouTube', '').trim();
-            }
+        const details = await getVideoDetails({ videoID: videoId, lang: 'en' });
+
+        if (!details.subtitles || details.subtitles.length === 0) {
+            throw new Error("No transcript found for this video. It might not have captions enabled.");
         }
-    } catch(e) {
-        console.warn("Could not fetch video title automatically. Using a default title.");
+
+        // Transform subtitles to the format our app expects
+        const formattedTranscript: TranscriptItem[] = details.subtitles.map((sub: Subtitle) => ({
+            text: sub.text,
+            offset: parseFloat(sub.start) * 1000,
+            duration: parseFloat(sub.dur) * 1000,
+        }));
+        
+        return {
+            title: details.title,
+            description: details.description,
+            transcript: formattedTranscript,
+            stats: null, // The new library doesn't provide stats like views/likes.
+        };
+
+    } catch (e: any) {
+         console.error("Failed to fetch video details or transcript:", e.message);
+         // Re-throw with a more user-friendly message
+         throw new Error(`Could not process video. Please check the video ID and try again. Original error: ${e.message}`);
     }
-
-
-    // Step 3: Format the data and return
-    return {
-      title: title,
-      description: "", // Description is not available through this method
-      transcript: transcript,
-      stats: null, // Stats are not available
-    };
   }
 );
