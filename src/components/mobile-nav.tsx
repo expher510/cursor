@@ -67,10 +67,6 @@ export function MobileNav({ setOpen }: { setOpen: (open: boolean) => void }) {
           <Copy className="w-5 h-5" />
           <span>Flashcards</span>
         </MobileLink>
-         <MobileLink href="/sync-users" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted text-destructive">
-          <UserCheck className="w-5 h-5" />
-          <span>Sync Account</span>
-        </MobileLink>
          {user ? (
             <button onClick={handleLogout} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted w-full text-left">
               <LogOut className="w-5 h-5" />
