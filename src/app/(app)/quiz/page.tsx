@@ -1,298 +1,259 @@
-
-
 'use client';
 import { Suspense, useEffect, useState, useMemo, useCallback } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { AppHeader } from "@/components/app-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
+import { Loader2, AlertTriangle, RefreshCw, Wand2, Shuffle } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { useFirebase } from '@/firebase';
-import { doc, getDoc, setDoc, updateDoc, collection, DocumentReference } from 'firebase/firestore';
-import { generateQuiz } from '@/ai/flows/quiz-flow';
-import { type QuizOutput } from '@/ai/schemas/quiz-schema';
+import { doc, getDoc, collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
+import { Input } from '@/components/ui/input';
 
-type AnswerState = {
-    selectedAnswer: string | null;
-    isCorrect: boolean | null;
+type VocabularyItem = {
+  id: string;
+  word: string;
+  translation: string;
 };
 
-type QuizDoc = QuizOutput & { id: string; score?: number; userAnswers?: string[] };
+type WordBankItem = {
+  word: string;
+  used: boolean;
+};
 
-function QuizView({ quizDoc, videoTitle, onQuizFinish }: { quizDoc: QuizDoc, videoTitle: string, onQuizFinish: (score: number, answers: AnswerState[]) => void }) {
-    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [answers, setAnswers] = useState<AnswerState[]>(Array(quizDoc.questions.length).fill({ selectedAnswer: null, isCorrect: null }));
-    const [isFinished, setIsFinished] = useState(false);
+function WritingExerciseView({ initialWords }: { initialWords: string[] }) {
+    const [wordBank, setWordBank] = useState<WordBankItem[]>([]);
+    const [text, setText] = useState('');
+    const router = useRouter();
 
-    const questions = quizDoc.questions;
-    const currentQuestion = questions[currentQuestionIndex];
-    const currentAnswer = answers[currentQuestionIndex];
+    useEffect(() => {
+        setWordBank(initialWords.map(word => ({ word, used: false })));
+    }, [initialWords]);
 
-    const handleAnswerSelect = (answer: string) => {
-        if (currentAnswer.selectedAnswer) return; // Already answered
-
-        const isCorrect = answer === currentQuestion.correctAnswer;
-        const newAnswers = [...answers];
-        newAnswers[currentQuestionIndex] = { selectedAnswer: answer, isCorrect };
-        setAnswers(newAnswers);
-    };
-
-    const handleNext = () => {
-        if (currentQuestionIndex < questions.length - 1) {
-            setCurrentQuestionIndex(currentQuestionIndex + 1);
-        } else {
-            setIsFinished(true);
-        }
+    const handleWordClick = (word: string) => {
+        setText(prev => prev ? `${prev} ${word}` : word);
+        setWordBank(prev => prev.map(item => item.word === word ? { ...item, used: true } : item));
     };
     
-    // Call onQuizFinish when the last question is answered
-    useEffect(() => {
-        const lastAnswer = answers[questions.length - 1];
-        if (lastAnswer.selectedAnswer !== null) {
-             const finalScore = answers.filter(a => a.isCorrect).length;
-             onQuizFinish(finalScore, answers);
-             if (currentQuestionIndex === questions.length - 1) {
-                setIsFinished(true);
-            }
-        }
-    }, [answers, questions.length, onQuizFinish, currentQuestionIndex]);
+    const handleReset = () => {
+        setText('');
+        setWordBank(prev => prev.map(item => ({ ...item, used: false })));
+    };
 
+    const handleConfirm = () => {
+        // For now, just navigates home as requested.
+        router.push('/');
+    };
 
-    const score = useMemo(() => answers.filter(a => a.isCorrect).length, [answers]);
-
-    const restartQuiz = () => {
-        setCurrentQuestionIndex(0);
-        setAnswers(Array(quizDoc.questions.length).fill({ selectedAnswer: null, isCorrect: null }));
-        setIsFinished(false);
-    }
-    
-    // Load previous answers if they exist
-    useEffect(() => {
-        if (quizDoc.userAnswers && quizDoc.userAnswers.length === questions.length) {
-            const loadedAnswers = quizDoc.userAnswers.map((userAnswer, index) => {
-                const question = questions[index];
-                if (!userAnswer) return { selectedAnswer: null, isCorrect: null };
-                
-                const isCorrect = userAnswer === question.correctAnswer;
-                return { selectedAnswer: userAnswer, isCorrect: isCorrect };
-            });
-            setAnswers(loadedAnswers);
-            
-            // If all questions were answered, mark as finished
-            if(loadedAnswers.every(a => a.selectedAnswer !== null)) {
-                setIsFinished(true);
-            }
-        }
-    }, [quizDoc, questions]);
-
-
-    if (isFinished) {
-        return (
-            <Card className="w-full max-w-2xl text-center">
-                <CardHeader>
-                    <CardTitle>Exercise Complete!</CardTitle>
-                    <CardDescription>You've finished the exercise for "{videoTitle}".</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="text-4xl font-bold">
-                        Your Score: {score} / {questions.length}
-                    </div>
-                    <div className="flex gap-4 justify-center">
-                        <Button onClick={restartQuiz}><RefreshCw className="mr-2" /> Try Again</Button>
-                        <Button asChild variant="outline">
-                            <Link href="/">Back to Home</Link>
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-        )
-    }
+    const allWordsUsed = useMemo(() => wordBank.every(item => item.used), [wordBank]);
 
     return (
-        <Card className="w-full max-w-2xl">
+        <Card className="w-full max-w-3xl">
             <CardHeader>
-                <CardTitle>Writing Exercise</CardTitle>
-                <CardDescription>Question {currentQuestionIndex + 1} of {questions.length}</CardDescription>
+                <CardTitle>Free Writing Practice</CardTitle>
+                <CardDescription>Use the words below to write a story, a sentence, or anything you like. Click a word to use it.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <p className="text-lg font-semibold">{currentQuestion.questionText}</p>
-                <RadioGroup
-                    value={currentAnswer.selectedAnswer ?? ''}
-                    onValueChange={handleAnswerSelect}
-                    disabled={!!currentAnswer.selectedAnswer}
-                >
-                    {currentQuestion.options.map((option, index) => {
-                        const isSelected = currentAnswer.selectedAnswer === option;
-                        const isCorrect = currentQuestion.correctAnswer === option;
-                        return (
-                            <Label
-                                key={index}
-                                className={cn(
-                                    "flex items-center gap-4 rounded-lg border p-4 cursor-pointer transition-colors",
-                                    currentAnswer.selectedAnswer && isCorrect && "border-green-500 bg-green-500/10",
-                                    currentAnswer.selectedAnswer && isSelected && !isCorrect && "border-red-500 bg-red-500/10",
-                                    !currentAnswer.selectedAnswer && "hover:bg-muted"
-                                )}
-                            >
-                                <RadioGroupItem value={option} />
-                                <span>{option}</span>
-                                {currentAnswer.selectedAnswer && isCorrect && <CheckCircle className="ml-auto text-green-500" />}
-                                {currentAnswer.selectedAnswer && isSelected && !isCorrect && <XCircle className="ml-auto text-red-500" />}
-                            </Label>
-                        );
-                    })}
-                </RadioGroup>
+                {/* Word Bank */}
+                <div className="p-4 rounded-lg border bg-muted min-h-[80px]">
+                    {wordBank.length > 0 ? (
+                        <div className="flex flex-wrap gap-3">
+                            {wordBank.map((item, index) => (
+                                !item.used && (
+                                    <Button
+                                        key={index}
+                                        variant="secondary"
+                                        onClick={() => handleWordClick(item.word)}
+                                        className="capitalize shadow-sm"
+                                    >
+                                        {item.word}
+                                    </Button>
+                                )
+                            ))}
+                            {allWordsUsed && (
+                                <p className="text-sm text-muted-foreground">Great job! You've used all the words.</p>
+                            )}
+                        </div>
+                    ) : (
+                         <p className="text-sm text-muted-foreground text-center">No words to practice. Try adding some from a video!</p>
+                    )}
+                </div>
+                
+                {/* Text Area */}
+                <Textarea 
+                    placeholder="Start writing here..."
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
+                    rows={8}
+                    className="text-base"
+                />
 
-                {currentAnswer.selectedAnswer && (
-                    <div className="flex justify-end">
-                        <Button onClick={handleNext}>
-                            {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Finish Exercise'}
-                        </Button>
-                    </div>
-                )}
+                {/* Actions */}
+                <div className="flex justify-between items-center gap-4">
+                     <Button variant="ghost" onClick={handleReset}><RefreshCw className="mr-2 h-4 w-4" /> Reset</Button>
+                    <Button onClick={handleConfirm} disabled={!allWordsUsed}>
+                        Confirm
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     );
 }
 
 
-function QuizGenerator() {
+function WritingExerciseGenerator() {
     const searchParams = useSearchParams();
     const videoId = searchParams.get('v');
     const { firestore, user } = useFirebase();
 
-    const [quizDoc, setQuizDoc] = useState<QuizDoc | null>(null);
-    const [videoTitle, setVideoTitle] = useState<string>('');
+    const [words, setWords] = useState<string[]>([]);
+    const [numWords, setNumWords] = useState(5);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [quizDocRef, setQuizDocRef] = useState<DocumentReference | null>(null);
 
-    useEffect(() => {
-        if (!videoId || !user || !firestore) {
-            setError("Missing video ID, user, or Firebase instance.");
-            setIsLoading(false);
-            return;
+    const fetchWords = useCallback(async (count: number) => {
+        if (!user || !firestore) {
+            setError("You must be logged in to start an exercise.");
+            return [];
+        }
+        
+        let fetchedWords: string[] = [];
+
+        // 1. Try to get words from the current video's vocab
+        if (videoId) {
+            const vocabColRef = collection(firestore, `users/${user.uid}/videos/${videoId}/quizzes`); // Incorrect path, should be vocabularies
+            // Corrected path, but vocabulary is not tied to video in the same way anymore, it's global
+            const vocabColRefGlobal = collection(firestore, `users/${user.uid}/vocabularies`);
+            const vocabSnapshot = await getDocs(query(vocabColRefGlobal));
+            fetchedWords = vocabSnapshot.docs.map(d => d.data().word);
         }
 
-        async function getOrCreateQuiz() {
-            try {
-                // 1. Check for existing quiz with predictable ID
-                const predictableQuizDocRef = doc(firestore, `users/${user!.uid}/videos/${videoId}/quizzes`, videoId);
-                setQuizDocRef(predictableQuizDocRef);
-                const quizSnap = await getDoc(predictableQuizDocRef);
+        // 2. If not enough words, get from global vocabulary
+        if (fetchedWords.length < count) {
+            const vocabColRefGlobal = collection(firestore, `users/${user.uid}/vocabularies`);
+            const vocabSnapshot = await getDocs(query(vocabColRefGlobal, limit(50)));
+            const globalWords = vocabSnapshot.docs.map(d => d.data().word);
+            fetchedWords = [...new Set([...fetchedWords, ...globalWords])];
+        }
 
-
-                if (quizSnap.exists()) {
-                    console.log("Found existing quiz in Firestore.");
-                    setQuizDoc({ id: quizSnap.id, ...quizSnap.data() } as QuizDoc);
-                } else {
-                    console.log("No existing quiz. Generating a new one.");
-                    // 2. Fetch transcript
-                    const transcriptRef = doc(firestore, `users/${user!.uid}/videos/${videoId}/transcripts`, videoId);
+        // 3. If still not enough, get from random video transcript
+        if (fetchedWords.length < count) {
+             const videosQuery = query(collection(firestore, `users/${user.uid}/videos`), limit(10));
+             const videosSnapshot = await getDocs(videosQuery);
+             if (!videosSnapshot.empty) {
+                const randomVideo = videosSnapshot.docs[Math.floor(Math.random() * videosSnapshot.docs.length)];
+                if (randomVideo.id !== '_placeholder') {
+                    const transcriptRef = doc(firestore, `users/${user.uid}/videos/${randomVideo.id}/transcripts`, randomVideo.id);
                     const transcriptSnap = await getDoc(transcriptRef);
-                    if (!transcriptSnap.exists()) throw new Error("Transcript not found for this video. Please process the video first.");
-                    
-                    const transcriptContent = transcriptSnap.data().content.map((t: any) => t.text).join(' ');
-
-                    // 3. Generate quiz
-                    const newQuiz = await generateQuiz({ transcript: transcriptContent });
-
-                     if (!newQuiz || !newQuiz.questions || newQuiz.questions.length === 0) {
-                        throw new Error("The AI model failed to generate valid quiz questions.");
+                    if (transcriptSnap.exists()) {
+                        const transcriptText = transcriptSnap.data().content.map((t: any) => t.text).join(' ');
+                        const transcriptWords = transcriptText.split(/\s+/).filter(w => w.length > 3);
+                        fetchedWords = [...new Set([...fetchedWords, ...transcriptWords])];
                     }
-
-                    // 4. Save to Firestore with predictable ID
-                    const newQuizData = { ...newQuiz, id: videoId, videoId, userId: user.uid };
-                    await setDoc(predictableQuizDocRef, newQuizData, {});
-                    setQuizDoc(newQuizData as QuizDoc);
                 }
-
-                // Fetch video title for display
-                 const videoDocRef = doc(firestore, `users/${user!.uid}/videos/${videoId}`);
-                 const videoDocSnap = await getDoc(videoDocRef);
-                 if (videoDocSnap.exists()) {
-                     setVideoTitle(videoDocSnap.data().title || 'Video');
-                 }
-
-            } catch (e: any) {
-                console.error("Failed to get or create quiz:", e);
-                setError(e.message || "An unknown error occurred while generating the quiz.");
-            } finally {
-                setIsLoading(false);
-            }
+             }
         }
 
-        getOrCreateQuiz();
+        // 4. Shuffle and slice
+        return fetchedWords.sort(() => 0.5 - Math.random()).slice(0, count);
 
     }, [videoId, user, firestore]);
+    
+    
+    const handleStartExercise = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const fetchedWords = await fetchWords(numWords);
+            if (fetchedWords.length === 0) {
+                 setError("Could not find any words to practice. Try watching a video and saving some vocabulary first.");
+            }
+            setWords(fetchedWords);
+        } catch(e: any) {
+            console.error("Error fetching words:", e);
+            setError(e.message || "An unexpected error occurred while preparing your exercise.");
+        } finally {
+            setIsLoading(false);
+        }
+    }, [fetchWords, numWords]);
 
-    const handleQuizFinish = useCallback(async (score: number, answers: AnswerState[]) => {
-        if (!quizDocRef) return;
-
-        const userAnswers = answers.map(a => a.selectedAnswer || "");
-        console.log("Saving score to Firestore:", { score, userAnswers });
-
-        await updateDoc(quizDocRef, {
-            score: score,
-            userAnswers: userAnswers,
-        });
-    }, [quizDocRef]);
 
     if (isLoading) {
         return (
-            <Card className="w-full max-w-2xl">
-                <CardHeader>
-                    <CardTitle>Preparing Writing Exercise...</CardTitle>
-                    <CardDescription>Please wait while we prepare your questions.</CardDescription>
+            <Card className="w-full max-w-md text-center">
+                 <CardHeader>
+                    <CardTitle>Prepare Your Exercise</CardTitle>
+                    <CardDescription>Getting things ready...</CardDescription>
                 </CardHeader>
-                <CardContent className="flex justify-center items-center h-40">
-                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <CardContent className="flex justify-center items-center h-24">
+                     <Loader2 className="h-10 w-10 animate-spin text-primary" />
                 </CardContent>
             </Card>
         );
     }
     
-    if (error) {
+     if (error) {
         return (
-            <Card className="w-full max-w-2xl border-destructive bg-destructive/10">
+            <Card className="w-full max-w-xl border-destructive bg-destructive/10">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-destructive"><AlertTriangle/> Error</CardTitle>
                     <CardDescription className="text-destructive/80">{error}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p>Could not load or generate the exercise. This might happen if the video transcript is too short or if there was an issue with the AI service. Please try a different video.</p>
-                </CardContent>
-            </Card>
-        )
-    }
-    
-    if (!quizDoc || !quizDoc.questions || quizDoc.questions.length === 0) {
-        return (
-             <Card className="w-full max-w-2xl">
-                <CardHeader>
-                    <CardTitle>No Exercise Available</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p>We couldn't generate an exercise for this video, it's possible the transcript was too short.</p>
+                    <p>We couldn't prepare the writing exercise. Please check your connection or try again later.</p>
                 </CardContent>
             </Card>
         )
     }
 
-    return <QuizView quizDoc={quizDoc} videoTitle={videoTitle} onQuizFinish={handleQuizFinish} />;
+    if (words.length > 0) {
+        return <WritingExerciseView initialWords={words} />;
+    }
+
+    return (
+        <Card className="w-full max-w-md">
+            <CardHeader>
+                <CardTitle>Setup Writing Practice</CardTitle>
+                <CardDescription>Choose how many words you want to practice with.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="flex items-center gap-4">
+                    <label htmlFor="num-words" className="font-medium">Number of words:</label>
+                    <Input 
+                        id="num-words"
+                        type="number"
+                        value={numWords}
+                        onChange={(e) => setNumWords(Math.max(1, Math.min(20, parseInt(e.target.value) || 1)))}
+                        className="w-24"
+                    />
+                    <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => setNumWords(Math.floor(Math.random() * 10) + 3)}
+                    >
+                        <Shuffle className="h-5 w-5" />
+                        <span className="sr-only">Randomize</span>
+                    </Button>
+                </div>
+                 <Button onClick={handleStartExercise} className="w-full" size="lg">
+                    <Wand2 className="mr-2" />
+                    Generate Exercise
+                </Button>
+            </CardContent>
+        </Card>
+    );
 }
 
-
-export default function QuizPage() {
+// Main Page Component
+export default function WritingExercisePage() {
   return (
     <>
       <AppHeader showBackButton={true} />
       <main className="container mx-auto pt-24 flex flex-col items-center gap-8 px-4 pb-10">
-        <QuizGenerator />
+        <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin" />}>
+            <WritingExerciseGenerator />
+        </Suspense>
       </main>
     </>
   );
