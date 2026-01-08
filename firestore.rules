@@ -170,14 +170,16 @@ service cloud.firestore {
       }
       
       /**
-       * @description Controls access to a user's writing exercise attempts.
-       * @path /users/{userId}/writingAttempts/{attemptId}
-       * @allow A signed-in user can manage their own writing exercise attempts.
+       * @description Controls access to a user's speaking exercise attempts.
+       * @path /users/{userId}/speakingAttempts/{attemptId}
+       * @allow A signed-in user can manage their own speaking exercise attempts.
        * @principle Enforces path-based ownership for all user attempts.
        */
-      match /writingAttempts/{attemptId} {
+      match /speakingAttempts/{attemptId} {
         allow get, list, create, update, delete: if isOwner(userId);
       }
     }
   }
 }
+
+    

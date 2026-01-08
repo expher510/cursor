@@ -172,35 +172,35 @@
       },
       "required": ["id", "videoId", "userId", "questions"]
     },
-    "WritingExerciseAttempt": {
+    "SpeakingExerciseAttempt": {
       "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Writing Exercise Attempt",
-      "description": "Represents a user's attempt at a writing exercise.",
+      "title": "Speaking Exercise Attempt",
+      "description": "Represents a user's attempt at a speaking exercise.",
       "type": "object",
       "properties": {
         "id": {
           "type": "string",
-          "description": "Unique identifier for the writing exercise attempt."
+          "description": "Unique identifier for the speaking exercise attempt."
         },
         "userId": {
           "type": "string",
           "description": "The ID of the user who took the exercise."
         },
-        "score": {
-          "type": "number",
-          "description": "The user's score for this attempt (e.g., percentage)."
+         "videoId": {
+          "type": "string",
+          "description": "The ID of the video associated with this attempt."
         },
-        "wordsUsed": {
-          "type": "array",
-          "description": "A list of the vocabulary words used in this exercise.",
-          "items": { "type": "string" }
+        "audioUrl": {
+          "type": "string",
+          "description": "The Data URI of the recorded audio.",
+          "format": "uri"
         },
         "timestamp": {
           "type": "number",
           "description": "The timestamp when the exercise was completed."
         }
       },
-      "required": ["id", "userId", "score", "wordsUsed", "timestamp"]
+      "required": ["id", "userId", "videoId", "audioUrl", "timestamp"]
     }
   },
   "auth": {
@@ -315,14 +315,14 @@
           ]
         }
       },
-      {
-        "path": "/users/{userId}/writingAttempts/{attemptId}",
+       {
+        "path": "/users/{userId}/speakingAttempts/{attemptId}",
         "definition": {
-          "entityName": "WritingExerciseAttempt",
+          "entityName": "SpeakingExerciseAttempt",
           "schema": {
-            "$ref": "#/entities/WritingExerciseAttempt"
+            "$ref": "#/entities/SpeakingExerciseAttempt"
           },
-          "description": "Stores a user's writing exercise attempts. Path-based ownership ensures data isolation.",
+          "description": "Stores a user's speaking exercise attempts. Path-based ownership ensures data isolation.",
           "params": [
             {
               "name": "userId",
@@ -339,3 +339,5 @@
     "reasoning": "The Firestore structure is designed to ensure data isolation and facilitate secure access based on user ownership. Each user has their own collection of videos, transcripts, quizzes, and vocabularies, eliminating the need for complex authorization rules. This structure adheres to the principles of Authorization Independence and Structural Segregation. Specifically:\n\n1.  **Authorization Independence:** The design focuses on path-based ownership for all user-related data (videos, transcripts, quizzes, vocabularies). This eliminates the need for `get()` calls in security rules because access control is directly tied to the path. This allows atomic operations and simplifies debugging.\n\n2.  **Structural Segregation:**  Each user's data is stored under their own document ID (`/users/{userId}`).  This ensures that all documents within a given collection share the same security requirements.  This simplifies security rules because they can be applied to entire collections rather than requiring filtering based on document content.\n\n3.  **QAPs (Rules are not Filters):** The structure supports secure `list` operations because each user's resources are isolated within their own path. A user can list their videos, transcripts, and vocabularies without exposing data from other users.\n\n4.  **Access Modeling:** All data is modeled using Path-Based ownership, which directly represents the `User 1:N Entity` relationships.\n\nThis design prioritizes clarity, security, and scalability by leveraging Firestore's hierarchical data model and enforcing strict ownership."
   }
 }
+
+    

@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, Square } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -11,14 +11,53 @@ import { Logo } from "@/components/logo";
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { useFirebase } from "@/firebase";
+import { doc, getDoc, addDoc, collection } from "firebase/firestore";
+import { Loader2 } from "lucide-react";
 
 
-function SpeakingTestFeedback({ audioUrl, onRetry }: { audioUrl: string, onRetry: () => void }) {
+function SpeakingTestFeedback({ attemptId, onRetry }: { attemptId: string; onRetry: () => void }) {
+    const { firestore, user } = useFirebase();
+    const [attemptData, setAttemptData] = useState<{ audioUrl: string } | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        if (!firestore || !user || !attemptId) return;
+        const fetchAttempt = async () => {
+            setIsLoading(true);
+            const docRef = doc(firestore, `users/${user.uid}/speakingAttempts`, attemptId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                setAttemptData(docSnap.data() as { audioUrl: string });
+            }
+            setIsLoading(false);
+        };
+        fetchAttempt();
+    }, [firestore, user, attemptId]);
+
     const feedback = {
         score: 85,
         strengths: "Good pace and clear articulation on most words.",
         areasForImprovement: "Slight hesitation on complex words like 'inventions'. Try to maintain a consistent flow.",
     };
+
+    if (isLoading) {
+        return (
+             <Card className="w-full max-w-4xl mx-auto">
+                <CardHeader className="text-center">
+                    <CardTitle>Loading Your Results...</CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-center items-center h-48">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </CardContent>
+            </Card>
+        );
+    }
+
+    if (!attemptData) {
+        return <p>Could not load test results.</p>;
+    }
+
 
     return (
         <Card className="w-full max-w-4xl mx-auto">
@@ -32,7 +71,7 @@ function SpeakingTestFeedback({ audioUrl, onRetry }: { audioUrl: string, onRetry
                 </div>
                  <div className="text-center">
                     <p className="font-semibold">Your Recording:</p>
-                    <audio src={audioUrl} controls className="w-full max-w-sm mx-auto mt-2" />
+                    <audio src={attemptData.audioUrl} controls className="w-full max-w-sm mx-auto mt-2" />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
                     <div className="p-4 bg-green-100/50 rounded-lg">
@@ -55,7 +94,7 @@ function SpeakingTestFeedback({ audioUrl, onRetry }: { audioUrl: string, onRetry
     );
 }
 
-function SpeakingTestRecorder({ onTestComplete }: { onTestComplete: (audioUrl: string) => void }) {
+function SpeakingTestRecorder({ videoId, onTestComplete }: { videoId: string, onTestComplete: (attemptId: string) => void }) {
     const [isRecording, setIsRecording] = useState(false);
     const [isPreparing, setIsPreparing] = useState(false);
     const [timeLeft, setTimeLeft] = useState(30);
@@ -63,6 +102,7 @@ function SpeakingTestRecorder({ onTestComplete }: { onTestComplete: (audioUrl: s
     const audioChunksRef = useRef<Blob[]>([]);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const { toast } = useToast();
+    const { firestore, user } = useFirebase();
 
     useEffect(() => {
         if (isRecording && timeLeft > 0) {
@@ -78,6 +118,17 @@ function SpeakingTestRecorder({ onTestComplete }: { onTestComplete: (audioUrl: s
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isRecording, timeLeft]);
 
+    const blobToBase64 = (blob: Blob): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => {
+                resolve(reader.result as string);
+            };
+            reader.onerror = error => reject(error);
+        });
+    }
+
     const startRecording = async () => {
         setIsPreparing(true);
         try {
@@ -89,10 +140,21 @@ function SpeakingTestRecorder({ onTestComplete }: { onTestComplete: (audioUrl: s
                 audioChunksRef.current.push(event.data);
             };
 
-            recorder.onstop = () => {
+            recorder.onstop = async () => {
                 const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-                const audioUrl = URL.createObjectURL(audioBlob);
-                onTestComplete(audioUrl);
+                
+                if (firestore && user) {
+                    const audioDataUrl = await blobToBase64(audioBlob);
+                    const attemptCollectionRef = collection(firestore, `users/${user.uid}/speakingAttempts`);
+                    const docRef = await addDoc(attemptCollectionRef, {
+                        userId: user.uid,
+                        videoId: videoId,
+                        audioUrl: audioDataUrl,
+                        timestamp: Date.now(),
+                    });
+                    onTestComplete(docRef.id);
+                }
+                
                 audioChunksRef.current = [];
                 stream.getTracks().forEach(track => track.stop()); // Release microphone
             };
@@ -127,7 +189,7 @@ function SpeakingTestRecorder({ onTestComplete }: { onTestComplete: (audioUrl: s
             {!isRecording && !isPreparing && (
                 <Button size="lg" className="rounded-full" onClick={startRecording}>
                     <Mic className="mr-2 h-5 w-5" />
-                    Start Speaking Test
+                    Read Out Loud
                 </Button>
             )}
             
@@ -159,16 +221,16 @@ function SpeakingTestRecorder({ onTestComplete }: { onTestComplete: (audioUrl: s
 function ReadingPracticePage() {
     const { videoData, isLoading, error } = useWatchPage();
     const [testState, setTestState] = useState<'idle' | 'testing' | 'finished'>('idle');
-    const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+    const [lastAttemptId, setLastAttemptId] = useState<string | null>(null);
 
-    const handleTestComplete = (audioUrl: string) => {
-        setRecordedAudioUrl(audioUrl);
+    const handleTestComplete = (attemptId: string) => {
+        setLastAttemptId(attemptId);
         setTestState('finished');
     };
     
     const resetTest = () => {
         setTestState('idle');
-        setRecordedAudioUrl(null);
+        setLastAttemptId(null);
     }
 
 
@@ -192,7 +254,7 @@ function ReadingPracticePage() {
         )
     }
 
-    if (error || !videoData) {
+    if (error || !videoData || !videoData.videoId) {
         return (
             <Card className="max-w-md mx-auto text-center border-destructive bg-destructive/10">
               <CardHeader>
@@ -218,7 +280,7 @@ function ReadingPracticePage() {
         <div className="w-full max-w-4xl mx-auto space-y-6">
             
             {testState !== 'finished' && (
-                <div className="mb-4 text-center">
+                 <div className="mb-4 text-center">
                     <div className="flex justify-center">
                         <Logo />
                     </div>
@@ -237,7 +299,7 @@ function ReadingPracticePage() {
                     <div className="my-6 flex justify-center">
                        <Button size="lg" className="rounded-full" onClick={() => setTestState('testing')}>
                             <Mic className="mr-2 h-5 w-5" />
-                            Start Speaking Test
+                            Read Out Loud
                        </Button>
                     </div>
                     <VocabularyList layout="scroll" />
@@ -246,12 +308,12 @@ function ReadingPracticePage() {
 
             {testState === 'testing' && (
                  <div className="my-6">
-                    <SpeakingTestRecorder onTestComplete={handleTestComplete} />
+                    <SpeakingTestRecorder videoId={videoData.videoId} onTestComplete={handleTestComplete} />
                  </div>
             )}
 
-            {testState === 'finished' && recordedAudioUrl && (
-                <SpeakingTestFeedback audioUrl={recordedAudioUrl} onRetry={resetTest} />
+            {testState === 'finished' && lastAttemptId && (
+                <SpeakingTestFeedback attemptId={lastAttemptId} onRetry={resetTest} />
             )}
 
             
@@ -275,3 +337,5 @@ export default function ReadingPage() {
       </>
   );
 }
+
+    
