@@ -2,7 +2,7 @@
 
 import { Skeleton } from "./ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { AlertTriangle, Edit } from "lucide-react";
+import { AlertTriangle, Edit, Eye, EyeOff } from "lucide-react";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
 import Link from "next/link";
@@ -51,6 +51,7 @@ function ErrorState({ message }: { message: string }) {
 export function VideoWorkspace() {
   const { videoData, isLoading, error } = useWatchPage();
   const [currentTime, setCurrentTime] = useState(0);
+  const [showTranscript, setShowTranscript] = useState(true);
 
   if (isLoading) {
     return <LoadingState />;
@@ -97,12 +98,24 @@ export function VideoWorkspace() {
                 </div>
              </div>
 
-            <div className="w-full">
-                <CaptionView transcript={videoData.transcript} currentTime={currentTime} />
+            <div className="w-full relative">
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute top-2 right-2 z-10 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowTranscript(!showTranscript)}
+                >
+                    {showTranscript ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    <span className="sr-only">{showTranscript ? "Hide transcript" : "Show transcript"}</span>
+                </Button>
+                
+                {showTranscript && (
+                    <CaptionView transcript={videoData.transcript} currentTime={currentTime} />
+                )}
             </div>
             
             <div className="w-full">
-                 <VocabularyList layout="flex" />
+                 <VocabularyList layout="scroll" />
             </div>
         
             <div className="mt-4">
