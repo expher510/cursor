@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/mobile-nav";
-import { Menu, Copy, ArrowLeft, LogOut, LogIn } from "lucide-react";
+import { Menu, Copy, ArrowLeft, LogOut, LogIn, User } from "lucide-react";
 import Link from "next/link";
 import {
   Sheet,
@@ -11,6 +11,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFirebase } from "@/firebase";
@@ -26,6 +35,8 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
     }
   };
   
+  const userInitial = user?.displayName?.charAt(0) || user?.email?.charAt(0) || <User className="h-5 w-5" />;
+
   return (
     <header className="fixed top-0 z-50 w-full">
       <div className="container flex h-14 items-center">
@@ -67,10 +78,31 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
                           <span className="sr-only">Flashcards</span>
                       </Link>
                   </Button>
-                  <Button variant="outline" size="icon" onClick={handleLogout} className="h-10 w-10">
-                      <LogOut className="h-5 w-5" />
-                      <span className="sr-only">Logout</span>
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+                        <Avatar className="h-10 w-10">
+                          <AvatarImage src={user.photoURL || undefined} alt={user.displayName || "User"} />
+                          <AvatarFallback className="uppercase">{userInitial}</AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                      <DropdownMenuLabel className="font-normal">
+                        <div className="flex flex-col space-y-1">
+                          <p className="text-sm font-medium leading-none">{user.displayName}</p>
+                          <p className="text-xs leading-none text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </div>
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Log out</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </>
              ) : (
                 <Button asChild variant="default" className="gap-2">
