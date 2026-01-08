@@ -93,14 +93,10 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
             console.log("Video not in Firestore. Fetching from API.");
             const result = await processVideo({ videoId });
 
-            if (!result.title) {
-              console.warn("API did not return a title, using video ID as fallback.");
-            }
-
             // Save the new data to Firestore (non-blocking)
             setDocumentNonBlocking(videoDocRef, {
             id: videoId,
-            title: result.title || videoId,
+            title: result.title || 'YouTube Video',
             userId: user.uid,
             timestamp: Date.now(),
             }, { merge: true });

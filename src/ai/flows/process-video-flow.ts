@@ -43,7 +43,7 @@ const transcriptApiTool = ai.defineTool(
     description: 'Fetches the transcript for a given YouTube video using the Supadata API.',
     inputSchema: z.object({ videoId: z.string() }),
     outputSchema: z.object({
-      title: z.string(),
+      title: z.string().nullable(),
       transcript: z.array(z.object({
         text: z.string(),
         offset: z.number(),
@@ -82,7 +82,7 @@ const transcriptApiTool = ai.defineTool(
 
         const result = await response.json();
         
-        const title = result.title || "Untitled Video";
+        const title = result.title || null;
         const transcript = result.content || [];
 
         return { title, transcript };
@@ -105,7 +105,7 @@ const processVideoFlow = ai.defineFlow(
     const { title, transcript } = await transcriptApiTool(input);
 
     return {
-      title,
+      title: title || 'YouTube Video',
       transcript: transcript,
     };
   }
