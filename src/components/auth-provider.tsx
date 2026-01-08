@@ -1,3 +1,4 @@
+
 'use client';
 
 import { FirebaseContext } from '@/firebase/provider';
@@ -21,16 +22,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const { user, isUserLoading, firestore } = context;
+  const { user, isUserLoading, firestore, auth } = context;
 
   // Effect to sync user document to Firestore on auth state change
   useEffect(() => {
-    if (user && firestore) {
-      ensureUserDocument(firestore, user).catch(error => {
-        console.error("Failed to ensure user document on auth change:", error);
+    if (user && firestore && auth) {
+      ensureUserDocument(firestore, user, auth).catch(error => {
+        // The error is already logged and emitted by ensureUserDocument,
+        // so we just need to prevent unhandled promise rejection here.
+        console.error("AuthProvider: Failed to ensure user document on auth change. The error boundary should handle this.");
       });
     }
-  }, [user, firestore]);
+  }, [user, firestore, auth]);
 
 
   // Effect for handling redirection based on auth state

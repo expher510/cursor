@@ -1,3 +1,4 @@
+
 'use client';
 import {
   Auth,
@@ -8,7 +9,9 @@ import {
   User,
   UserCredential,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, Firestore, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, Firestore, writeBatch } from 'firebase/firestore';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
 
 
 /**
@@ -17,8 +20,9 @@ import { doc, setDoc, getDoc, Firestore, writeBatch } from 'firebase/firestore';
  * This is CRITICAL for new and existing users to avoid permission errors.
  * @param firestore The Firestore instance.
  * @param user The authenticated user object from Firebase Auth.
+ * @param auth The Firebase Auth instance.
  */
-export async function ensureUserDocument(firestore: Firestore, user: User) {
+export async function ensureUserDocument(firestore: Firestore, user: User, auth: Auth) {
     if (!user || !firestore) return;
 
     const userDocRef = doc(firestore, `users/${user.uid}`);
@@ -30,12 +34,10 @@ export async function ensureUserDocument(firestore: Firestore, user: User) {
             console.log(`User document for ${user.uid} does not exist. Creating...`);
             
             const batch = writeBatch(firestore);
+            const userData = { id: user.uid, email: user.email };
 
             // 1. Create the main user document
-            batch.set(userDocRef, {
-                id: user.uid,
-                email: user.email,
-            });
+            batch.set(userDocRef, userData);
 
             // 2. Create a placeholder document in the 'videos' subcollection
             // This is crucial to ensure the collection path exists for security rules.
@@ -45,13 +47,32 @@ export async function ensureUserDocument(firestore: Firestore, user: User) {
                 timestamp: Date.now()
             });
             
-            await batch.commit();
+            await batch.commit()
+              .catch((error) => {
+                // This catch block is specifically for the batch.commit() promise
+                console.error("Firestore batch commit failed:", error);
+                const contextualError = new FirestorePermissionError({
+                    operation: 'write',
+                    path: userDocRef.path, // Path of the primary document being created
+                    requestResourceData: userData
+                }, auth);
+                errorEmitter.emit('permission-error', contextualError);
+                // Re-throw to indicate failure to the caller
+                throw contextualError;
+            });
 
             console.log(`Successfully created document and videos subcollection for user ${user.uid}.`);
         }
-    } catch (error) {
+    } catch (error: any) {
+        // This will catch errors from getDoc and from the re-thrown batch commit error.
         console.error("Error in ensureUserDocument:", error);
-         // We re-throw the error to ensure the calling function is aware of the failure.
+
+        // Avoid re-throwing if it's already our custom error
+        if (error instanceof FirestorePermissionError) {
+          throw error;
+        }
+
+        // We re-throw the error to ensure the calling function is aware of the failure.
         throw error;
     }
 }
