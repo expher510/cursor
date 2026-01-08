@@ -9,7 +9,6 @@ import { Loader2, Sparkles } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
@@ -107,7 +106,9 @@ function WritingWorkspace() {
         if (editorRef.current) {
             editorRef.current.innerHTML = "";
         }
-        setAvailableWords(exerciseWords);
+        setIsStarted(false);
+        setAvailableWords([]);
+        setExerciseWords([]);
     }
 
     const getFeedback = async () => {
@@ -166,16 +167,15 @@ function WritingWorkspace() {
                 ref={editorRef}
                 contentEditable={true}
                 className={cn(
-                    'flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-lg ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+                    'flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-xl ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
                     'leading-relaxed'
                 )}
                 data-placeholder="Start writing or click a word bubble..."
              />
             
             <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setIsStarted(false)}>Back to Settings</Button>
+                <Button variant="outline" onClick={resetExercise}>Reset</Button>
                 <div>
-                  <Button variant="outline" onClick={resetExercise} className="mr-2">Reset</Button>
                   <Button onClick={getFeedback} disabled={isGettingFeedback || availableWords.length > 0}>
                       {isGettingFeedback ? (
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
