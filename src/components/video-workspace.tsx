@@ -14,39 +14,15 @@ import { VocabularyList } from "./vocabulary-list";
 
 function LoadingState() {
   return (
-     <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-        <div className="md:col-span-2 space-y-8">
-            <div className="space-y-2">
-                <Skeleton className="h-10 w-3/4" />
-                <Skeleton className="h-6 w-full max-w-2xl" />
-            </div>
-            <Card>
-                <CardContent className="p-4 md:p-6">
-                <div className="aspect-video w-full overflow-hidden rounded-lg border">
-                    <Skeleton className="h-full w-full" />
-                </div>
-                </CardContent>
-            </Card>
-            <Skeleton className="h-20 w-full rounded-lg" />
-            <div className="flex">
-                <Skeleton className="h-12 w-48 rounded-md" />
-            </div>
+     <div className="space-y-8 max-w-4xl mx-auto">
+        <div className="space-y-2">
+            <Skeleton className="h-10 w-3/4" />
+            <Skeleton className="h-6 w-full" />
         </div>
-        <div className="hidden md:block">
-             <div className="h-full flex flex-col border rounded-lg">
-                <div className="flex items-center justify-between p-4 border-b">
-                    <Skeleton className="h-6 w-32" />
-                    <Skeleton className="h-10 w-28" />
-                </div>
-                <div className="p-4">
-                    <Skeleton className="h-10 w-full" />
-                </div>
-                <div className="space-y-2 p-4">
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                    <Skeleton className="h-16 w-full" />
-                </div>
-             </div>
+        <Skeleton className="aspect-video w-full rounded-lg" />
+        <Skeleton className="h-20 w-full rounded-lg" />
+        <div className="flex">
+            <Skeleton className="h-12 w-48 rounded-md" />
         </div>
     </div>
   );
@@ -90,64 +66,42 @@ export function VideoWorkspace() {
   }
 
   return (
-    <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
-        <div className="lg:col-span-2 space-y-8">
-            <div className="space-y-2">
-                <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Listening</h1>
-                <p className="text-lg text-muted-foreground max-w-3xl">
-                    Listen to the video and follow along with the synchronized transcript. Click any word to save it to your vocabulary list.
-                </p>
-            </div>
-
-            <Card>
-                <CardContent className="p-4 md:p-6">
-                    <div className="aspect-video w-full overflow-hidden rounded-lg border">
-                        <ReactPlayer
-                            url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                            width="100%"
-                            height="100%"
-                            controls={true}
-                            playing={true}
-                            onProgress={(progress) => setCurrentTime(progress.playedSeconds * 1000)}
-                            config={{
-                                youtube: {
-                                    playerVars: {
-                                        modestbranding: 1,
-                                        rel: 0,
-                                    }
-                                }
-                            }}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
-      
-            <CaptionView transcript={videoData.transcript} currentTime={currentTime} />
-
-            <div className="flex">
-                <Button asChild size="lg">
-                <Link href={`/quiz?v=${videoData.videoId}`}>
-                    <BrainCircuit className="mr-2 h-5 w-5" />
-                    Test Your Comprehension
-                </Link>
-                </Button>
-            </div>
+    <div className="space-y-8 max-w-4xl mx-auto">
+        <div className="space-y-2 text-center">
+            <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Listening</h1>
+            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+                Listen to the video and follow along with the synchronized transcript. Click any word to save it.
+            </p>
         </div>
-        <div className="hidden lg:block">
-            <div className="h-full flex flex-col border rounded-lg bg-card text-card-foreground">
-                <div className="flex items-center justify-between p-4 border-b">
-                    <h2 className="text-lg font-semibold flex items-center gap-2">
-                        Vocabulary
-                    </h2>
-                     <Button asChild variant="outline" size="sm">
-                        <Link href="/flashcards">
-                            <Copy className="mr-2 h-4 w-4"/>
-                            Flashcards
-                        </Link>
-                    </Button>
-                </div>
-                 <VocabularyList isSheet={true} />
-            </div>
+
+        <div className="aspect-video w-full overflow-hidden rounded-lg bg-black/75 p-1">
+            <ReactPlayer
+                url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                width="100%"
+                height="100%"
+                controls={true}
+                playing={true}
+                onProgress={(progress) => setCurrentTime(progress.playedSeconds * 1000)}
+                config={{
+                    youtube: {
+                        playerVars: {
+                            modestbranding: 1,
+                            rel: 0,
+                        }
+                    }
+                }}
+            />
+        </div>
+  
+        <CaptionView transcript={videoData.transcript} currentTime={currentTime} />
+
+        <div className="flex justify-center">
+            <Button asChild size="lg">
+            <Link href={`/quiz?v=${videoData.videoId}`}>
+                <BrainCircuit className="mr-2 h-5 w-5" />
+                Test Your Comprehension
+            </Link>
+            </Button>
         </div>
     </div>
   );
