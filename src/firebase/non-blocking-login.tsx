@@ -1,7 +1,6 @@
 'use client';
 import {
   Auth,
-  signInAnonymously,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   GoogleAuthProvider,
@@ -11,10 +10,6 @@ import {
 import { getFirestore, doc } from 'firebase/firestore';
 import { setDocumentNonBlocking } from './non-blocking-updates';
 
-/** Initiate anonymous sign-in (blocking). */
-export async function initiateAnonymousSignIn(authInstance: Auth) {
-  return await signInAnonymously(authInstance);
-}
 
 /** Initiate email/password sign-up (blocking to allow for error handling). */
 export async function initiateEmailSignUp(authInstance: Auth, email: string, password: string): Promise<UserCredential> {
