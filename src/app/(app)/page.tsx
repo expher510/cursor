@@ -44,7 +44,7 @@ function ActivityButtons({ videoIdToUse, isProcessing, onActivitySelect }: { vid
         <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleNavigation('quiz')}>
             {isProcessing && <Loader2 className="mr-2 animate-spin" />}
             <Edit className="mr-2" />
-            Start Quiz
+            Start Writing
         </Button>
       </div>
     </div>

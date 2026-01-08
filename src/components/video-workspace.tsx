@@ -2,7 +2,7 @@
 
 import { Skeleton } from "./ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { AlertTriangle, BrainCircuit } from "lucide-react";
+import { AlertTriangle, Edit } from "lucide-react";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
 import Link from "next/link";
@@ -105,8 +105,8 @@ export function VideoWorkspace() {
             <div className="mt-4">
                 <Button asChild size="lg">
                 <Link href={`/quiz?v=${videoData.videoId}`}>
-                    <BrainCircuit className="mr-2 h-5 w-5" />
-                    Test Your Comprehension
+                    <Edit className="mr-2 h-5 w-5" />
+                    Start Writing Exercise
                 </Link>
                 </Button>
             </div>

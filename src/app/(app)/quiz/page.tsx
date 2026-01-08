@@ -94,8 +94,8 @@ function QuizView({ quizDoc, videoTitle, onQuizFinish }: { quizDoc: QuizDoc, vid
         return (
             <Card className="w-full max-w-2xl text-center">
                 <CardHeader>
-                    <CardTitle>Quiz Complete!</CardTitle>
-                    <CardDescription>You've finished the quiz for "{videoTitle}".</CardDescription>
+                    <CardTitle>Exercise Complete!</CardTitle>
+                    <CardDescription>You've finished the exercise for "{videoTitle}".</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="text-4xl font-bold">
@@ -115,7 +115,7 @@ function QuizView({ quizDoc, videoTitle, onQuizFinish }: { quizDoc: QuizDoc, vid
     return (
         <Card className="w-full max-w-2xl">
             <CardHeader>
-                <CardTitle>Comprehension Quiz</CardTitle>
+                <CardTitle>Writing Exercise</CardTitle>
                 <CardDescription>Question {currentQuestionIndex + 1} of {questions.length}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -150,7 +150,7 @@ function QuizView({ quizDoc, videoTitle, onQuizFinish }: { quizDoc: QuizDoc, vid
                 {currentAnswer.selectedAnswer && (
                     <div className="flex justify-end">
                         <Button onClick={handleNext}>
-                            {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Finish Quiz'}
+                            {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Finish Exercise'}
                         </Button>
                     </div>
                 )}
@@ -246,7 +246,7 @@ function QuizGenerator() {
         return (
             <Card className="w-full max-w-2xl">
                 <CardHeader>
-                    <CardTitle>Preparing Quiz...</CardTitle>
+                    <CardTitle>Preparing Writing Exercise...</CardTitle>
                     <CardDescription>Please wait while we prepare your questions.</CardDescription>
                 </CardHeader>
                 <CardContent className="flex justify-center items-center h-40">
@@ -264,7 +264,7 @@ function QuizGenerator() {
                     <CardDescription className="text-destructive/80">{error}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p>Could not load or generate the quiz. This might happen if the video transcript is too short or if there was an issue with the AI service. Please try a different video.</p>
+                    <p>Could not load or generate the exercise. This might happen if the video transcript is too short or if there was an issue with the AI service. Please try a different video.</p>
                 </CardContent>
             </Card>
         )
@@ -274,10 +274,10 @@ function QuizGenerator() {
         return (
              <Card className="w-full max-w-2xl">
                 <CardHeader>
-                    <CardTitle>No Quiz Available</CardTitle>
+                    <CardTitle>No Exercise Available</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p>We couldn't generate a quiz for this video, it's possible the transcript was too short.</p>
+                    <p>We couldn't generate an exercise for this video, it's possible the transcript was too short.</p>
                 </CardContent>
             </Card>
         )
