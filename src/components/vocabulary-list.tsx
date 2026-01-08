@@ -3,7 +3,6 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "./ui/button";
 import { X } from "lucide-react";
-import { useFirebase } from "@/firebase";
 import { Skeleton } from "./ui/skeleton";
 import { useWatchPage } from "@/context/watch-page-context";
 import {
