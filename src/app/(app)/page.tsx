@@ -13,6 +13,7 @@ import { collection, limit, query, orderBy, doc, setDoc } from "firebase/firesto
 import { AppHeader } from "@/components/app-header";
 import { processVideo } from "@/ai/flows/process-video-flow";
 import { useToast } from "@/hooks/use-toast";
+import { Logo } from "@/components/logo";
 
 
 type HistoryItem = {
@@ -137,10 +138,8 @@ export default function HomePage() {
       <main className="flex min-h-screen w-full flex-col items-center bg-background p-4 pt-24">
         <div className="flex flex-col items-center gap-8 text-center max-w-5xl w-full">
           
-          <div className="flex flex-col gap-2 max-w-2xl">
-            <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-              Unlock Languages with Video
-            </h1>
+          <div className="flex flex-col items-center gap-2 max-w-2xl">
+              <Logo />
             <p className="text-muted-foreground md:text-xl">
               Paste a YouTube link below to turn any video into an interactive language lesson.
             </p>
