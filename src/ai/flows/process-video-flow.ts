@@ -61,21 +61,17 @@ const processVideoFlow = ai.defineFlow(
   },
   async ({ videoId }) => {
     
-    // 1. Fetch metadata from Piped API
-    const streamUrl = `https://pipedapi.kavin.rocks/streams/${videoId}`;
-    let streamData;
+    let title = 'YouTube Video';
     try {
-        const streamResponse = await fetch(streamUrl);
-        if (!streamResponse.ok) {
-            throw new Error(`Piped API request for metadata failed with status ${streamResponse.status}`);
+        const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+        const html = await response.text();
+        const match = html.match(/<title>(.*?)<\/title>/);
+        if (match && match[1]) {
+            title = match[1].replace(' - YouTube', '').trim();
         }
-        streamData = await streamResponse.json();
-    } catch(e: any) {
-        console.error("Failed to fetch stream data from Piped API:", e.message);
-        throw new Error("Could not retrieve video information. The video might be private or deleted.");
+    } catch(e) {
+        console.warn("Could not fetch video title automatically.");
     }
-
-    const { title, description, views, likes } = streamData;
     
     // 2. Fetch the transcript using the youtube-transcript library
     let transcript;
@@ -100,12 +96,12 @@ const processVideoFlow = ai.defineFlow(
 
     // 3. Format the data and return
     return {
-      title: title || 'YouTube Video',
-      description: description,
+      title: title,
+      description: "", // Piped API is removed, so description is empty
       transcript: transcript,
-      stats: {
-          views: views,
-          likes: likes,
+      stats: { // Stats are no longer available
+          views: 0,
+          likes: 0,
           commentCount: 0, 
       },
     };
