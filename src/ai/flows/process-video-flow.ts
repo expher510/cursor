@@ -67,7 +67,9 @@ const supadataApiTool = ai.defineTool(
     const API_KEY = process.env.SUPADATA_API_KEY;
 
     if (!API_KEY) {
-      throw new Error('Supadata API key is not configured.');
+      // This is not an error, just means we can't use this tool.
+      console.log("Supadata API key is not configured. Skipping.");
+      return { title: null, transcript: [] };
     }
     
     try {
@@ -95,8 +97,8 @@ const supadataApiTool = ai.defineTool(
         };
 
     } catch (error: any) {
-        console.warn(`Supadata API failed: ${error.message}.`);
-        // Don't throw, just return empty so the flow can fall back.
+        console.warn(`Supadata API failed: ${error.message}. The flow will attempt to use a fallback.`);
+        // Don't re-throw. Return empty so the flow can fall back to the next tool.
         return { title: null, transcript: [] };
     }
   }
@@ -106,7 +108,7 @@ const supadataApiTool = ai.defineTool(
 const youtubeTranscriptTool = ai.defineTool(
     {
         name: 'youtubeTranscriptTool',
-        description: 'Fetches the transcript for a given YouTube video ID directly.',
+        description: 'Fetches the transcript for a given YouTube video ID directly. This is a fallback if other services fail.',
         inputSchema: z.object({ videoId: z.string() }),
         outputSchema: z.array(TranscriptItemSchema),
     },
@@ -118,8 +120,8 @@ const youtubeTranscriptTool = ai.defineTool(
             return transcript;
         } catch (error: any) {
             console.error(`youtube-transcript failed: ${error.message}`);
-            // If this also fails, we throw a final error.
-            throw new Error(`Could not get transcript from any source. Reason: ${error.message}`);
+            // If this also fails, we throw a final error that the user will see.
+            throw new Error(`Could not retrieve transcript. The video may not have one available in English, or it might be disabled.`);
         }
     }
 );
@@ -187,26 +189,25 @@ const processVideoFlow = ai.defineFlow(
   },
   async ({ videoId }) => {
 
-    // Fetch transcript and metadata in parallel
-    const [supadataResult, youtubeApiResult] = await Promise.all([
-      supadataApiTool({ videoId }),
-      youtubeDataApiTool({ videoId })
-    ]);
+    // Fetch metadata from YouTube API first.
+    const youtubeApiResult = await youtubeDataApiTool({ videoId });
 
+    // Try Supadata first for the transcript.
+    let supadataResult = await supadataApiTool({ videoId });
     let transcript = supadataResult.transcript;
     
-    // If Supadata fails for transcript, try the library fallback
-    if (transcript.length === 0) {
+    // If Supadata returns an empty transcript, try the youtube-transcript library as a fallback.
+    if (!transcript || transcript.length === 0) {
         console.log("Supadata returned no transcript, trying youtube-transcript fallback...");
         transcript = await youtubeTranscriptTool({ videoId });
     }
 
-    // Ensure transcript exists after all attempts
-    if (transcript.length === 0) {
-        throw new Error("Failed to retrieve transcript. The video may not have one available.");
+    // If after all fallbacks, we still have no transcript, we must throw an error.
+    if (!transcript || transcript.length === 0) {
+        throw new Error("Failed to retrieve transcript from any available source. The video may not have one.");
     }
     
-    // Combine titles, preferring YouTube API's title
+    // Combine titles, preferring the official YouTube API's title.
     const finalTitle = youtubeApiResult.title || supadataResult.title || 'YouTube Video';
     
     return {
