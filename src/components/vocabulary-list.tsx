@@ -38,7 +38,7 @@ export function VocabularyList() {
                     {vocabulary.map((item) => (
                       <div 
                         key={item.id} 
-                        className="group relative flex items-center gap-2 rounded-full border bg-secondary/50 pr-2 pl-4 py-1 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-secondary"
+                        className="group relative flex items-center gap-2 rounded-full border border-primary bg-secondary/50 pr-2 pl-4 py-1 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-secondary"
                       >
                         <div className="flex flex-col">
                           <span className="capitalize">{item.word}</span>
