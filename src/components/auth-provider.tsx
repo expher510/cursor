@@ -17,15 +17,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const isPublicPath = PUBLIC_PATHS.includes(pathname);
 
-    // If user is not logged in and is trying to access a protected page
+    // If user is not logged in and is trying to access a protected page, redirect to login
     if (!user && !isPublicPath) {
       router.replace(`/login?from=${pathname}`);
+    }
+
+    // If user is logged in and tries to access login or signup, redirect to home
+    if (user && isPublicPath) {
+        router.replace('/');
     }
     
   }, [user, isUserLoading, pathname, router]);
 
-  // Show a loader only during the initial auth check.
-  if (isUserLoading) {
+  // If we are still loading, or if we are about to redirect, show a loader.
+  if (isUserLoading || (!user && !PUBLIC_PATHS.includes(pathname)) || (user && PUBLIC_PATHS.includes(pathname))) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">

@@ -26,8 +26,8 @@ import {
   initiateGoogleSignIn,
 } from '@/firebase/non-blocking-login';
 import { useFirebase } from '@/firebase';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Loader2, Mail, KeyRound, Eye, EyeOff } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -51,9 +51,8 @@ function GoogleIcon() {
 }
 
 export default function SignUpPage() {
-  const { auth, user, isUserLoading } = useFirebase();
+  const { auth } = useFirebase();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -66,20 +65,13 @@ export default function SignUpPage() {
     },
   });
 
-  useEffect(() => {
-    if (!isUserLoading && user) {
-      const from = searchParams.get('from') || '/';
-      router.replace(from);
-    }
-  }, [user, isUserLoading, router, searchParams]);
-
   const onSubmit = async (data: z.infer<typeof FormSchema>) => {
     if (!auth) return;
     setIsSubmitting(true);
     setAuthError(null);
     try {
       await initiateEmailSignUp(auth, data.email, data.password);
-      // Let the useEffect handle redirection
+      // AuthProvider will handle redirection
     } catch (error: any) {
       console.error("Sign up error:", error);
       if (error.code === 'auth/email-already-in-use') {
@@ -97,7 +89,7 @@ export default function SignUpPage() {
     setAuthError(null);
      try {
       await initiateGoogleSignIn(auth);
-      // Let the useEffect handle redirection
+      // AuthProvider will handle redirection
     } catch (error: any) {
         console.error("Google sign in error:", error);
         if (error.code !== 'auth/popup-closed-by-user') {
@@ -107,15 +99,6 @@ export default function SignUpPage() {
     }
   };
   
-  if (isUserLoading || (!isUserLoading && user)) {
-    return (
-        <div className="flex h-screen w-full items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-    );
-  }
-
-
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-gray-50 p-4">
       <Card className="w-full max-w-md shadow-lg">
