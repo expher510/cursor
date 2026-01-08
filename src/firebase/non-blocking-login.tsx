@@ -14,7 +14,7 @@ import { doc, setDoc, getDoc, Firestore, writeBatch } from 'firebase/firestore';
 /**
  * Ensures a user document exists in Firestore. If it doesn't, it creates one
  * along with a placeholder document in the 'videos' subcollection.
- * This is CRITICAL for new users to avoid permission errors.
+ * This is CRITICAL for new and existing users to avoid permission errors.
  * @param firestore The Firestore instance.
  * @param user The authenticated user object from Firebase Auth.
  */
