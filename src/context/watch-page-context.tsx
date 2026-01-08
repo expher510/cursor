@@ -1,7 +1,7 @@
 'use client';
 
 import { useFirebase } from '@/firebase';
-import { collection, doc, query, addDoc, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, doc, query, addDoc, deleteDoc, getDoc, setDoc, orderBy, limit, getDocs } from 'firebase/firestore';
 import { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect, useRef } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
@@ -36,31 +36,68 @@ const WatchPageContext = createContext<WatchPageContextType | undefined>(undefin
 export function WatchPageProvider({ children }: { children: ReactNode }) {
   const { firestore, user } = useFirebase();
   const searchParams = useSearchParams();
-  const videoId = searchParams.get('v');
+  const urlVideoId = searchParams.get('v');
 
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(urlVideoId);
 
-  // Effect to fetch already-cached data from Firestore.
-  // The main page now handles the initial processing and caching.
+  // Effect to fetch the last video ID if none is in the URL
   useEffect(() => {
-    if (!videoId) {
+    if (urlVideoId) {
+      setActiveVideoId(urlVideoId);
+      return;
+    }
+
+    if (user && firestore) {
+      const fetchLastVideo = async () => {
+        setIsLoading(true);
+        try {
+          const videosQuery = query(
+            collection(firestore, `users/${user.uid}/videos`),
+            orderBy("timestamp", "desc"),
+            limit(1)
+          );
+          const querySnapshot = await getDocs(videosQuery);
+          if (!querySnapshot.empty) {
+            const lastVideo = querySnapshot.docs[0];
+            setActiveVideoId(lastVideo.id);
+          } else {
+             setError("No videos found in your history.");
+             setIsLoading(false);
+          }
+        } catch (e: any) {
+          console.error("Error fetching last video:", e);
+          setError("Could not load your video history.");
+          setIsLoading(false);
+        }
+      };
+      fetchLastVideo();
+    }
+  }, [urlVideoId, user, firestore]);
+
+  // Effect to fetch already-cached data from Firestore based on activeVideoId
+  useEffect(() => {
+    if (!activeVideoId) {
+       if (!urlVideoId) { // Only set error if no ID was ever present
+          setError("No video ID provided and no history found.");
+        }
       setIsLoading(false);
-      setError("No video ID provided in the URL.");
       return;
     }
 
     if (!user || !firestore) {
-      setIsLoading(false);
       setError("Authentication or database service is not available.");
+      setIsLoading(false);
       return;
     }
 
     // If data is already loaded for this videoId, don't refetch
-    if (videoData?.videoId === videoId) {
+    if (videoData?.videoId === activeVideoId) {
         setIsLoading(false);
         return;
     }
@@ -71,25 +108,24 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
     async function fetchCachedVideoData() {
       try {
-        const videoDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}`);
-        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}/transcripts`, videoId);
+        const videoDocRef = doc(firestore, `users/${user.uid}/videos/${activeVideoId}`);
+        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${activeVideoId}/transcripts`, activeVideoId);
         
         const videoDocSnap = await getDoc(videoDocRef);
         const transcriptDocSnap = await getDoc(transcriptDocRef);
 
         if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
-          console.log("Loading video data from Firestore cache.");
+          console.log("Loading video data from Firestore cache for videoId:", activeVideoId);
           const combinedData: VideoData = {
             title: videoDocSnap.data().title,
             description: videoDocSnap.data().description,
             stats: videoDocSnap.data().stats,
             transcript: transcriptDocSnap.data().content,
-            videoId: videoId
+            videoId: activeVideoId
           };
           setVideoData(combinedData);
         } else {
-          // This case should be rare if the new flow on the homepage works correctly.
-          console.error("Data not found in cache. The video should have been processed before navigation.");
+          console.error("Data not found in cache for videoId:", activeVideoId);
           setError("Could not find pre-processed data for this video. Please try again from the homepage.");
         }
       } catch (e: any) {
@@ -102,7 +138,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     
     fetchCachedVideoData();
 
-  }, [videoId, user, firestore, videoData?.videoId]);
+  }, [activeVideoId, user, firestore, videoData?.videoId]);
 
 
   const showNotification = useCallback((message: string) => {
@@ -129,7 +165,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
 
   const addVocabularyItem = useCallback(async (word: string) => {
-    if (!user || !firestore || !videoId) return;
+    if (!user || !firestore || !activeVideoId) return;
 
     const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
     if (!cleanedWord) return;
@@ -149,7 +185,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             word: cleanedWord,
             translation: translation || 'No translation found',
             userId: user.uid,
-            videoId: videoId,
+            videoId: activeVideoId,
         });
         
         showNotification(`Saved!`);
@@ -159,7 +195,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         showNotification(`Error saving word.`);
     }
 
-  }, [user, firestore, videoId, savedWordsSet, showNotification]);
+  }, [user, firestore, activeVideoId, savedWordsSet, showNotification]);
 
   const removeVocabularyItem = useCallback(async (id: string) => {
       if (!firestore || !user) return;
