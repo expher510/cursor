@@ -105,7 +105,7 @@ export function VideoWorkspace() {
                     className="absolute top-2 right-2 z-10 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowTranscript(!showTranscript)}
                 >
-                    {showTranscript ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    {showTranscript ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
                     <span className="sr-only">{showTranscript ? "Hide transcript" : "Show transcript"}</span>
                 </Button>
                 
