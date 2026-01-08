@@ -44,7 +44,7 @@ function HistoryCard({ item, isSelected, onSelect }: { item: HistoryItem, isSele
         <div className="group relative">
             <Card 
                 className={cn(
-                    "overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full",
+                    "overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full text-left",
                     isSelected && "ring-2 ring-primary shadow-lg"
                 )}
                 onClick={() => onSelect(item.id)}
@@ -102,7 +102,7 @@ export function VideoHistory({ selectedVideoId, onVideoSelect }: VideoHistoryPro
     if (isLoading) {
         return (
             <div className="w-full max-w-4xl pt-10">
-                <h2 className="text-2xl font-bold font-headline mb-6">Your Recent Videos</h2>
+                <h2 className="text-2xl font-bold font-headline mb-6 text-center">YouTube Video</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {Array.from({ length: 4 }).map((_, i) => (
                         <div key={i} className="space-y-2">
@@ -120,8 +120,8 @@ export function VideoHistory({ selectedVideoId, onVideoSelect }: VideoHistoryPro
     }
 
     return (
-        <div className="w-full max-w-4xl pt-10 text-left">
-             <h2 className="text-2xl font-bold font-headline mb-6">Your Recent Videos</h2>
+        <div className="w-full max-w-4xl pt-10">
+             <h2 className="text-2xl font-bold font-headline mb-6 text-center">YouTube Video</h2>
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {displayHistory.map((item) => (
                     <HistoryCard 
