@@ -1,7 +1,6 @@
 "use client"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { TranscriptView } from "./transcript-view"
 import { VocabularyList } from "./vocabulary-list"
 import { type TranscriptItem } from "@/ai/flows/process-video-flow"
