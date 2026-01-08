@@ -3,13 +3,11 @@
 import { AppHeader } from "@/components/app-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useState, useMemo } from "react";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Loader2, Sparkles } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
 
@@ -18,13 +16,14 @@ function WritingWorkspace() {
     const [wordCount, setWordCount] = useState(10);
     const [exerciseWords, setExerciseWords] = useState<string[]>([]);
     const [availableWords, setAvailableWords] = useState<string[]>([]);
-    const [writingContent, setWritingContent] = useState("");
+    const [selectedWords, setSelectedWords] = useState<string[]>([]);
     const [isStarted, setIsStarted] = useState(false);
     const [isGettingFeedback, setIsGettingFeedback] = useState(false);
     
     const transcriptText = useMemo(() => {
         if (!videoData?.transcript) return [];
-        return videoData.transcript.map(t => t.text).join(' ').toLowerCase().match(/\b(\w+)\b/g) || [];
+        const fullText = videoData.transcript.map(t => t.text).join(' ');
+        return fullText.toLowerCase().match(/\b(\w+)\b/g) || [];
     }, [videoData]);
     
     const startExercise = () => {
@@ -46,22 +45,21 @@ function WritingWorkspace() {
         const finalWords = words.sort(() => 0.5 - Math.random());
         setExerciseWords(finalWords);
         setAvailableWords(finalWords);
-        setWritingContent("");
+        setSelectedWords([]);
         setIsStarted(true);
     };
 
     const handleWordClick = (word: string) => {
-        setWritingContent(prev => prev ? `${prev.trim()} ${word}` : word);
+        setSelectedWords(prev => [...prev, word]);
         setAvailableWords(prev => prev.filter(w => w !== word));
     };
     
     const resetExercise = () => {
         setIsStarted(false);
-        setWritingContent("");
+        setSelectedWords([]);
         setExerciseWords([]);
         setAvailableWords([]);
     }
-
 
     const getFeedback = async () => {
         setIsGettingFeedback(true);
@@ -101,31 +99,37 @@ function WritingWorkspace() {
 
     return (
         <div className="w-full max-w-4xl space-y-6">
-            <div className="min-h-[6rem]">
-                <div className="flex flex-wrap gap-3 justify-center">
-                    {availableWords.map(word => (
+            <div className="min-h-[6rem] flex flex-wrap gap-3 justify-center">
+                {availableWords.map(word => (
+                     <Badge 
+                        key={word}
+                        variant="outline"
+                        className="cursor-pointer border-primary text-primary text-base font-semibold capitalize transition-all hover:bg-primary/10 px-4 py-2"
+                        onClick={() => handleWordClick(word)}
+                    >
+                        {word}
+                    </Badge>
+                ))}
+            </div>
+
+            <div className="w-full min-h-[10rem] rounded-md border border-input bg-background p-3 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 flex flex-wrap gap-2 items-start content-start">
+                 {selectedWords.length > 0 ? (
+                    selectedWords.map((word, index) => (
                          <Badge 
-                            key={word}
+                            key={`${word}-${index}`}
                             variant="outline"
-                            className="cursor-pointer border-primary text-primary text-base font-semibold capitalize transition-all hover:bg-primary/10 px-4 py-2"
-                            onClick={() => handleWordClick(word)}
+                            className="border-primary text-primary text-base font-semibold capitalize px-3 py-1"
                         >
                             {word}
                         </Badge>
-                    ))}
-                </div>
+                    ))
+                 ) : (
+                    <span className="text-muted-foreground">Your selected words will appear here...</span>
+                 )}
             </div>
-
-            <Textarea
-                placeholder="Click words above or type here..."
-                rows={10}
-                className="text-base"
-                value={writingContent}
-                onChange={(e) => setWritingContent(e.target.value)}
-            />
             
             <div className="flex justify-between">
-                <Button variant="outline" onClick={resetExercise}>Back to Settings</Button>
+                <Button variant="outline" onClick={resetExercise}>Reset</Button>
                 <Button onClick={getFeedback} disabled={isGettingFeedback || availableWords.length > 0}>
                     {isGettingFeedback ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
