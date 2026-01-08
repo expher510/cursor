@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, BookOpenCheck } from "lucide-react";
+import { AlertTriangle, Mic } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -65,12 +65,6 @@ function ReadingPracticePage() {
                             Click on any word in the transcript to instantly get its translation and add it to your personal vocabulary list.
                         </p>
                     </div>
-                    <Button asChild>
-                        <Link href={`/quiz?v=${videoData.videoId}`}>
-                            <BookOpenCheck className="mr-2 h-5 w-5" />
-                            Start Quiz
-                        </Link>
-                    </Button>
                 </div>
             </div>
             
@@ -78,6 +72,15 @@ function ReadingPracticePage() {
 
              <div className="p-1 rounded-lg border bg-card text-card-foreground shadow-sm h-[50vh]">
                 <TranscriptView transcript={formattedTranscript} videoId={videoData.videoId!} />
+             </div>
+
+             <div className="flex justify-center pt-4">
+                 <Button asChild size="lg">
+                    <Link href={`/quiz?v=${videoData.videoId}`}>
+                        <Mic className="mr-2 h-5 w-5" />
+                        Start Speaking Test
+                    </Link>
+                </Button>
              </div>
         </div>
     )
