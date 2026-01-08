@@ -21,7 +21,7 @@ type HistoryItem = {
   timestamp: number;
 };
 
-function ActivityButtons({ videoIdToUse, isHistoryLoading, onActivitySelect }: { videoIdToUse: string | null, isHistoryLoading: boolean, onActivitySelect: (path: string, videoId: string) => void }) {
+function ActivityButtons({ videoIdToUse, isProcessing, onActivitySelect }: { videoIdToUse: string | null, isProcessing: boolean, onActivitySelect: (path: string, videoId: string) => void }) {
   const isEnabled = !!videoIdToUse;
 
   const handleNavigation = (path: string) => {
@@ -35,20 +35,20 @@ function ActivityButtons({ videoIdToUse, isHistoryLoading, onActivitySelect }: {
        <h2 className="text-2xl font-bold font-headline mb-6 text-center">Choose Your Practice</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <Button size="lg" disabled={!isEnabled || isHistoryLoading} onClick={() => handleNavigation('watch')}>
-            {isHistoryLoading && <Loader2 className="mr-2 animate-spin" />}
+        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleNavigation('watch')}>
+            {isProcessing && <Loader2 className="mr-2 animate-spin" />}
             <Headphones className="mr-2" />
             Start Listening
         </Button>
         
-        <Button size="lg" disabled={!isEnabled || isHistoryLoading} onClick={() => handleNavigation('reading')}>
-            {isHistoryLoading && <Loader2 className="mr-2 animate-spin" />}
+        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleNavigation('reading')}>
+            {isProcessing && <Loader2 className="mr-2 animate-spin" />}
             <BookOpen className="mr-2" />
             Start Reading
         </Button>
 
-        <Button size="lg" disabled={!isEnabled || isHistoryLoading} onClick={() => handleNavigation('quiz')}>
-            {isHistoryLoading && <Loader2 className="mr-2 animate-spin" />}
+        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleNavigation('quiz')}>
+            {isProcessing && <Loader2 className="mr-2 animate-spin" />}
             <Edit className="mr-2" />
             Start Quiz
         </Button>
@@ -83,7 +83,6 @@ function MainContent({ url }: { url: string; }) {
     if (!user || !firestore) return;
     
     setIsProcessing(true);
-    toast({ title: "Processing Video...", description: "Please wait while we prepare your lesson." });
 
     try {
         const result = await processVideo({ videoId });
@@ -106,7 +105,6 @@ function MainContent({ url }: { url: string; }) {
             content: result.transcript,
         }, { merge: true });
 
-        toast({ title: "Success!", description: "Your video is ready." });
         router.push(`/${path}?v=${videoId}`);
 
     } catch (e: any) {
@@ -120,7 +118,7 @@ function MainContent({ url }: { url: string; }) {
 
   return (
     <>
-      <ActivityButtons videoIdToUse={videoIdToUse} isHistoryLoading={isProcessing || isHistoryLoading} onActivitySelect={handlePracticeNavigation} />
+      <ActivityButtons videoIdToUse={videoIdToUse} isProcessing={isProcessing || isHistoryLoading} onActivitySelect={handlePracticeNavigation} />
       <VideoHistory 
         selectedVideoId={selectedVideoId}
         onVideoSelect={setSelectedVideoId}
