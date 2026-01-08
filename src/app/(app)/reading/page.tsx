@@ -8,6 +8,7 @@ import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 
 function ReadingPracticePage() {
@@ -58,7 +59,9 @@ function ReadingPracticePage() {
     return (
         <div className="w-full max-w-4xl mx-auto space-y-6">
             <div className="mb-4 text-center">
-                <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Reading</h1>
+                <div className="flex justify-center">
+                    <Logo />
+                </div>
                 <p className="text-lg text-muted-foreground mt-2 max-w-3xl mx-auto">
                     Click on any word in the transcript to instantly get its translation and add it to your personal vocabulary list.
                 </p>
