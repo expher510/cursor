@@ -39,6 +39,9 @@ function ErrorState({ message }: { message: string }) {
                     <p className="text-muted-foreground">
                         {message}
                     </p>
+                     <Button asChild variant="secondary" className="mt-4">
+                        <Link href="/">Go to Homepage</Link>
+                    </Button>
                 </CardContent>
             </Card>
         </div>
@@ -46,7 +49,7 @@ function ErrorState({ message }: { message: string }) {
 }
 
 
-export function VideoWorkspace({ videoId }: { videoId: string }) {
+export function VideoWorkspace() {
   const { videoData, isLoading, error } = useWatchPage();
   
   if (isLoading) {
@@ -57,17 +60,16 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
     return <ErrorState message={error} />;
   }
 
-  if (!videoData) {
-    // This can happen briefly or if there's no videoId, provider will set an error.
-    return <LoadingState />;
+  if (!videoData || !videoData.videoId) {
+    return <ErrorState message="Video data could not be loaded." />;
   }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <VideoPlayer videoId={videoId} title={videoData.title} />
+      <VideoPlayer videoId={videoData.videoId} title={videoData.title} />
       <div className="flex justify-center">
         <Button asChild size="lg">
-            <Link href={`/quiz?v=${videoId}`}>
+            <Link href={`/quiz?v=${videoData.videoId}`}>
                 <BrainCircuit className="mr-2 h-5 w-5" />
                 Start Quiz
             </Link>

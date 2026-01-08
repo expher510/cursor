@@ -9,8 +9,10 @@ import { extractYouTubeVideoId } from "@/lib/utils";
 import { useFirebase } from "@/firebase";
 import { useCollection } from "@/firebase/firestore/use-collection";
 import { useMemoFirebase } from "@/firebase/provider";
-import { collection, limit, query, orderBy } from "firebase/firestore";
+import { collection, limit, query, orderBy, doc, setDoc } from "firebase/firestore";
 import { AppHeader } from "@/components/app-header";
+import { processVideo } from "@/ai/flows/process-video-flow";
+import { useToast } from "@/hooks/use-toast";
 
 
 type HistoryItem = {
@@ -19,14 +21,12 @@ type HistoryItem = {
   timestamp: number;
 };
 
-function ActivityButtons({ videoIdToUse, isHistoryLoading }: { videoIdToUse: string | null, isHistoryLoading: boolean }) {
-  const router = useRouter();
-
+function ActivityButtons({ videoIdToUse, isHistoryLoading, onActivitySelect }: { videoIdToUse: string | null, isHistoryLoading: boolean, onActivitySelect: (path: string, videoId: string) => void }) {
   const isEnabled = !!videoIdToUse;
 
   const handleNavigation = (path: string) => {
     if (videoIdToUse) {
-      router.push(`/${path}?v=${videoIdToUse}`);
+      onActivitySelect(path, videoIdToUse);
     }
   };
 
@@ -35,19 +35,19 @@ function ActivityButtons({ videoIdToUse, isHistoryLoading }: { videoIdToUse: str
        <h2 className="text-2xl font-bold font-headline mb-6 text-center">Choose Your Practice</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <Button size="lg" disabled={!isEnabled} onClick={() => handleNavigation('watch')}>
+        <Button size="lg" disabled={!isEnabled || isHistoryLoading} onClick={() => handleNavigation('watch')}>
             {isHistoryLoading && <Loader2 className="mr-2 animate-spin" />}
             <Headphones className="mr-2" />
             Start Listening
         </Button>
         
-        <Button size="lg" disabled={!isEnabled} onClick={() => handleNavigation('reading')}>
+        <Button size="lg" disabled={!isEnabled || isHistoryLoading} onClick={() => handleNavigation('reading')}>
             {isHistoryLoading && <Loader2 className="mr-2 animate-spin" />}
             <BookOpen className="mr-2" />
             Start Reading
         </Button>
 
-        <Button size="lg" disabled={!isEnabled} onClick={() => handleNavigation('quiz')}>
+        <Button size="lg" disabled={!isEnabled || isHistoryLoading} onClick={() => handleNavigation('quiz')}>
             {isHistoryLoading && <Loader2 className="mr-2 animate-spin" />}
             <Edit className="mr-2" />
             Start Quiz
@@ -57,9 +57,12 @@ function ActivityButtons({ videoIdToUse, isHistoryLoading }: { videoIdToUse: str
   );
 }
 
-function MainContent({ url, onUrlChange }: { url: string; onUrlChange: (url: string) => void; }) {
+function MainContent({ url }: { url: string; }) {
   const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const { firestore, user } = useFirebase();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const historyQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -76,9 +79,48 @@ function MainContent({ url, onUrlChange }: { url: string; onUrlChange: (url: str
   const latestHistoryVideoId = history?.[0]?.id ?? null;
   const videoIdToUse = newVideoId || selectedVideoId || latestHistoryVideoId;
 
+  const handlePracticeNavigation = async (path: string, videoId: string) => {
+    if (!user || !firestore) return;
+    
+    setIsProcessing(true);
+    toast({ title: "Processing Video...", description: "Please wait while we prepare your lesson." });
+
+    try {
+        const result = await processVideo({ videoId });
+
+        const videoDocRef = doc(firestore, `users/${user.uid}/videos`, videoId);
+        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}/transcripts`, videoId);
+
+        await setDoc(videoDocRef, {
+            id: videoId,
+            title: result.title,
+            description: result.description,
+            stats: result.stats,
+            userId: user.uid,
+            timestamp: Date.now(),
+        }, { merge: true });
+
+        await setDoc(transcriptDocRef, {
+            id: videoId,
+            videoId: videoId,
+            content: result.transcript,
+        }, { merge: true });
+
+        toast({ title: "Success!", description: "Your video is ready." });
+        router.push(`/${path}?v=${videoId}`);
+
+    } catch (e: any) {
+        console.error("Failed to process and save video:", e);
+        toast({ variant: "destructive", title: "Processing Failed", description: e.message || "Could not process the video. Please try another one." });
+    } finally {
+        setIsProcessing(false);
+    }
+  };
+
+
   return (
     <>
-      <ActivityButtons videoIdToUse={videoIdToUse} isHistoryLoading={isHistoryLoading} />
+      <ActivityButtons videoIdToUse={videoIdToUse} isHistoryLoading={isProcessing || isHistoryLoading} onActivitySelect={handlePracticeNavigation} />
       <VideoHistory 
         selectedVideoId={selectedVideoId}
         onVideoSelect={setSelectedVideoId}
@@ -91,7 +133,6 @@ function MainContent({ url, onUrlChange }: { url: string; onUrlChange: (url: str
 export default function HomePage() {
   const [url, setUrl] = useState('');
   const { user, isUserLoading } = useFirebase();
-
 
   return (
     <>
@@ -114,7 +155,7 @@ export default function HomePage() {
           {isUserLoading ? (
             <Loader2 className="mt-12 h-8 w-8 animate-spin text-primary" />
           ) : user ? (
-            <MainContent url={url} onUrlChange={setUrl} />
+            <MainContent url={url} />
           ) : (
              <div className="text-center p-8 border-dashed border-2 rounded-lg mt-8">
                 <p className="text-muted-foreground">Please log in or sign up to see your history and start practicing.</p>
