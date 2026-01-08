@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useFirebase } from '@/firebase';
@@ -101,8 +99,7 @@ export function VideoHistory({ selectedVideoId, onVideoSelect }: VideoHistoryPro
 
     if (isLoading) {
         return (
-            <div className="w-full max-w-4xl pt-10">
-                <h2 className="text-2xl font-bold font-headline mb-6 text-center">YouTube Video</h2>
+            <div className="w-full">
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {Array.from({ length: 4 }).map((_, i) => (
                         <div key={i} className="space-y-2">
@@ -116,12 +113,11 @@ export function VideoHistory({ selectedVideoId, onVideoSelect }: VideoHistoryPro
     }
     
     if (!displayHistory || displayHistory.length === 0) {
-        return null; 
+        return <div className="text-center text-muted-foreground py-8">No recent videos to show.</div>; 
     }
 
     return (
-        <div className="w-full max-w-4xl pt-10">
-             <h2 className="text-2xl font-bold font-headline mb-6 text-center">YouTube Video</h2>
+        <div className="w-full">
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {displayHistory.map((item) => (
                     <HistoryCard 

@@ -3,24 +3,17 @@ import { useState } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
 import { VideoHistory } from "@/components/video-history";
 import { Button } from "@/components/ui/button";
-import { Headphones, BookOpen, Edit, Loader2 } from "lucide-react";
+import { Headphones, BookOpen, Edit, Loader2, Youtube, Book } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { extractYouTubeVideoId } from "@/lib/utils";
 import { useFirebase } from "@/firebase";
-import { useCollection } from "@/firebase/firestore/use-collection";
-import { useMemoFirebase } from "@/firebase/provider";
-import { collection, limit, query, orderBy, doc, setDoc } from "firebase/firestore";
+import { doc, setDoc } from "firebase/firestore";
 import { AppHeader } from "@/components/app-header";
 import { processVideo } from "@/ai/flows/process-video-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
+import { cn } from "@/lib/utils";
 
-
-type HistoryItem = {
-  id: string;
-  title: string;
-  timestamp: number;
-};
 
 function ActivityButtons({ videoIdToUse, isProcessing, onActivitySelect }: { videoIdToUse: string | null, isProcessing: boolean, onActivitySelect: (path: string, videoId: string) => void }) {
   const isEnabled = !!videoIdToUse;
@@ -64,17 +57,8 @@ function MainContent({ url }: { url: string; }) {
   const router = useRouter();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [sourceType, setSourceType] = useState<'youtube' | 'books'>('youtube');
 
-  const historyQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return query(
-      collection(firestore, `users/${user.uid}/videos`),
-      orderBy("timestamp", "desc"),
-      limit(20)
-    );
-  }, [user, firestore]);
-
-  const { data: history, isLoading: isHistoryLoading } = useCollection<HistoryItem>(historyQuery);
 
   const newVideoId = extractYouTubeVideoId(url);
   const videoIdToUse = newVideoId || selectedVideoId;
@@ -118,11 +102,35 @@ function MainContent({ url }: { url: string; }) {
 
   return (
     <>
-      <ActivityButtons videoIdToUse={videoIdToUse} isProcessing={isProcessing || isHistoryLoading} onActivitySelect={handlePracticeNavigation} />
-      <VideoHistory 
-        selectedVideoId={selectedVideoId}
-        onVideoSelect={setSelectedVideoId}
-      />
+      <ActivityButtons videoIdToUse={videoIdToUse} isProcessing={isProcessing} onActivitySelect={handlePracticeNavigation} />
+      
+      <div className="w-full max-w-4xl pt-10">
+        <div className="flex justify-center items-center gap-4 mb-6">
+            <Button
+                variant={sourceType === 'youtube' ? 'secondary' : 'ghost'}
+                onClick={() => setSourceType('youtube')}
+                className={cn("gap-2", sourceType === 'youtube' && "text-primary")}
+            >
+                <Youtube />
+                YouTube
+            </Button>
+             <Button
+                variant={sourceType === 'books' ? 'secondary' : 'ghost'}
+                onClick={() => setSourceType('books')}
+                className={cn("gap-2", sourceType === 'books' && "text-primary")}
+            >
+                <Book />
+                Books
+            </Button>
+        </div>
+        
+        {sourceType === 'youtube' && (
+            <VideoHistory 
+                selectedVideoId={selectedVideoId}
+                onVideoSelect={setSelectedVideoId}
+            />
+        )}
+      </div>
     </>
   );
 }
