@@ -1,11 +1,11 @@
 'use client';
 
 import { useFirebase } from '@/firebase';
-import { collection, doc, query, addDoc, deleteDoc } from 'firebase/firestore';
+import { collection, doc, query, addDoc, deleteDoc, getDoc, setDoc } from 'firebase/firestore';
 import { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect, useRef } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
-import { type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
+import { type ProcessVideoOutput, processVideo } from '@/ai/flows/process-video-flow';
 import { translateWord } from '@/ai/flows/translate-word-flow';
 import { useSearchParams } from 'next/navigation';
 
@@ -26,11 +26,8 @@ type WatchPageContextType = {
   addVocabularyItem: (word: string) => void;
   removeVocabularyItem: (id: string) => void;
   videoData: VideoData | null;
-  setVideoData: (data: VideoData | null) => void;
   isLoading: boolean;
-  setIsLoading: (loading: boolean) => void;
   error: string | null;
-  setError: (error: string | null) => void;
   notification: string | null;
 };
 
@@ -46,6 +43,90 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
   const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    // If there's no videoId, don't do anything.
+    if (!videoId) {
+      setIsLoading(false);
+      setError("No video selected. Please go back and choose a video.");
+      return;
+    }
+
+    // If data for the current videoId is already loaded, don't refetch.
+    if (videoData && videoData.videoId === videoId) {
+      if (isLoading) setIsLoading(false);
+      return;
+    }
+
+    async function fetchAndSetVideoData() {
+      if (!user || !firestore) {
+        setError("User or database not available.");
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsLoading(true);
+      setError(null);
+      setVideoData(null); // Clear previous video data
+      
+      try {
+        const videoDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}`);
+        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}/transcripts`, videoId);
+        
+        const videoDocSnap = await getDoc(videoDocRef);
+        const transcriptDocSnap = await getDoc(transcriptDocRef);
+
+        let processedData;
+
+        if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
+          console.log("Found video and transcript in Firestore. Loading from cache.");
+          processedData = {
+              title: videoDocSnap.data().title,
+              description: videoDocSnap.data().description,
+              stats: videoDocSnap.data().stats,
+              transcript: transcriptDocSnap.data().content,
+          };
+        } else {
+            console.log("Video not in Firestore. Fetching from API and caching.");
+            const result = await processVideo({ videoId });
+            
+            // Cache the new data to Firestore
+            await setDoc(videoDocRef, {
+                id: videoId,
+                title: result.title,
+                description: result.description,
+                stats: result.stats,
+                userId: user.uid,
+                timestamp: Date.now(),
+            }, { merge: true });
+
+            await setDoc(transcriptDocRef, {
+                id: videoId,
+                videoId: videoId,
+                content: result.transcript,
+            }, { merge: true });
+
+            processedData = result;
+        }
+
+        setVideoData({
+          ...processedData,
+          videoId: videoId
+        });
+
+      } catch (e: any) {
+        console.error("Error processing video:", e);
+        setError(e.message || "An unknown error occurred while processing the video.");
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchAndSetVideoData();
+
+  }, [videoId, user, firestore, videoData, isLoading]);
+
+
 
   const showNotification = useCallback((message: string) => {
     if (notificationTimeoutRef.current) {
@@ -129,11 +210,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     addVocabularyItem,
     removeVocabularyItem,
     videoData,
-    setVideoData,
     isLoading,
-    setIsLoading,
     error,
-    setError,
     notification,
   };
 

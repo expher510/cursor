@@ -5,11 +5,6 @@ import { useWatchPage } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle } from "lucide-react";
-import { useEffect } from "react";
-import { useSearchParams } from "next/navigation";
-import { useFirebase } from "@/firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
-import { processVideo } from "@/ai/flows/process-video-flow";
 
 
 function ReadingPracticePage() {
@@ -70,101 +65,12 @@ function ReadingPracticePage() {
     )
 }
 
-function ReadingPageContent() {
-  const searchParams = useSearchParams();
-  const videoId = searchParams.get('v');
-  const { firestore, user } = useFirebase();
-  const { setVideoData, videoData, isLoading, setIsLoading, setError } = useWatchPage();
-
-  useEffect(() => {
-    if (!videoId) {
-      setError("No video selected. Please go back and choose a video.");
-      setIsLoading(false);
-      return;
-    }
-
-    if (videoData && videoData.videoId === videoId) {
-      if (isLoading) setIsLoading(false);
-      return;
-    }
-
-    async function fetchVideoData() {
-      if (!user || !firestore) {
-        setError("User or database not available.");
-        setIsLoading(false);
-        return;
-      }
-      
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const videoDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}`);
-        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}/transcripts`, videoId);
-        
-        const videoDocSnap = await getDoc(videoDocRef);
-        const transcriptDocSnap = await getDoc(transcriptDocRef);
-
-        let processedData;
-
-        if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
-          console.log("Found video and transcript in Firestore. Loading from cache.");
-          processedData = {
-              title: videoDocSnap.data().title,
-              description: videoDocSnap.data().description,
-              stats: videoDocSnap.data().stats,
-              transcript: transcriptDocSnap.data().content,
-          };
-        } else {
-            console.log("Video not in Firestore. Fetching from API and caching.");
-            const result = await processVideo({ videoId });
-            
-            // Cache the new data to Firestore
-            await setDoc(videoDocRef, {
-                id: videoId,
-                title: result.title,
-                description: result.description,
-                stats: result.stats,
-                userId: user.uid,
-                timestamp: Date.now(),
-            }, { merge: true });
-
-            await setDoc(transcriptDocRef, {
-                id: videoId,
-                videoId: videoId,
-                content: result.transcript,
-            }, { merge: true });
-
-            processedData = result;
-        }
-
-        setVideoData({
-          ...processedData,
-          videoId: videoId
-        });
-
-      } catch (e: any) {
-        console.error("Error processing video for reading:", e);
-        setError(e.message || "An unknown error occurred.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    
-    fetchVideoData();
-
-  }, [videoId, user, firestore, setVideoData, setError, setIsLoading, videoData, isLoading]);
-
-  return <ReadingPracticePage />;
-}
-
-
 export default function ReadingPage() {
   return (
       <>
         <AppHeader showBackButton={true} />
         <main className="container mx-auto flex-1 p-4 md:p-6 pt-24">
-            <ReadingPageContent />
+            <ReadingPracticePage />
         </main>
       </>
   );

@@ -1,10 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
 import { VideoPlayer } from "./video-player";
-import { useFirebase } from "@/firebase";
-import { setDoc, doc, getDoc } from "firebase/firestore";
-import { processVideo } from "@/ai/flows/process-video-flow";
 import { Skeleton } from "./ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { AlertTriangle, BrainCircuit } from "lucide-react";
@@ -51,81 +47,7 @@ function ErrorState({ message }: { message: string }) {
 
 
 export function VideoWorkspace({ videoId }: { videoId: string }) {
-  const { firestore, user } = useFirebase();
-  const { setVideoData, videoData, isLoading, error, setError, setIsLoading } = useWatchPage();
-  
-  useEffect(() => {
-    if (videoData && videoData.videoId === videoId) {
-        if (isLoading) setIsLoading(false);
-        return;
-    }
-
-    async function processAndSetVideo() {
-      if (!videoId || !user || !firestore) {
-        setError("User or video information is missing.");
-        return;
-      }
-      
-      setIsLoading(true);
-      setError(null);
-      
-      try {
-        const videoDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}`);
-        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}/transcripts`, videoId);
-        
-        const videoDocSnap = await getDoc(videoDocRef);
-        const transcriptDocSnap = await getDoc(transcriptDocRef);
-
-        let processedData;
-
-        if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
-          console.log("Found video and transcript in Firestore. Loading from cache.");
-          const videoInfo = videoDocSnap.data();
-          const transcriptInfo = transcriptDocSnap.data();
-          
-          processedData = {
-              title: videoInfo.title,
-              description: videoInfo.description,
-              stats: videoInfo.stats,
-              transcript: transcriptInfo.content,
-          };
-        } else {
-            console.log("Video not in Firestore. Fetching from API and caching.");
-            const result = await processVideo({ videoId });
-
-            // Save the new data to Firestore
-            await setDoc(videoDocRef, {
-                id: videoId,
-                title: result.title,
-                description: result.description,
-                stats: result.stats,
-                userId: user.uid,
-                timestamp: Date.now(),
-            }, { merge: true });
-
-            await setDoc(transcriptDocRef, {
-                id: videoId,
-                videoId: videoId,
-                content: result.transcript,
-            }, { merge: true });
-
-            processedData = result;
-        }
-
-        setVideoData({
-          ...processedData,
-          videoId: videoId
-        });
-
-      } catch (e: any) {
-        console.error("Error processing video:", e);
-        setError(e.message || "An unknown error occurred while processing the video.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    processAndSetVideo();
-  }, [videoId, user, firestore, setVideoData, setError, setIsLoading, videoData, isLoading]);
+  const { videoData, isLoading, error } = useWatchPage();
   
   if (isLoading) {
     return <LoadingState />;
@@ -136,6 +58,7 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
   }
 
   if (!videoData) {
+    // This can happen briefly or if there's no videoId, provider will set an error.
     return <LoadingState />;
   }
 
