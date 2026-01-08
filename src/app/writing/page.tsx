@@ -22,7 +22,8 @@ function WritingWorkspace() {
     const [isGettingFeedback, setIsGettingFeedback] = useState(false);
     
     const transcriptText = useMemo(() => {
-        return videoData?.transcript.map(t => t.text).toLowerCase().match(/\b(\w+)\b/g) || [];
+        if (!videoData?.transcript) return [];
+        return videoData.transcript.map(t => t.text).join(' ').toLowerCase().match(/\b(\w+)\b/g) || [];
     }, [videoData]);
     
     const startExercise = () => {
