@@ -28,8 +28,8 @@ const TranscriptItemSchema = z.object({
 export type TranscriptItem = z.infer<typeof TranscriptItemSchema>;
 
 const VideoStatsSchema = z.object({
-    viewCount: z.number().optional(),
-    likeCount: z.number().optional(),
+    views: z.number().optional(),
+    likes: z.number().optional(),
     commentCount: z.number().optional(),
 }).optional();
 export type VideoStats = z.infer<typeof VideoStatsSchema>;
@@ -142,7 +142,6 @@ const pipedApiTool = ai.defineTool(
                 throw new Error(errorBody?.message || `Piped API request failed with status ${response.status}`);
             }
             const data = await response.json();
-            console.log("Full Piped API response data:", JSON.stringify(data, null, 2));
             
             if (!data) {
                 console.warn("No data found in Piped API response for videoId:", videoId);
@@ -153,8 +152,8 @@ const pipedApiTool = ai.defineTool(
                 title: data.title || null,
                 description: data.description || null,
                 stats: {
-                    viewCount: data.views,
-                    likeCount: data.likes,
+                    views: data.views,
+                    likes: data.likes,
                     commentCount: 0, // Piped /streams endpoint doesn't provide commentCount directly
                 },
             };
