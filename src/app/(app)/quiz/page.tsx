@@ -32,7 +32,7 @@ function WritingExerciseView({ initialWords }: { initialWords: string[] }) {
     }, [initialWords]);
 
     const handleWordClick = (word: string) => {
-        setText(prev => prev ? `${prev} ${word}` : word);
+        setText(prev => prev ? `${prev.trim()} ${word}` : word);
         setWordBank(prev => prev.map(item => item.word === word ? { ...item, used: true } : item));
     };
     
@@ -92,7 +92,7 @@ function WritingExerciseView({ initialWords }: { initialWords: string[] }) {
                 {/* Actions */}
                 <div className="flex justify-between items-center gap-4">
                      <Button variant="ghost" onClick={handleReset}><RefreshCw className="mr-2 h-4 w-4" /> Reset</Button>
-                    <Button onClick={handleConfirm} disabled={!allWordsUsed}>
+                    <Button onClick={handleConfirm} disabled={!allWordsUsed && wordBank.length > 0}>
                         Confirm
                     </Button>
                 </div>
@@ -109,7 +109,7 @@ function WritingExerciseGenerator() {
 
     const [words, setWords] = useState<string[]>([]);
     const [numWords, setNumWords] = useState(5);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const fetchWords = useCallback(async (count: number) => {
@@ -118,27 +118,17 @@ function WritingExerciseGenerator() {
             return [];
         }
         
-        let fetchedWords: string[] = [];
+        let allAvailableWords: string[] = [];
 
-        // 1. Try to get words from the current video's vocab
-        if (videoId) {
-            const vocabColRef = collection(firestore, `users/${user.uid}/videos/${videoId}/quizzes`); // Incorrect path, should be vocabularies
-            // Corrected path, but vocabulary is not tied to video in the same way anymore, it's global
-            const vocabColRefGlobal = collection(firestore, `users/${user.uid}/vocabularies`);
-            const vocabSnapshot = await getDocs(query(vocabColRefGlobal));
-            fetchedWords = vocabSnapshot.docs.map(d => d.data().word);
-        }
+        // 1. Get words from the global vocabulary list first
+        const vocabColRefGlobal = collection(firestore, `users/${user.uid}/vocabularies`);
+        const vocabSnapshot = await getDocs(query(vocabColRefGlobal, limit(50)));
+        const globalWords = vocabSnapshot.docs.map(d => d.data().word);
+        allAvailableWords = [...new Set(globalWords)];
 
-        // 2. If not enough words, get from global vocabulary
-        if (fetchedWords.length < count) {
-            const vocabColRefGlobal = collection(firestore, `users/${user.uid}/vocabularies`);
-            const vocabSnapshot = await getDocs(query(vocabColRefGlobal, limit(50)));
-            const globalWords = vocabSnapshot.docs.map(d => d.data().word);
-            fetchedWords = [...new Set([...fetchedWords, ...globalWords])];
-        }
 
-        // 3. If still not enough, get from random video transcript
-        if (fetchedWords.length < count) {
+        // 2. If still not enough, get from random video transcript
+        if (allAvailableWords.length < count) {
              const videosQuery = query(collection(firestore, `users/${user.uid}/videos`), limit(10));
              const videosSnapshot = await getDocs(videosQuery);
              if (!videosSnapshot.empty) {
@@ -148,17 +138,17 @@ function WritingExerciseGenerator() {
                     const transcriptSnap = await getDoc(transcriptRef);
                     if (transcriptSnap.exists()) {
                         const transcriptText = transcriptSnap.data().content.map((t: any) => t.text).join(' ');
-                        const transcriptWords = transcriptText.split(/\s+/).filter(w => w.length > 3);
-                        fetchedWords = [...new Set([...fetchedWords, ...transcriptWords])];
+                        const transcriptWords = transcriptText.split(/\s+/).filter(w => w.length > 3 && isNaN(Number(w)));
+                        allAvailableWords = [...new Set([...allAvailableWords, ...transcriptWords])];
                     }
                 }
              }
         }
 
-        // 4. Shuffle and slice
-        return fetchedWords.sort(() => 0.5 - Math.random()).slice(0, count);
+        // 3. Shuffle and slice
+        return allAvailableWords.sort(() => 0.5 - Math.random()).slice(0, count);
 
-    }, [videoId, user, firestore]);
+    }, [user, firestore]);
     
     
     const handleStartExercise = useCallback(async () => {
@@ -202,6 +192,10 @@ function WritingExerciseGenerator() {
                 </CardHeader>
                 <CardContent>
                     <p>We couldn't prepare the writing exercise. Please check your connection or try again later.</p>
+                     <Button onClick={handleStartExercise} variant="secondary" className="mt-4">
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Try Again
+                    </Button>
                 </CardContent>
             </Card>
         )
