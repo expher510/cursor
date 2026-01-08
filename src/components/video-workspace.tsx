@@ -7,7 +7,7 @@ import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
 import Link from "next/link";
 import ReactPlayer from 'react-player/youtube';
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { CaptionView } from "./caption-view";
 import { VocabularyList } from "./vocabulary-list";
 
@@ -69,8 +69,8 @@ export function VideoWorkspace() {
   }
 
   return (
-    <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-      <div className="md:col-span-2 space-y-8">
+    <div className="flex flex-col md:flex-row gap-8 max-w-7xl mx-auto">
+      <div className="flex-1 space-y-8">
         <div className="space-y-2 text-center md:text-left">
             <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Listening</h1>
             <p className="text-lg text-muted-foreground max-w-3xl">
@@ -109,9 +109,11 @@ export function VideoWorkspace() {
         </div>
       </div>
       
-      <div className="h-full flex flex-col gap-4">
+      <div className="md:w-[40%] flex flex-col gap-4">
         <h2 className="text-lg font-semibold tracking-tight">Vocabulary</h2>
-        <VocabularyList />
+        <div className="aspect-video">
+             <VocabularyList />
+        </div>
       </div>
     </div>
   );
