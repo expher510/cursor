@@ -80,7 +80,7 @@ export function VideoWorkspace() {
         <div className="w-full grid grid-cols-12 gap-8 items-start">
              {/* Left Column for Video and Captions */}
              <div className="col-span-9 space-y-4">
-                 <div className="aspect-video w-full overflow-hidden rounded-lg bg-black/75 p-1">
+                <div className="aspect-video w-full overflow-hidden rounded-lg bg-black/75 p-1">
                     <ReactPlayer
                         url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                         width="100%"
@@ -103,9 +103,7 @@ export function VideoWorkspace() {
 
              {/* Right Column for Vocabulary */}
              <div className="col-span-3">
-                <div className="aspect-video w-full">
-                    <VocabularyList />
-                </div>
+                 <VocabularyList />
              </div>
         </div>
         
