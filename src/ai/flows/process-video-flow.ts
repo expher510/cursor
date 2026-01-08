@@ -28,9 +28,9 @@ const TranscriptItemSchema = z.object({
 export type TranscriptItem = z.infer<typeof TranscriptItemSchema>;
 
 const VideoStatsSchema = z.object({
-    viewCount: z.string().optional(),
-    likeCount: z.string().optional(),
-    commentCount: z.string().optional(),
+    viewCount: z.number().optional(),
+    likeCount: z.number().optional(),
+    commentCount: z.number().optional(),
 }).optional();
 export type VideoStats = z.infer<typeof VideoStatsSchema>;
 
@@ -115,11 +115,11 @@ const youtubeTranscriptTool = ai.defineTool(
     }
 );
 
-// Tool: YouTube Data API (for metadata)
-const youtubeDataApiTool = ai.defineTool(
+// Tool: Piped API (for metadata)
+const pipedApiTool = ai.defineTool(
     {
-        name: 'youtubeDataApiTool',
-        description: 'Fetches video metadata (title, description, stats) from the YouTube Data API.',
+        name: 'pipedApiTool',
+        description: 'Fetches video metadata (title, description, stats) from the Piped API.',
         inputSchema: z.object({ videoId: z.string() }),
         outputSchema: z.object({
             title: z.string().nullable(),
@@ -128,49 +128,40 @@ const youtubeDataApiTool = ai.defineTool(
         })
     },
     async ({ videoId }) => {
-        const API_KEY = process.env.YOUTUBE_DATA_API_KEY;
-        if (!API_KEY || API_KEY === '<your_youtube_api_key>') {
-            console.warn("YouTube Data API key not configured. Skipping metadata fetch.");
-            return { title: null, description: null, stats: null };
-        }
-        
-        const url = `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet,statistics&key=${API_KEY}`;
+        const url = `https://pipedapi.kavin.rocks/streams/${videoId}`;
 
         try {
-            console.log("Fetching metadata from YouTube Data API...");
+            console.log("Fetching metadata from Piped API...");
             const response = await fetch(url);
             
-            console.log("YouTube API Response Status:", response.status);
+            console.log("Piped API Response Status:", response.status);
 
             if (!response.ok) {
                 const errorBody = await response.json().catch(() => ({}));
-                console.error("YouTube API Error Body:", errorBody);
-                throw new Error(errorBody?.error?.message || `YouTube API request failed with status ${response.status}`);
+                console.error("Piped API Error Body:", errorBody);
+                throw new Error(errorBody?.message || `Piped API request failed with status ${response.status}`);
             }
             const data = await response.json();
-            console.log("Full YouTube API response data:", JSON.stringify(data, null, 2));
-
-            const item = data.items?.[0];
-
-            if (!item) {
-                console.warn("No 'items' found in YouTube API response for videoId:", videoId);
+            console.log("Full Piped API response data:", JSON.stringify(data, null, 2));
+            
+            if (!data) {
+                console.warn("No data found in Piped API response for videoId:", videoId);
                 return { title: null, description: null, stats: null };
             }
-            console.log("Successfully parsed video item from YouTube API:", JSON.stringify(item, null, 2));
-
 
             return {
-                title: item.snippet?.title || null,
-                description: item.snippet?.description || null,
-                stats: item.statistics ? {
-                    viewCount: item.statistics.viewCount,
-                    likeCount: item.statistics.likeCount,
-                    commentCount: item.statistics.commentCount,
-                } : null,
+                title: data.title || null,
+                description: data.description || null,
+                stats: {
+                    viewCount: data.views,
+                    likeCount: data.likes,
+                    commentCount: 0, // Piped /streams endpoint doesn't provide commentCount directly
+                },
             };
 
         } catch (error: any) {
-            console.warn(`YouTube Data API failed: ${error.message}`);
+            console.warn(`Piped API failed: ${error.message}`);
+            // Return nulls if the API fails for any reason
             return { title: null, description: null, stats: null };
         }
     }
@@ -187,8 +178,8 @@ const processVideoFlow = ai.defineFlow(
   async ({ videoId }) => {
 
     // Fetch metadata and transcript in parallel for better performance
-    const [youtubeApiResult, transcript] = await Promise.all([
-        youtubeDataApiTool({ videoId }),
+    const [pipedApiResult, transcript] = await Promise.all([
+        pipedApiTool({ videoId }),
         youtubeTranscriptTool({ videoId })
     ]);
 
@@ -197,14 +188,14 @@ const processVideoFlow = ai.defineFlow(
         throw new Error("Failed to retrieve transcript from any available source. The video may not have one.");
     }
     
-    // Use the official YouTube API's title if available, otherwise default.
-    const finalTitle = youtubeApiResult.title || 'YouTube Video';
+    // Use the Piped API's title if available, otherwise default.
+    const finalTitle = pipedApiResult.title || 'YouTube Video';
     
     return {
       title: finalTitle,
-      description: youtubeApiResult.description,
+      description: pipedApiResult.description,
       transcript,
-      stats: youtubeApiResult.stats,
+      stats: pipedApiResult.stats,
     };
   }
 );
