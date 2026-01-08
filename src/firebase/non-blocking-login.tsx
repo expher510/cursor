@@ -7,7 +7,7 @@ import {
   signInWithPopup,
   UserCredential,
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, writeBatch } from 'firebase/firestore';
+import { getFirestore, doc, writeBatch } from 'firebase/firestore';
 
 
 /**
