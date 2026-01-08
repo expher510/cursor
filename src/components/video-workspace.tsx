@@ -69,8 +69,8 @@ export function VideoWorkspace() {
   }
 
   return (
-    <div className="grid md:grid-cols-4 gap-8 max-w-6xl mx-auto">
-      <div className="md:col-span-3 space-y-8">
+    <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+      <div className="md:col-span-2 space-y-8">
         <div className="space-y-2 text-center md:text-left">
             <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Listening</h1>
             <p className="text-lg text-muted-foreground max-w-3xl">
