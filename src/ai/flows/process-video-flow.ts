@@ -11,6 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import 'dotenv/config';
+import { google } from 'googleapis';
 
 // Schema Definitions
 
@@ -39,7 +40,7 @@ const ProcessVideoOutputSchema = z.object({
   title: z.string().describe('The title of the video.'),
   description: z.string().optional().nullable().describe('The description of the video.'),
   transcript: z.array(TranscriptItemSchema).describe('The transcript of the video with timestamps.'),
-  stats: VideoStatsSchema,
+  stats: VideoStatsSchema.nullable(),
 });
 export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
 
@@ -48,6 +49,58 @@ export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
 export async function processVideo(input: ProcessVideoInput): Promise<ProcessVideoOutput> {
   return processVideoFlow(input);
 }
+
+// Tool: YouTube Data API v3
+const youtubeApiTool = ai.defineTool(
+    {
+        name: 'youtubeApiTool',
+        description: 'Fetches video metadata (title, description, stats) from the YouTube Data API v3.',
+        inputSchema: z.object({ videoId: z.string() }),
+        outputSchema: z.object({
+            title: z.string().nullable(),
+            description: z.string().nullable(),
+            stats: VideoStatsSchema.nullable(),
+        }),
+    },
+    async ({ videoId }) => {
+        const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
+        if (!YOUTUBE_API_KEY) {
+            console.warn('YouTube API key is not configured. Skipping YouTube API call.');
+            return { title: null, description: null, stats: null };
+        }
+        
+        try {
+            const youtube = google.youtube({
+                version: 'v3',
+                auth: YOUTUBE_API_KEY,
+            });
+
+            const response = await youtube.videos.list({
+                part: ['snippet', 'statistics'],
+                id: [videoId],
+            });
+
+            const video = response.data.items?.[0];
+            if (!video) {
+                return { title: null, description: null, stats: null };
+            }
+
+            return {
+                title: video.snippet?.title || null,
+                description: video.snippet?.description || null,
+                stats: {
+                    viewCount: video.statistics?.viewCount,
+                    likeCount: video.statistics?.likeCount,
+                    commentCount: video.statistics?.commentCount,
+                },
+            };
+        } catch (error: any) {
+            console.error(`YouTube API failed: ${error.message}`);
+            // Don't throw, just return nulls so the fallback can be used.
+            return { title: null, description: null, stats: null };
+        }
+    }
+);
 
 
 // Tool: Supadata API (Primary Source for Transcript and Fallback Metadata)
@@ -108,20 +161,28 @@ const processVideoFlow = ai.defineFlow(
     outputSchema: ProcessVideoOutputSchema,
   },
   async ({ videoId }) => {
+
+    // Run API calls in parallel
+    const [youtubeResult, supadataResult] = await Promise.all([
+        youtubeApiTool({ videoId }),
+        supadataApiTool({ videoId })
+    ]);
     
-    // Call Supadata API
-    const supadataResult = await supadataApiTool({ videoId });
-
-    // For now, we only get stats from Supadata if available, will add YouTube API later.
-    const title = supadataResult.title || 'YouTube Video';
-    const description = null; // Supadata doesn't provide this.
-    const stats = {}; // No stats from Supadata for now.
+    // Ensure transcript exists, otherwise it's a critical failure
     const transcript = supadataResult.transcript;
-
     if (transcript.length === 0) {
         throw new Error("Failed to retrieve transcript. The video may not have one available.");
     }
     
+    // Combine results with fallback logic
+    const title = youtubeResult?.title || supadataResult?.title || 'YouTube Video';
+    const description = youtubeResult?.description ?? null;
+    const stats = youtubeResult?.stats ?? null;
+
+    if (!title) {
+        throw new Error("Failed to retrieve video title from any source.");
+    }
+
     return {
       title,
       description,

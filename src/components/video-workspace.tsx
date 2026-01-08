@@ -100,7 +100,7 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
                 id: videoId,
                 title: result.title,
                 description: result.description ?? null,
-                stats: result.stats,
+                stats: result.stats ?? null,
                 userId: user.uid,
                 timestamp: Date.now(),
             }, { merge: true });
