@@ -3,9 +3,8 @@ import { useState } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
 import { VideoHistory } from "@/components/video-history";
 import { Button } from "@/components/ui/button";
-import { Headphones, BookOpen, Edit, Loader2, LogIn } from "lucide-react";
+import { Headphones, BookOpen, Edit, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Link from 'next/link';
 import { extractYouTubeVideoId } from "@/lib/utils";
 import { useFirebase } from "@/firebase";
 import { useCollection } from "@/firebase/firestore/use-collection";
@@ -117,7 +116,9 @@ export default function HomePage() {
           ) : user ? (
             <MainContent url={url} onUrlChange={setUrl} />
           ) : (
-            <p className="text-muted-foreground mt-8">You need to be logged in to see your history.</p>
+             <div className="text-center p-8 border-dashed border-2 rounded-lg mt-8">
+                <p className="text-muted-foreground">Please log in or sign up to see your history and start practicing.</p>
+            </div>
           )}
 
         </div>
