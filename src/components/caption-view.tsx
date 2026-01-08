@@ -19,27 +19,18 @@ export function CaptionView({ transcript, currentTime }: CaptionViewProps) {
     if (!transcript || transcript.length === 0) {
       return null;
     }
-
-    const PREDICTIVE_BUFFER = 250; 
-
-    const activeLines = transcript.filter(line => 
-      currentTime >= (line.offset - PREDICTIVE_BUFFER) && currentTime < (line.offset + line.duration)
-    );
-
-    if (activeLines.length > 0) {
-      return activeLines;
-    }
-
-    let lastLine: TranscriptItem | null = null;
+    
+    // Find the single, most appropriate line for the current time.
+    // This will be the last line that has started.
+    let currentLine: TranscriptItem | null = null;
     for (const line of transcript) {
         if (line.offset <= currentTime) {
-            lastLine = line;
+            currentLine = line;
         } else {
-            break;
+            break; // Stop as soon as we pass the current time
         }
     }
-    
-    return lastLine ? [lastLine] : null;
+    return currentLine;
 
   }, [transcript, currentTime]);
 
@@ -48,11 +39,13 @@ export function CaptionView({ transcript, currentTime }: CaptionViewProps) {
        return <span>...</span>;
     }
     
-    return activeLine.map((line, lineIndex) => (
-        <span key={`${line.offset}-${lineIndex}`}>
+    const line = activeLine; // We now have a single line object
+
+    return (
+        <span key={line.offset}>
             {line.text.split(/(\s+)/).map((word, wordIndex) => {
               const cleanedWord = word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,"");
-              const key = `${line.offset}-${lineIndex}-${wordIndex}`;
+              const key = `${line.offset}-${wordIndex}`;
               
               if (!cleanedWord) {
                 return <span key={key}>{word}</span>;
@@ -76,8 +69,8 @@ export function CaptionView({ transcript, currentTime }: CaptionViewProps) {
                 </Button>
               );
             })}
-          </span>
-    ));
+        </span>
+    );
   };
 
   return (
