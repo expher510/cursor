@@ -43,7 +43,7 @@ async function ensureUserDocument(authInstance: Auth, user: UserCredential['user
 /** Initiate email/password sign-up (blocking to allow for error handling). */
 export async function initiateEmailSignUp(authInstance: Auth, email: string, password: string): Promise<UserCredential> {
   const userCredential = await createUserWithEmailAndPassword(authInstance, email, password);
-  ensureUserDocument(authInstance, userCredential.user);
+  await ensureUserDocument(authInstance, userCredential.user);
   return userCredential;
 }
 
@@ -53,7 +53,7 @@ export async function initiateEmailSignIn(authInstance: Auth, email: string, pas
   // Sign-in itself doesn't need to create the document, but we can ensure it exists
   // for consistency, especially for users created before this logic was in place.
   const userCredential = await signInWithEmailAndPassword(authInstance, email, password);
-  ensureUserDocument(authInstance, userCredential.user);
+  await ensureUserDocument(authInstance, userCredential.user);
   return userCredential;
 }
 
@@ -61,6 +61,6 @@ export async function initiateEmailSignIn(authInstance: Auth, email: string, pas
 export async function initiateGoogleSignIn(authInstance: Auth): Promise<UserCredential> {
   const provider = new GoogleAuthProvider();
   const userCredential = await signInWithPopup(authInstance, provider);
-  ensureUserDocument(authInstance, userCredential.user);
+  await ensureUserDocument(authInstance, userCredential.user);
   return userCredential;
 }
