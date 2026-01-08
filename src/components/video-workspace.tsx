@@ -106,7 +106,7 @@ export function VideoWorkspace() {
                 <Button asChild size="lg">
                 <Link href={`/quiz?v=${videoData.videoId}`}>
                     <Edit className="mr-2 h-5 w-5" />
-                    Start Writing Exercise
+                    Comprehensive Quiz
                 </Link>
                 </Button>
             </div>
