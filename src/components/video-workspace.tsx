@@ -87,6 +87,8 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
           
           processedData = {
               title: videoInfo.title,
+              description: videoInfo.description,
+              stats: videoInfo.stats,
               transcript: transcriptInfo.content,
           };
         } else {
@@ -95,10 +97,12 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
 
             // Save the new data to Firestore (non-blocking)
             setDocumentNonBlocking(videoDocRef, {
-            id: videoId,
-            title: result.title || 'YouTube Video',
-            userId: user.uid,
-            timestamp: Date.now(),
+                id: videoId,
+                title: result.title,
+                description: result.description ?? null,
+                stats: result.stats,
+                userId: user.uid,
+                timestamp: Date.now(),
             }, { merge: true });
 
             setDocumentNonBlocking(transcriptDocRef, {

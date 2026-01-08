@@ -1,9 +1,9 @@
 
 'use server';
 /**
- * @fileOverview A flow for processing YouTube videos to extract transcripts.
+ * @fileOverview A flow for processing YouTube videos to extract transcripts and metadata.
  *
- * - processVideo - A function that takes a YouTube video ID and returns its title and transcript.
+ * - processVideo - A function that takes a YouTube video ID and returns its title, transcript, and other metadata.
  * - ProcessVideoInput - The input type for the processVideo function.
  * - ProcessVideoOutput - The return type for the processVideo function.
  */
@@ -11,6 +11,8 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import 'dotenv/config';
+
+// Schema Definitions
 
 const ProcessVideoInputSchema = z.object({
   videoId: z.string().describe('The ID of the YouTube video to process.'),
@@ -21,93 +23,110 @@ const TranscriptItemSchema = z.object({
   text: z.string(),
   offset: z.number(),
   duration: z.number(),
-  videoId: z.string().optional(), // Make videoId optional here
+  videoId: z.string().optional(),
 });
 export type TranscriptItem = z.infer<typeof TranscriptItemSchema>;
 
+const VideoStatsSchema = z.object({
+    viewCount: z.string().optional(),
+    likeCount: z.string().optional(),
+    commentCount: z.string().optional(),
+}).optional();
+export type VideoStats = z.infer<typeof VideoStatsSchema>;
+
+
 const ProcessVideoOutputSchema = z.object({
   title: z.string().describe('The title of the video.'),
+  description: z.string().optional().nullable().describe('The description of the video.'),
   transcript: z.array(TranscriptItemSchema).describe('The transcript of the video with timestamps.'),
+  stats: VideoStatsSchema,
 });
 export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
 
-// This is a wrapper function that we will call from our components.
+
+// This is the public wrapper function that components will call.
 export async function processVideo(input: ProcessVideoInput): Promise<ProcessVideoOutput> {
   return processVideoFlow(input);
 }
 
 
-const transcriptApiTool = ai.defineTool(
+// Tool: Supadata API (Primary Source for Transcript and Fallback Metadata)
+const supadataApiTool = ai.defineTool(
   {
-    name: 'transcriptApiTool',
-    description: 'Fetches the transcript for a given YouTube video using the Supadata API.',
+    name: 'supadataApiTool',
+    description: 'Fetches the transcript and basic metadata for a given YouTube video using the Supadata API.',
     inputSchema: z.object({ videoId: z.string() }),
     outputSchema: z.object({
       title: z.string().nullable(),
-      transcript: z.array(z.object({
-        text: z.string(),
-        offset: z.number(),
-        duration: z.number(),
-      })),
+      transcript: z.array(TranscriptItemSchema),
     }),
   },
-  async (input) => {
-    const { videoId } = input;
+  async ({ videoId }) => {
     const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    
     const API_BASE_URL = 'https://api.supadata.ai/v1/transcript';
     const API_KEY = process.env.SUPADATA_API_KEY;
 
     if (!API_KEY) {
-      throw new Error('Supadata API key is not configured in .env file (SUPADATA_API_KEY).');
+      throw new Error('Supadata API key is not configured.');
     }
     
     try {
         const requestUrl = new URL(API_BASE_URL);
         requestUrl.searchParams.append('url', youtubeUrl);
         requestUrl.searchParams.append('lang', 'en');
-        requestUrl.searchParams.append('mode', 'native'); // Fetch existing transcripts to avoid generation costs
+        requestUrl.searchParams.append('mode', 'native');
 
         const response = await fetch(requestUrl.toString(), {
             method: 'GET',
-            headers: {
-                'x-api-key': API_KEY,
-            },
+            headers: { 'x-api-key': API_KEY },
         });
 
         if (!response.ok) {
-            const errorBody = await response.json().catch(() => ({ message: `API request failed with status ${response.status}` }));
-            throw new Error(errorBody.message || `API request failed with status ${response.status}`);
+            const errorBody = await response.json().catch(() => ({ message: `Supadata API request failed with status ${response.status}` }));
+            throw new Error(errorBody.message);
         }
 
         const result = await response.json();
-        
-        const title = result.title || null;
-        const transcript = result.content || [];
-
-        return { title, transcript };
+        return {
+            title: result.title || null,
+            transcript: result.content || [],
+        };
 
     } catch (error: any) {
-        console.error(`Supadata API failed:`, error.message);
-        throw new Error(`Could not get transcript from Supadata for video ID: ${videoId}. Reason: ${error.message}`);
+        console.error(`Supadata API failed: ${error.message}`);
+        throw new Error(`Could not get transcript from Supadata. Reason: ${error.message}`);
     }
   }
 );
 
+
+// The Main Flow
 const processVideoFlow = ai.defineFlow(
   {
     name: 'processVideoFlow',
     inputSchema: ProcessVideoInputSchema,
     outputSchema: ProcessVideoOutputSchema,
   },
-  async (input) => {
+  async ({ videoId }) => {
     
-    const { title, transcript } = await transcriptApiTool(input);
+    // Call Supadata API
+    const supadataResult = await supadataApiTool({ videoId });
 
+    // For now, we only get stats from Supadata if available, will add YouTube API later.
+    const title = supadataResult.title || 'YouTube Video';
+    const description = null; // Supadata doesn't provide this.
+    const stats = {}; // No stats from Supadata for now.
+    const transcript = supadataResult.transcript;
+
+    if (transcript.length === 0) {
+        throw new Error("Failed to retrieve transcript. The video may not have one available.");
+    }
+    
     return {
-      title: title || 'YouTube Video',
-      transcript: transcript,
+      title,
+      description,
+      transcript,
+      stats,
     };
   }
 );
-
