@@ -76,9 +76,6 @@ function ReadingPracticePage() {
             
             <VocabularyList />
 
-             <div className="p-1 rounded-lg border bg-card text-card-foreground shadow-sm h-[50vh]">
-                <TranscriptView transcript={formattedTranscript} videoId={videoData.videoId!} />
-             </div>
         </div>
     )
 }
