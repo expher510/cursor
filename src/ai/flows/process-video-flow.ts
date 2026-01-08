@@ -61,42 +61,42 @@ const processVideoFlow = ai.defineFlow(
   },
   async ({ videoId }) => {
     
-    let title = 'YouTube Video';
-    try {
-        const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
-        const html = await response.text();
-        const match = html.match(/<title>(.*?)<\/title>/);
-        if (match && match[1]) {
-            title = match[1].replace(' - YouTube', '').trim();
-        }
-    } catch(e) {
-        console.warn("Could not fetch video title automatically.");
-    }
-    
-    // 2. Fetch the transcript using the youtube-transcript library
+    // Step 1: Fetch the transcript using the youtube-transcript library
     let transcript;
     try {
         transcript = await YoutubeTranscript.fetchTranscript(videoId);
     } catch (e: any) {
          console.error("Failed to fetch transcript:", e.message);
          // Re-throw with a more user-friendly message
-         throw new Error("Could not retrieve transcript. The video may not have subtitles enabled.");
+         throw new Error("Could not retrieve transcript. The video may not have subtitles enabled or is private.");
     }
     
     if (!transcript || transcript.length === 0) {
         throw new Error("The retrieved transcript was empty. It might be in an unsupported format or disabled for this video.");
     }
+    
+    // Step 2: Try to fetch the title from the YouTube page (best-effort)
+    let title = 'YouTube Video';
+    try {
+        const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+        if (response.ok) {
+            const html = await response.text();
+            const match = html.match(/<title>(.*?)<\/title>/);
+            if (match && match[1]) {
+                title = match[1].replace(' - YouTube', '').trim();
+            }
+        }
+    } catch(e) {
+        console.warn("Could not fetch video title automatically. Using a default title.");
+    }
 
-    // 3. Format the data and return
+
+    // Step 3: Format the data and return
     return {
       title: title,
-      description: "", // Piped API is removed, so description is empty
+      description: "", // Description is not available through this method
       transcript: transcript,
-      stats: { // Stats are no longer available
-          views: 0,
-          likes: 0,
-          commentCount: 0, 
-      },
+      stats: null, // Stats are not available
     };
   }
 );
