@@ -57,7 +57,7 @@ export async function ensureUserDocument(firestore: Firestore, user: User, auth:
                 console.error("Firestore batch commit failed for new user setup:", error);
                 const contextualError = new FirestorePermissionError({
                     operation: 'write', // Batch can contain multiple operations
-                    path: `users/${user.uid}`,
+                    path: `users/${user.id}`,
                     requestResourceData: { userData, placeholderVideos }
                 }, auth);
                 errorEmitter.emit('permission-error', contextualError);
@@ -71,10 +71,14 @@ export async function ensureUserDocument(firestore: Firestore, user: User, auth:
         console.error("Error in ensureUserDocument:", error);
         
         if (!(error instanceof FirestorePermissionError)) {
-            // If it's not our custom error, it's an unexpected issue.
-            // We can choose to wrap it or just rethrow.
-            throw error;
+            const contextualError = new FirestorePermissionError({
+                operation: 'write',
+                path: `users/${user.uid}`,
+             }, auth);
+             errorEmitter.emit('permission-error', contextualError);
+             throw contextualError;
         }
+        throw error;
     }
 }
 
