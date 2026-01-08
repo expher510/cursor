@@ -25,6 +25,7 @@ export interface UseCollectionResult<T> {
   data: WithId<T>[] | null; // Document data with ID, or null.
   isLoading: boolean;       // True if loading.
   error: FirestoreError | Error | null; // Error object, or null.
+  setData: React.Dispatch<React.SetStateAction<WithId<T>[] | null>>; // Function to manually update the local state
 }
 
 /* Internal implementation of Query:
@@ -106,7 +107,7 @@ export function useCollection<T = any>(
         setData(null);
         setIsLoading(false);
 
-        // Also emit the error for any central listener components
+        // Also emit the error for any central listener component
         errorEmitter.emit('permission-error', contextualError);
       }
     );
@@ -114,5 +115,5 @@ export function useCollection<T = any>(
     return () => unsubscribe();
   }, [memoizedTargetRefOrQuery, auth]);
   
-  return { data, isLoading, error };
+  return { data, isLoading, error, setData };
 }
