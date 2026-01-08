@@ -3,7 +3,7 @@
 import { AppHeader } from "@/components/app-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef }from "react";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Loader2, Sparkles } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
@@ -11,16 +11,18 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Logo } from "@/components/logo";
+import { cn } from "@/lib/utils";
 
 function WritingWorkspace() {
     const { videoData, vocabulary, isLoading: isContextLoading } = useWatchPage();
     const [wordCount, setWordCount] = useState(10);
     const [exerciseWords, setExerciseWords] = useState<string[]>([]);
     const [availableWords, setAvailableWords] = useState<string[]>([]);
-    const [writtenText, setWrittenText] = useState("");
     const [isStarted, setIsStarted] = useState(false);
     const [isGettingFeedback, setIsGettingFeedback] = useState(false);
     
+    const editorRef = useRef<HTMLDivElement>(null);
+
     const transcriptText = useMemo(() => {
         if (!videoData?.transcript) return [];
         const fullText = videoData.transcript.map(t => t.text).join(' ');
@@ -47,17 +49,64 @@ function WritingWorkspace() {
         const finalWords = words.sort(() => 0.5 - Math.random());
         setExerciseWords(finalWords);
         setAvailableWords(finalWords);
-        setWrittenText("");
+        if (editorRef.current) {
+            editorRef.current.innerHTML = '';
+        }
         setIsStarted(true);
     };
 
+    const insertTextAtCursor = (text: string, isStyled: boolean) => {
+        const editor = editorRef.current;
+        if (!editor) return;
+
+        editor.focus();
+        const selection = window.getSelection();
+        if (!selection || selection.rangeCount === 0) return;
+
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+
+        if (isStyled) {
+            const span = document.createElement('span');
+            span.className = 'text-primary';
+            span.textContent = text;
+            
+            const space = document.createTextNode(' ');
+
+            range.insertNode(space);
+            range.insertNode(span);
+            
+            // Move cursor after the inserted styled text
+            range.setStartAfter(span);
+
+        } else {
+            const textNode = document.createTextNode(text);
+            range.insertNode(textNode);
+            // Move cursor after the inserted text
+            range.setStartAfter(textNode);
+        }
+        
+        selection.removeAllRanges();
+        selection.addRange(range);
+    }
+
     const handleWordClick = (word: string) => {
-        setWrittenText(prev => `${prev}${prev ? " " : ""}${word}`);
+        const editor = editorRef.current;
+        if (editor) {
+             // Add a space before the new word if there's existing content that doesn't end with a space
+            const currentText = editor.innerText.trim();
+            if (currentText && !/\s$/.test(editor.innerText)) {
+               insertTextAtCursor(' ', false);
+            }
+            insertTextAtCursor(word, true);
+        }
         setAvailableWords(prev => prev.filter(w => w !== word));
     };
     
     const resetExercise = () => {
-        setWrittenText("");
+        if (editorRef.current) {
+            editorRef.current.innerHTML = "";
+        }
         setAvailableWords(exerciseWords);
     }
 
@@ -99,6 +148,7 @@ function WritingWorkspace() {
 
     return (
         <div className="w-full max-w-4xl space-y-6">
+            
             <div className="min-h-[6rem] flex flex-wrap gap-3 justify-center">
                 {availableWords.map(word => (
                      <Badge 
@@ -112,12 +162,15 @@ function WritingWorkspace() {
                 ))}
             </div>
 
-            <Textarea
-                placeholder="Start writing your text here or click the words above..."
-                value={writtenText}
-                onChange={(e) => setWrittenText(e.target.value)}
-                className="min-h-[10rem] text-base"
-            />
+             <div
+                ref={editorRef}
+                contentEditable={true}
+                className={cn(
+                    'flex min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm',
+                    'leading-relaxed'
+                )}
+                data-placeholder="Start writing or click a word bubble..."
+             />
             
             <div className="flex justify-between">
                 <Button variant="outline" onClick={() => setIsStarted(false)}>Back to Settings</Button>
@@ -142,7 +195,7 @@ export default function WritingPage() {
     <>
       <AppHeader showBackButton={true} />
       <main className="container mx-auto pt-24 flex flex-col items-center gap-8 px-4 pb-10">
-         <div className="flex justify-center">
+        <div className="flex justify-center">
             <Logo />
         </div>
         <p className="text-muted-foreground max-w-2xl text-center">
