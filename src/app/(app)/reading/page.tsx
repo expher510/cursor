@@ -1,10 +1,11 @@
 'use client';
 import { AppHeader } from "@/components/app-header";
-import { ReadingTabs } from "@/components/video-tabs";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle } from "lucide-react";
+import { VocabularyList } from "@/components/vocabulary-list";
+import { TranscriptView } from "@/components/transcript-view";
 
 
 function ReadingPracticePage() {
@@ -15,10 +16,10 @@ function ReadingPracticePage() {
              <div className="w-full max-w-4xl mx-auto space-y-8">
                 <Skeleton className="h-10 w-1/2" />
                 <Skeleton className="h-6 w-3/4" />
+                <Skeleton className="h-20 w-full" />
                 <Card>
                     <CardHeader>
                         <Skeleton className="h-6 w-1/4" />
-                        <Skeleton className="h-4 w-1/2" />
                     </CardHeader>
                     <CardContent className="space-y-3">
                         <Skeleton className="h-5 w-full" />
@@ -53,14 +54,19 @@ function ReadingPracticePage() {
 
 
     return (
-        <div className="w-full max-w-4xl mx-auto">
-            <div className="text-center mb-8">
+        <div className="w-full max-w-4xl mx-auto space-y-6">
+            <div className="text-center mb-4">
                 <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Reading</h1>
                 <p className="text-lg text-muted-foreground mt-2 max-w-3xl mx-auto">
                     Click on any word in the transcript to instantly get its translation and add it to your personal vocabulary list.
                 </p>
             </div>
-            <ReadingTabs transcript={formattedTranscript} videoId={videoData.videoId!} />
+            
+            <VocabularyList />
+
+             <div className="p-1 rounded-lg border bg-card text-card-foreground shadow-sm h-[50vh]">
+                <TranscriptView transcript={formattedTranscript} videoId={videoData.videoId!} />
+             </div>
         </div>
     )
 }

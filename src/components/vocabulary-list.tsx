@@ -11,6 +11,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import Link from "next/link";
+import { ScrollArea, ScrollBar } from "./ui/scroll-area";
 
 
 export function VocabularyList() {
@@ -27,20 +28,21 @@ export function VocabularyList() {
                  <Skeleton className="h-10 w-28 rounded-full" />
               </div>
             ) : !vocabulary || vocabulary.length === 0 ? (
-              <div className="flex h-full min-h-[100px] items-center justify-center rounded-md text-center p-4">
+              <div className="flex h-full min-h-[60px] items-center justify-center rounded-md text-center">
                   <p className="text-sm text-muted-foreground">
                       Words you save will appear here.
                   </p>
               </div>
             ) : (
-               <TooltipProvider>
-                  <div className="flex flex-wrap gap-3">
+              <ScrollArea className="w-full whitespace-nowrap">
+                <TooltipProvider>
+                  <div className="flex w-max space-x-3 pb-2">
                     {vocabulary.map((item) => (
                       <div 
                         key={item.id} 
                         className="group relative flex items-center gap-2 rounded-full border border-primary bg-secondary/50 pr-2 pl-4 py-1 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-secondary"
                       >
-                        <div className="flex flex-col">
+                        <div className="flex flex-col text-left">
                           <span className="capitalize">{item.word}</span>
                           <span className="text-xs text-muted-foreground font-normal">{item.translation}</span>
                         </div>
@@ -62,7 +64,9 @@ export function VocabularyList() {
                       </div>
                     ))}
                   </div>
-              </TooltipProvider>
+                </TooltipProvider>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
             )}
           </div>
            {vocabulary && vocabulary.length > 0 && (
