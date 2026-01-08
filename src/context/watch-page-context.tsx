@@ -61,16 +61,13 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
   const vocabQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
-     // Don't filter by videoId here, we want all vocab for the flashcards page to work correctly
-    return query(
-        collection(firestore, `users/${user.uid}/vocabularies`),
-    );
+    return query(collection(firestore, `users/${user.uid}/vocabularies`));
   }, [user, firestore]);
 
   const { data: allVocabulary } = useCollection<VocabularyItem>(vocabQuery);
 
   const videoVocabulary = useMemo(() => {
-    if (!allVocabulary || !videoId) return [];
+    if (!allVocabulary || !videoId) return allVocabulary || [];
     return allVocabulary.filter(item => item.videoId === videoId);
   }, [allVocabulary, videoId]);
 
@@ -128,7 +125,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
 
   const value = {
-    vocabulary: videoVocabulary ?? [],
+    vocabulary: allVocabulary ?? [],
     savedWordsSet,
     addVocabularyItem,
     removeVocabularyItem,

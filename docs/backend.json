@@ -103,19 +103,18 @@
           "type": "string",
           "description": "Reference to Video. (Relationship: Video 1:N Vocabulary)"
         },
-        "words": {
-          "type": "array",
-          "description": "A list of vocabulary words/phrases.",
-          "items": {
+        "word": {
             "type": "string"
-          }
+        },
+        "translation": {
+            "type": "string"
         }
       },
       "required": [
         "id",
         "userId",
         "videoId",
-        "words"
+        "word"
       ]
     },
     "Quiz": {
@@ -217,7 +216,7 @@
         "definition": {
           "entityName": "User",
           "schema": {
-            "$ref": "#/backend/entities/User"
+            "$ref": "#/entities/User"
           },
           "description": "Stores user profiles.  Path-based ownership, allowing access only to the user themselves.",
           "params": [
@@ -233,7 +232,7 @@
         "definition": {
           "entityName": "Video",
           "schema": {
-            "$ref": "#/backend/entities/Video"
+            "$ref": "#/entities/Video"
           },
           "description": "Stores videos associated with a specific user. Path-based ownership, so only the user can access their own videos.",
           "params": [
@@ -253,7 +252,7 @@
         "definition": {
           "entityName": "Transcript",
           "schema": {
-            "$ref": "#/backend/entities/Transcript"
+            "$ref": "#/entities/Transcript"
           },
           "description": "Stores transcripts for videos owned by a specific user. Path-based ownership ensures data isolation.",
           "params": [
@@ -277,7 +276,7 @@
         "definition": {
           "entityName": "Quiz",
           "schema": {
-            "$ref": "#/backend/entities/Quiz"
+            "$ref": "#/entities/Quiz"
           },
           "description": "Stores quizzes for videos owned by a specific user. Path-based ownership ensures data isolation.",
           "params": [
@@ -301,7 +300,7 @@
         "definition": {
           "entityName": "Vocabulary",
           "schema": {
-            "$ref": "#/backend/entities/Vocabulary"
+            "$ref": "#/entities/Vocabulary"
           },
           "description": "Stores vocabulary lists created by a user. Path-based ownership ensures data isolation.",
           "params": [
@@ -321,7 +320,7 @@
         "definition": {
           "entityName": "WritingExerciseAttempt",
           "schema": {
-            "$ref": "#/backend/entities/WritingExerciseAttempt"
+            "$ref": "#/entities/WritingExerciseAttempt"
           },
           "description": "Stores a user's writing exercise attempts. Path-based ownership ensures data isolation.",
           "params": [
