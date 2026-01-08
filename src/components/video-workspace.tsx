@@ -69,18 +69,18 @@ export function VideoWorkspace() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
-      <div className="md:col-span-2 space-y-8">
-        <div className="space-y-2 text-center md:text-left">
+     <div className="flex flex-col items-center w-full">
+        <div className="w-full space-y-2 text-center md:text-left mb-8">
             <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Listening</h1>
             <p className="text-lg text-muted-foreground max-w-3xl">
                 Listen to the video and follow along with the synchronized transcript. Click any word to save it.
             </p>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_25%] gap-4 items-start">
-             <div className="space-y-4">
-                <div className="aspect-video w-full overflow-hidden rounded-lg bg-black/75 p-1">
+
+        <div className="w-full grid grid-cols-12 gap-8 items-start">
+             {/* Left Column for Video and Captions */}
+             <div className="col-span-9 space-y-4">
+                 <div className="aspect-video w-full overflow-hidden rounded-lg bg-black/75 p-1">
                     <ReactPlayer
                         url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                         width="100%"
@@ -100,12 +100,16 @@ export function VideoWorkspace() {
                 </div>
                 <CaptionView transcript={videoData.transcript} currentTime={currentTime} />
              </div>
-             <div className="h-full">
-                <VocabularyList />
+
+             {/* Right Column for Vocabulary */}
+             <div className="col-span-3">
+                <div className="aspect-video w-full">
+                    <VocabularyList />
+                </div>
              </div>
         </div>
-
-        <div className="flex justify-center">
+        
+        <div className="mt-8 flex justify-center">
             <Button asChild size="lg">
             <Link href={`/quiz?v=${videoData.videoId}`}>
                 <BrainCircuit className="mr-2 h-5 w-5" />
@@ -113,9 +117,6 @@ export function VideoWorkspace() {
             </Link>
             </Button>
         </div>
-      </div>
-      
-      {/* This outer vocabulary list is now removed, integrated into the grid above */}
     </div>
   );
 }
