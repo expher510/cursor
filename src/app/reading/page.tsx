@@ -10,6 +10,7 @@ import { useSearchParams } from "next/navigation";
 import { useFirebase } from "@/firebase";
 import { doc, getDoc } from "firebase/firestore";
 import { processVideo } from "@/ai/flows/process-video-flow";
+import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 function ReadingPracticePage() {
@@ -74,21 +75,24 @@ function ReadingPageContent() {
   const searchParams = useSearchParams();
   const videoId = searchParams.get('v');
   const { firestore, user } = useFirebase();
-  const { setVideoData, videoData, setIsLoading, setError } = useWatchPage();
+  const { setVideoData, videoData, isLoading, setIsLoading, setError } = useWatchPage();
 
   useEffect(() => {
     if (!videoId) {
       setError("No video selected. Please go back and choose a video.");
+      setIsLoading(false);
       return;
     }
 
     if (videoData && videoData.videoId === videoId) {
+      if (isLoading) setIsLoading(false);
       return;
     }
 
     async function fetchVideoData() {
       if (!user || !firestore) {
         setError("User or database not available.");
+        setIsLoading(false);
         return;
       }
       
@@ -108,12 +112,30 @@ function ReadingPageContent() {
           console.log("Found video and transcript in Firestore. Loading from cache.");
           processedData = {
               title: videoDocSnap.data().title,
+              description: videoDocSnap.data().description,
+              stats: videoDocSnap.data().stats,
               transcript: transcriptDocSnap.data().content,
           };
         } else {
-            console.log("Video not in Firestore. Fetching from API.");
+            console.log("Video not in Firestore. Fetching from API and caching.");
             const result = await processVideo({ videoId });
-            // For reading page, we don't save, just display. Saving happens on watch page.
+            
+            // Cache the new data to Firestore (non-blocking)
+            setDocumentNonBlocking(videoDocRef, {
+                id: videoId,
+                title: result.title,
+                description: result.description,
+                stats: result.stats,
+                userId: user.uid,
+                timestamp: Date.now(),
+            }, { merge: true });
+
+            setDocumentNonBlocking(transcriptDocRef, {
+                id: videoId,
+                videoId: videoId,
+                content: result.transcript,
+            }, { merge: true });
+
             processedData = result;
         }
 
@@ -132,7 +154,7 @@ function ReadingPageContent() {
     
     fetchVideoData();
 
-  }, [videoId, user, firestore, setVideoData, setError, setIsLoading, videoData]);
+  }, [videoId, user, firestore, setVideoData, setError, setIsLoading, videoData, isLoading]);
 
   return <ReadingPracticePage />;
 }
