@@ -11,7 +11,6 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import 'dotenv/config';
-import { YoutubeTranscript } from 'youtube-transcript';
 
 // Schema Definitions
 
@@ -50,59 +49,6 @@ export async function processVideo(input: ProcessVideoInput): Promise<ProcessVid
   return processVideoFlow(input);
 }
 
-// Tool: Supadata API (Primary Source for Transcript and Fallback Metadata)
-const supadataApiTool = ai.defineTool(
-  {
-    name: 'supadataApiTool',
-    description: 'Fetches the transcript and basic metadata for a given YouTube video using the Supadata API.',
-    inputSchema: z.object({ videoId: z.string() }),
-    outputSchema: z.object({
-      title: z.string().nullable(),
-      transcript: z.array(TranscriptItemSchema),
-    }),
-  },
-  async ({ videoId }) => {
-    const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const API_BASE_URL = 'https://api.supadata.ai/v1/transcript';
-    const API_KEY = process.env.SUPADATA_API_KEY;
-
-    if (!API_KEY) {
-      // This is not an error, just means we can't use this tool.
-      console.log("Supadata API key is not configured. Skipping.");
-      return { title: null, transcript: [] };
-    }
-    
-    try {
-        console.log("Attempting to fetch transcript from Supadata...");
-        const requestUrl = new URL(API_BASE_URL);
-        requestUrl.searchParams.append('url', youtubeUrl);
-        requestUrl.searchParams.append('lang', 'en');
-        requestUrl.searchParams.append('mode', 'native');
-
-        const response = await fetch(requestUrl.toString(), {
-            method: 'GET',
-            headers: { 'x-api-key': API_KEY },
-        });
-
-        if (!response.ok) {
-            const errorBody = await response.json().catch(() => ({ message: `Supadata API request failed with status ${response.status}` }));
-            throw new Error(errorBody.message);
-        }
-
-        const result = await response.json();
-        console.log("Successfully fetched from Supadata.");
-        return {
-            title: result.title || null,
-            transcript: result.content || [],
-        };
-
-    } catch (error: any) {
-        console.warn(`Supadata API failed: ${error.message}. The flow will attempt to use a fallback.`);
-        // Don't re-throw. Return empty so the flow can fall back to the next tool.
-        return { title: null, transcript: [] };
-    }
-  }
-);
 
 // Fallback Tool: youtube-transcript library
 const youtubeTranscriptTool = ai.defineTool(
@@ -115,9 +61,52 @@ const youtubeTranscriptTool = ai.defineTool(
     async ({ videoId }) => {
         try {
             console.log("Attempting to fetch transcript using youtube-transcript library...");
-            const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+            
+            // This logic is equivalent to the YoutubeTranscript.fetchTranscript method
+            const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+            const html = await response.text();
+            const innerTubeApiKeyMatch = html.match(/"innerTubeApiKey":"(.*?)"/);
+            
+            if (!innerTubeApiKeyMatch) {
+              throw new Error("Could not find innerTubeApiKey. The video may not have a transcript.");
+            }
+            const innerTubeApiKey = innerTubeApiKeyMatch[1];
+            
+            const playerResponseMatch = html.match(/ytInitialPlayerResponse\s*=\s*({.+?});/);
+            if (!playerResponseMatch) {
+              throw new Error('Could not find ytInitialPlayerResponse. The video may not have a transcript.');
+            }
+            const playerResponse = JSON.parse(playerResponseMatch[1]);
+            const captionTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+
+            if (!captionTracks || captionTracks.length === 0) {
+              throw new Error('No caption tracks found for this video.');
+            }
+
+            const transcriptTrack = captionTracks.find((track: any) => track.kind === 'asr' && track.languageCode === 'en') || captionTracks[0];
+
+            if (!transcriptTrack?.baseUrl) {
+                throw new Error("Could not find a valid transcript track URL.");
+            }
+
+            const transcriptResponse = await fetch(transcriptTrack.baseUrl);
+            const transcriptXml = await transcriptResponse.text();
+
+            const transcriptItems = Array.from(transcriptXml.matchAll(/<text start="(.*?)" dur="(.*?)">(.*?)<\/text>/g))
+              .map(match => ({
+                  offset: parseFloat(match[1]) * 1000,
+                  duration: parseFloat(match[2]) * 1000,
+                  text: match[3]
+                      .replace(/&amp;/g, '&')
+                      .replace(/&quot;/g, '"')
+                      .replace(/&#39;/g, "'")
+                      .replace(/&lt;/g, '<')
+                      .replace(/&gt;/g, '>')
+              }));
+
+
             console.log("Successfully fetched from youtube-transcript.");
-            return transcript;
+            return transcriptItems;
         } catch (error: any) {
             console.error(`youtube-transcript failed: ${error.message}`);
             // If this also fails, we throw a final error that the user will see.
@@ -189,26 +178,19 @@ const processVideoFlow = ai.defineFlow(
   },
   async ({ videoId }) => {
 
-    // Fetch metadata from YouTube API first.
-    const youtubeApiResult = await youtubeDataApiTool({ videoId });
+    // Fetch metadata and transcript in parallel for better performance
+    const [youtubeApiResult, transcript] = await Promise.all([
+        youtubeDataApiTool({ videoId }),
+        youtubeTranscriptTool({ videoId })
+    ]);
 
-    // Try Supadata first for the transcript.
-    let supadataResult = await supadataApiTool({ videoId });
-    let transcript = supadataResult.transcript;
-    
-    // If Supadata returns an empty transcript, try the youtube-transcript library as a fallback.
-    if (!transcript || transcript.length === 0) {
-        console.log("Supadata returned no transcript, trying youtube-transcript fallback...");
-        transcript = await youtubeTranscriptTool({ videoId });
-    }
-
-    // If after all fallbacks, we still have no transcript, we must throw an error.
+    // If we have no transcript, we must throw an error.
     if (!transcript || transcript.length === 0) {
         throw new Error("Failed to retrieve transcript from any available source. The video may not have one.");
     }
     
-    // Combine titles, preferring the official YouTube API's title.
-    const finalTitle = youtubeApiResult.title || supadataResult.title || 'YouTube Video';
+    // Use the official YouTube API's title if available, otherwise default.
+    const finalTitle = youtubeApiResult.title || 'YouTube Video';
     
     return {
       title: finalTitle,
