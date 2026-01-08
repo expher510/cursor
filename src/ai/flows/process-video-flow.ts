@@ -141,13 +141,18 @@ const processVideoFlow = ai.defineFlow(
   async ({ videoId }) => {
 
     // Fetch metadata and transcript in parallel for better performance
-    const [pipedApiResult, transcript] = await Promise.all([
+    const [pipedApiResult, transcriptResult] = await Promise.all([
         pipedApiTool({ videoId }),
-        youtubeTranscriptTool({ videoId })
+        youtubeTranscriptTool({ videoId }).catch(err => err as Error) // Catch transcript errors specifically
     ]);
 
+    // If transcript resulted in an error, throw it.
+    if (transcriptResult instanceof Error) {
+        throw transcriptResult;
+    }
+    
     // If we have no transcript, we must throw an error.
-    if (!transcript || transcript.length === 0) {
+    if (!transcriptResult || transcriptResult.length === 0) {
         throw new Error("Failed to retrieve transcript from any available source. The video may not have one.");
     }
     
@@ -157,7 +162,7 @@ const processVideoFlow = ai.defineFlow(
     return {
       title: finalTitle,
       description: pipedApiResult.description,
-      transcript,
+      transcript: transcriptResult,
       stats: pipedApiResult.stats,
     };
   }
