@@ -31,36 +31,48 @@ export async function ensureUserDocument(firestore: Firestore, user: User, auth:
         const userDocSnap = await getDoc(userDocRef);
 
         if (!userDocSnap.exists()) {
-            console.log(`User document for ${user.uid} does not exist. Creating...`);
+            console.log(`User document for ${user.uid} does not exist. Creating with placeholder content...`);
             
+            const batch = writeBatch(firestore);
+
+            // 1. Create the main user document
             const userData = { id: user.uid, email: user.email };
+            batch.set(userDocRef, userData);
+
+            // 2. Create placeholder video history
+            const placeholderVideos = [
+                { id: 'RGy4oJ9A-9M', title: 'Learn Arabic in 30 Minutes', timestamp: Date.now() - 1000 },
+                { id: 'IeH48i42Oug', title: 'Learn French in 30 Minutes', timestamp: Date.now() - 2000 },
+                { id: '_hG4c6-sD8', title: 'Learn Spanish for Beginners', timestamp: Date.now() - 3000 },
+            ];
+
+            placeholderVideos.forEach(video => {
+                const videoDocRef = doc(firestore, `users/${user.uid}/videos`, video.id);
+                batch.set(videoDocRef, { ...video, userId: user.uid });
+            });
             
-            // Try to set the user document.
-            // We do NOT use a batch here anymore. We try to create the user doc first.
-            // If this fails, the error handler will catch it and show the detailed error.
-            // This is better for debugging security rules than a silent batch failure.
-            await setDoc(userDocRef, userData).catch(error => {
-                console.error("Firestore setDoc failed for user document:", error);
+
+            // Commit the batch
+            await batch.commit().catch(error => {
+                console.error("Firestore batch commit failed for new user setup:", error);
                 const contextualError = new FirestorePermissionError({
-                    operation: 'create',
-                    path: userDocRef.path,
-                    requestResourceData: userData
+                    operation: 'write', // Batch can contain multiple operations
+                    path: `users/${user.uid}`,
+                    requestResourceData: { userData, placeholderVideos }
                 }, auth);
                 errorEmitter.emit('permission-error', contextualError);
                 throw contextualError; // Re-throw to stop execution
             });
 
-            console.log(`Successfully created user document for ${user.uid}.`);
+            console.log(`Successfully created user document and placeholder history for ${user.uid}.`);
         }
     } catch (error: any) {
-        // This will catch errors from getDoc and from the re-thrown setDoc error.
+        // This will catch errors from getDoc and from the re-thrown batch.commit error.
         console.error("Error in ensureUserDocument:", error);
         
-        // If it's not our custom error, it's an unexpected issue.
-        // We don't emit it as a permission error, just log it.
-        // The custom error is already emitted and thrown inside the catch block above.
         if (!(error instanceof FirestorePermissionError)) {
-             // We can choose to wrap it or just rethrow
+            // If it's not our custom error, it's an unexpected issue.
+            // We can choose to wrap it or just rethrow.
             throw error;
         }
     }
