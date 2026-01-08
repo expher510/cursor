@@ -60,10 +60,18 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
         
         <nav className="flex items-center justify-end gap-2" style={{minWidth: '150px'}}>
              {user ? (
-                <Button variant="outline" size="icon" onClick={handleLogout} className="h-10 w-10">
-                    <LogOut className="h-5 w-5" />
-                    <span className="sr-only">Logout</span>
-                </Button>
+                <>
+                  <Button asChild variant="outline" size="icon" className="h-10 w-10 border-primary/80 hover:bg-primary/10">
+                      <Link href="/flashcards">
+                          <Copy className="h-5 w-5 text-primary" />
+                          <span className="sr-only">Flashcards</span>
+                      </Link>
+                  </Button>
+                  <Button variant="outline" size="icon" onClick={handleLogout} className="h-10 w-10">
+                      <LogOut className="h-5 w-5" />
+                      <span className="sr-only">Logout</span>
+                  </Button>
+                </>
              ) : (
                 <Button asChild variant="default" className="gap-2">
                     <Link href="/login">
