@@ -65,10 +65,10 @@ function ReadingPracticePage() {
                             Click on any word in the transcript to instantly get its translation and add it to your personal vocabulary list.
                         </p>
                     </div>
-                     <Button asChild size="lg">
+                     <Button asChild size="lg" className="rounded-full">
                         <Link href={`/quiz?v=${videoData.videoId}`}>
                             <Mic className="mr-2 h-5 w-5" />
-                            Start Speaking Test
+                            Reading Quiz
                         </Link>
                     </Button>
                 </div>
