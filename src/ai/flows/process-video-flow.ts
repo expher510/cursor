@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A flow for processing YouTube videos to extract transcripts and metadata.
+ * @fileOverview A flow for processing YouTube videos to extract transcripts and metadata using the Piped API.
  *
  * - processVideo - A function that takes a YouTube video ID and returns its title, transcript, and other metadata.
  * - ProcessVideoInput - The input type for the processVideo function.
@@ -11,7 +11,26 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import 'dotenv/config';
-import { YoutubeTranscript } from 'youtube-transcript';
+
+// XML to JSON-like Object Parser
+function parseTranscriptXml(xml: string) {
+    const lines = [];
+    const textNodes = xml.match(/<p begin="[^"]+" end="[^"]+" dur="[^"]+">[^<]+<\/p>/g) || [];
+    
+    for (const node of textNodes) {
+        const textMatch = node.match(/>([^<]+)</);
+        const text = textMatch ? textMatch[1].replace(/&amp;#39;/g, "'").replace(/&quot;/g, '"') : '';
+
+        const beginMatch = node.match(/begin="([^"]+)"/);
+        const offset = beginMatch ? parseFloat(beginMatch[1]) * 1000 : 0;
+        
+        const durMatch = node.match(/dur="([^"]+)"/);
+        const duration = durMatch ? parseFloat(durMatch[1]) * 1000 : 0;
+        
+        lines.push({ text, offset, duration });
+    }
+    return lines;
+}
 
 
 // Schema Definitions
@@ -52,85 +71,6 @@ export async function processVideo(input: ProcessVideoInput): Promise<ProcessVid
 }
 
 
-// Fallback Tool: youtube-transcript library logic
-const youtubeTranscriptTool = ai.defineTool(
-    {
-        name: 'youtubeTranscriptTool',
-        description: 'Fetches the transcript for a given YouTube video ID directly.',
-        inputSchema: z.object({ videoId: z.string() }),
-        outputSchema: z.array(TranscriptItemSchema),
-    },
-    async ({ videoId }) => {
-        try {
-            console.log(`Attempting to fetch transcript for ${videoId} using youtube-transcript library...`);
-            
-            const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-
-            if (!transcript || transcript.length === 0) {
-                 throw new Error("Transcript was found but contained no text content.");
-            }
-
-            console.log(`Successfully fetched and parsed ${transcript.length} transcript lines.`);
-            return transcript;
-
-        } catch (error: any) {
-            console.error(`Transcript fetching failed: ${error.message}`);
-            // Re-throw the specific error message to be displayed to the user.
-            throw new Error(`Could not retrieve transcript. The video may not have subtitles enabled or is otherwise unavailable.`);
-        }
-    }
-);
-
-// Tool: Piped API (for metadata)
-const pipedApiTool = ai.defineTool(
-    {
-        name: 'pipedApiTool',
-        description: 'Fetches video metadata (title, description, stats) from the Piped API.',
-        inputSchema: z.object({ videoId: z.string() }),
-        outputSchema: z.object({
-            title: z.string().nullable(),
-            description: z.string().nullable(),
-            stats: VideoStatsSchema.nullable(),
-        })
-    },
-    async ({ videoId }) => {
-        const url = `https://pipedapi.kavin.rocks/streams/${videoId}`;
-
-        try {
-            console.log("Fetching metadata from Piped API...");
-            const response = await fetch(url);
-            
-            if (!response.ok) {
-                const errorBody = await response.json().catch(() => ({}));
-                console.error("Piped API Error Body:", errorBody);
-                throw new Error(errorBody?.message || `Piped API request failed with status ${response.status}`);
-            }
-            const data = await response.json();
-            
-            if (!data) {
-                console.warn("No data found in Piped API response for videoId:", videoId);
-                return { title: null, description: null, stats: null };
-            }
-
-            return {
-                title: data.title || null,
-                description: data.description || null,
-                stats: {
-                    views: data.views,
-                    likes: data.likes,
-                    commentCount: 0, // Piped /streams endpoint doesn't provide commentCount directly
-                },
-            };
-
-        } catch (error: any) {
-            console.warn(`Piped API failed: ${error.message}`);
-            // Return nulls if the API fails for any reason
-            return { title: null, description: null, stats: null };
-        }
-    }
-);
-
-
 // The Main Flow
 const processVideoFlow = ai.defineFlow(
   {
@@ -139,31 +79,57 @@ const processVideoFlow = ai.defineFlow(
     outputSchema: ProcessVideoOutputSchema,
   },
   async ({ videoId }) => {
+    
+    // 1. Fetch metadata and subtitle info from Piped API
+    const streamUrl = `https://pipedapi.kavin.rocks/streams/${videoId}`;
+    let streamData;
+    try {
+        const streamResponse = await fetch(streamUrl);
+        if (!streamResponse.ok) {
+            throw new Error(`Piped API request for stream data failed with status ${streamResponse.status}`);
+        }
+        streamData = await streamResponse.json();
+    } catch(e: any) {
+        console.error("Failed to fetch stream data from Piped API:", e.message);
+        throw new Error("Could not fetch video information. The video might be private or unavailable.");
+    }
 
-    // Fetch metadata and transcript in parallel for better performance
-    const [pipedApiResult, transcriptResult] = await Promise.all([
-        pipedApiTool({ videoId }),
-        youtubeTranscriptTool({ videoId }).catch(err => err as Error) // Catch transcript errors specifically
-    ]);
-
-    // If transcript resulted in an error, throw it.
-    if (transcriptResult instanceof Error) {
-        throw transcriptResult;
+    const { title, description, views, likes, subtitles } = streamData;
+    
+    // 2. Find an auto-generated subtitle URL
+    const autoSub = subtitles?.find((sub: any) => sub.autoGenerated === true);
+    if (!autoSub || !autoSub.url) {
+        throw new Error("Could not retrieve transcript. The video may not have subtitles enabled or is otherwise unavailable.");
     }
     
-    // If we have no transcript, we must throw an error.
-    if (!transcriptResult || transcriptResult.length === 0) {
-        throw new Error("Failed to retrieve transcript from any available source. The video may not have one.");
+    // 3. Fetch the transcript content
+    let transcriptXml;
+    try {
+        const transcriptResponse = await fetch(autoSub.url);
+        if (!transcriptResponse.ok) {
+            throw new Error(`Piped API request for transcript failed with status ${transcriptResponse.status}`);
+        }
+        transcriptXml = await transcriptResponse.text();
+    } catch (e: any) {
+        console.error("Failed to fetch transcript content:", e.message);
+        throw new Error("Failed to download the transcript file.");
     }
-    
-    // Use the Piped API's title if available, otherwise default.
-    const finalTitle = pipedApiResult.title || 'YouTube Video';
-    
+
+    // 4. Parse the XML transcript
+    const transcript = parseTranscriptXml(transcriptXml);
+    if (!transcript || transcript.length === 0) {
+        throw new Error("The retrieved transcript was empty or could not be parsed.");
+    }
+
     return {
-      title: finalTitle,
-      description: pipedApiResult.description,
-      transcript: transcriptResult,
-      stats: pipedApiResult.stats,
+      title: title || 'YouTube Video',
+      description: description,
+      transcript: transcript,
+      stats: {
+          views: views,
+          likes: likes,
+          commentCount: 0, 
+      },
     };
   }
 );
