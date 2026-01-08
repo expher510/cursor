@@ -8,12 +8,12 @@ import {
   User,
   UserCredential,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, Firestore } from 'firebase/firestore';
+import { doc, setDoc, getDoc, Firestore, writeBatch } from 'firebase/firestore';
 
 
 /**
- * Ensures a user document exists in Firestore. If it doesn't, it creates one.
- * This is crucial for new user sign-ups and as a fallback for existing users.
+ * Ensures a user document exists in Firestore. If it doesn't, it creates one
+ * along with a placeholder document in the 'videos' subcollection.
  * @param firestore The Firestore instance.
  * @param user The authenticated user object from Firebase Auth.
  */
@@ -27,16 +27,31 @@ async function ensureUserDocument(firestore: Firestore, user: User) {
 
         if (!userDocSnap.exists()) {
             console.log(`User document for ${user.uid} does not exist. Creating...`);
-            await setDoc(userDocRef, {
+            
+            const batch = writeBatch(firestore);
+
+            // 1. Create the main user document
+            batch.set(userDocRef, {
                 id: user.uid,
                 email: user.email,
             });
-            console.log(`Successfully created document for user ${user.uid}.`);
+
+            // 2. Create a placeholder document in the 'videos' subcollection
+            // This ensures the collection exists and is readable by security rules.
+            const placeholderVideoRef = doc(firestore, `users/${user.uid}/videos`, '_placeholder');
+            batch.set(placeholderVideoRef, {
+                title: "Placeholder",
+                timestamp: Date.now()
+            });
+            
+            await batch.commit();
+
+            console.log(`Successfully created document and videos subcollection for user ${user.uid}.`);
         }
     } catch (error) {
         console.error("Error in ensureUserDocument:", error);
-        // This error should be logged, but we won't re-throw it to avoid
-        // breaking the login/signup flow on a failed write.
+         // We re-throw the error to ensure the calling function is aware of the failure.
+        throw error;
     }
 }
 
