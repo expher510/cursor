@@ -27,11 +27,11 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
   };
   
   return (
-    <header className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="fixed top-0 z-50 w-full">
       <div className="container flex h-14 items-center">
         <div className="flex items-center gap-2 md:gap-4" style={{minWidth: '150px'}}>
             {showBackButton ? (
-                 <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => router.back()}>
+                 <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full ring-1 ring-primary/50" onClick={() => router.back()}>
                     <ArrowLeft className="h-5 w-5" />
                     <span className="sr-only">Back</span>
                  </Button>
