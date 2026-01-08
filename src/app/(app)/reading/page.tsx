@@ -97,6 +97,7 @@ function SpeakingTestFeedback({ attemptId, onRetry }: { attemptId: string; onRet
 function SpeakingTestRecorder({ videoId, onTestComplete }: { videoId: string, onTestComplete: (attemptId: string) => void }) {
     const [isRecording, setIsRecording] = useState(false);
     const [isPreparing, setIsPreparing] = useState(false);
+    const [duration, setDuration] = useState(30);
     const [timeLeft, setTimeLeft] = useState(30);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
@@ -159,9 +160,13 @@ function SpeakingTestRecorder({ videoId, onTestComplete }: { videoId: string, on
                 stream.getTracks().forEach(track => track.stop()); // Release microphone
             };
             
+            const randomDuration = Math.floor(Math.random() * (45 - 15 + 1)) + 15;
+            setDuration(randomDuration);
+            setTimeLeft(randomDuration);
+            
             recorder.start();
             setIsRecording(true);
-            setTimeLeft(30);
+
         } catch (err) {
             console.error("Failed to get microphone access:", err);
             toast({
@@ -182,7 +187,7 @@ function SpeakingTestRecorder({ videoId, onTestComplete }: { videoId: string, on
         if (timerRef.current) clearTimeout(timerRef.current);
     };
 
-    const progress = (timeLeft / 30) * 100;
+    const progress = (timeLeft / duration) * 100;
 
     return (
         <div className="w-full max-w-4xl mx-auto text-center">
@@ -337,5 +342,3 @@ export default function ReadingPage() {
       </>
   );
 }
-
-    
