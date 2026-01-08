@@ -59,8 +59,8 @@ export function CaptionView({ transcript, currentTime }: CaptionViewProps) {
                   variant="ghost" 
                   size="sm" 
                   className={cn(
-                      "h-auto px-1 py-0.5 text-xl font-semibold leading-relaxed hover:bg-white/20 disabled:opacity-100 disabled:cursor-default text-white",
-                       isSaved && "bg-yellow-500/20 text-yellow-300 cursor-default"
+                      "h-auto px-1 py-0.5 text-xl font-semibold leading-relaxed hover:bg-primary/10 disabled:opacity-100 disabled:cursor-default text-foreground",
+                       isSaved && "bg-primary/20 text-primary cursor-default"
                   )}
                   onClick={() => addVocabularyItem(cleanedWord)}
                   disabled={isSaved}
@@ -74,9 +74,9 @@ export function CaptionView({ transcript, currentTime }: CaptionViewProps) {
   };
 
   return (
-    <div className="w-full bg-black/75 rounded-lg p-4 min-h-[80px] flex items-center justify-center text-center">
+    <div className="w-full bg-muted rounded-lg p-4 min-h-[80px] flex items-center justify-center text-center border">
       {transcript.length > 0 ? (
-        <p className="text-xl font-semibold text-white leading-relaxed">
+        <p className="text-xl font-semibold text-foreground leading-relaxed">
           {renderContent()}
         </p>
       ) : (
