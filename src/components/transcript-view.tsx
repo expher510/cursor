@@ -6,8 +6,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "./ui/button";
 import { useWatchPage } from "@/context/watch-page-context";
 import { cn } from "@/lib/utils";
-import { useMemo } from "react";
-import { Skeleton } from "./ui/skeleton";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
@@ -19,24 +17,25 @@ export function TranscriptView({ transcript, videoId }: TranscriptViewProps) {
 
   return (
     <ScrollArea className="h-auto">
-      <div className="p-4 leading-relaxed text-lg">
-        {transcript.map((line, lineIndex) => (
+      <p className="p-4 leading-relaxed text-lg">
+        {transcript.map((line) =>
           line.text.split(/(\s+)/).map((word, wordIndex) => {
             if (!word.trim()) {
-              return <span key={`${line.offset}-${lineIndex}-space-${wordIndex}`}>{word}</span>;
+              return <span key={`${line.offset}-${wordIndex}-space`}>{word}</span>;
             }
-            
-            const cleanedWord = word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,"");
-            const key = `${line.offset}-${lineIndex}-${wordIndex}`;
+
+            const cleanedWord = word
+              .toLowerCase()
+              .replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g, "");
             const isSaved = savedWordsSet.has(cleanedWord);
 
             return (
-              <Button 
-                key={key}
-                variant="ghost" 
-                size="sm" 
+              <Button
+                key={`${line.offset}-${wordIndex}`}
+                variant="ghost"
+                size="sm"
                 className={cn(
-                  "h-auto px-1 py-0.5 font-medium text-base hover:bg-primary/10 text-foreground",
+                  "h-auto px-1 py-0.5 font-medium text-base hover:bg-primary/10 text-foreground align-baseline",
                   isSaved && "text-primary hover:bg-transparent cursor-default"
                 )}
                 onClick={() => addVocabularyItem(cleanedWord)}
@@ -46,8 +45,8 @@ export function TranscriptView({ transcript, videoId }: TranscriptViewProps) {
               </Button>
             );
           })
-        ))}
-      </div>
+        )}
+      </p>
     </ScrollArea>
   );
 }
