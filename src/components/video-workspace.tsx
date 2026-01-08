@@ -2,7 +2,7 @@
 
 import { Skeleton } from "./ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { AlertTriangle, BrainCircuit } from "lucide-react";
+import { AlertTriangle, BrainCircuit, Copy } from "lucide-react";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
 import Link from "next/link";
@@ -16,9 +16,9 @@ function LoadingState() {
   return (
      <div className="grid md:grid-cols-3 gap-8 max-w-7xl mx-auto">
         <div className="md:col-span-2 space-y-8">
-            <div className="text-center mb-8">
-                <Skeleton className="h-10 w-3/4 mx-auto" />
-                <Skeleton className="h-6 w-full max-w-2xl mx-auto mt-4" />
+            <div className="space-y-2">
+                <Skeleton className="h-10 w-3/4" />
+                <Skeleton className="h-6 w-full max-w-2xl" />
             </div>
             <Card>
                 <CardContent className="p-4 md:p-6">
@@ -28,21 +28,25 @@ function LoadingState() {
                 </CardContent>
             </Card>
             <Skeleton className="h-20 w-full rounded-lg" />
-            <div className="flex justify-center">
+            <div className="flex">
                 <Skeleton className="h-12 w-48 rounded-md" />
             </div>
         </div>
         <div className="hidden md:block">
-            <Card className="h-full">
-                <CardHeader>
-                    <Skeleton className="h-6 w-3/4"/>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <Skeleton className="h-12 w-full"/>
-                    <Skeleton className="h-12 w-full"/>
-                    <Skeleton className="h-12 w-full"/>
-                </CardContent>
-            </Card>
+             <div className="h-full flex flex-col border rounded-lg">
+                <div className="flex items-center justify-between p-4 border-b">
+                    <Skeleton className="h-6 w-32" />
+                    <Skeleton className="h-10 w-28" />
+                </div>
+                <div className="p-4">
+                    <Skeleton className="h-10 w-full" />
+                </div>
+                <div className="space-y-2 p-4">
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                    <Skeleton className="h-16 w-full" />
+                </div>
+             </div>
         </div>
     </div>
   );
@@ -88,9 +92,9 @@ export function VideoWorkspace() {
   return (
     <div className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
         <div className="lg:col-span-2 space-y-8">
-            <div className="text-center">
+            <div className="space-y-2">
                 <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Listening</h1>
-                <p className="text-lg text-muted-foreground mt-2 max-w-3xl mx-auto">
+                <p className="text-lg text-muted-foreground max-w-3xl">
                     Listen to the video and follow along with the synchronized transcript. Click any word to save it to your vocabulary list.
                 </p>
             </div>
@@ -120,7 +124,7 @@ export function VideoWorkspace() {
       
             <CaptionView transcript={videoData.transcript} currentTime={currentTime} />
 
-            <div className="flex justify-center">
+            <div className="flex">
                 <Button asChild size="lg">
                 <Link href={`/quiz?v=${videoData.videoId}`}>
                     <BrainCircuit className="mr-2 h-5 w-5" />
@@ -130,7 +134,20 @@ export function VideoWorkspace() {
             </div>
         </div>
         <div className="hidden lg:block">
-            <VocabularyList isSheet={true} />
+            <div className="h-full flex flex-col border rounded-lg bg-card text-card-foreground">
+                <div className="flex items-center justify-between p-4 border-b">
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                        Vocabulary
+                    </h2>
+                     <Button asChild variant="outline" size="sm">
+                        <Link href="/flashcards">
+                            <Copy className="mr-2 h-4 w-4"/>
+                            Flashcards
+                        </Link>
+                    </Button>
+                </div>
+                 <VocabularyList isSheet={true} />
+            </div>
         </div>
     </div>
   );

@@ -111,16 +111,7 @@ export function VocabularyList({ isSheet = false }: { isSheet?: boolean }) {
   )
 
   if (isSheet) {
-    return (
-      <div className="h-full flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-              <List className="h-5 w-5"/> Vocabulary
-          </h2>
-        </div>
-        {content}
-      </div>
-    )
+    return content;
   }
 
   return (
