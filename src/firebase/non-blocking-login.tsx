@@ -8,11 +8,9 @@ import {
   signInWithPopup,
 } from 'firebase/auth';
 
-/** Initiate anonymous sign-in (non-blocking). */
-export function initiateAnonymousSignIn(authInstance: Auth): void {
-  signInAnonymously(authInstance).catch((error) => {
-    console.error("Anonymous sign-in failed:", error);
-  });
+/** Initiate anonymous sign-in (blocking). */
+export async function initiateAnonymousSignIn(authInstance: Auth) {
+  return await signInAnonymously(authInstance);
 }
 
 /** Initiate email/password sign-up (blocking to allow for error handling). */
