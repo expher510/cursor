@@ -1,33 +1,32 @@
 'use client';
 import {
-  Auth, // Import Auth type for type hinting
+  Auth,
   signInAnonymously,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 
 /** Initiate anonymous sign-in (non-blocking). */
 export function initiateAnonymousSignIn(authInstance: Auth): void {
-  // CRITICAL: Call signInAnonymously directly. Do NOT use 'await signInAnonymously(...)'.
   signInAnonymously(authInstance).catch((error) => {
-    // This is a common error when the Identity Toolkit API is not enabled.
-    // We log it here for debugging but the user will see a more prominent error
-    // from the AuthProvider or error boundary.
     console.error("Anonymous sign-in failed:", error);
   });
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
 }
 
-/** Initiate email/password sign-up (non-blocking). */
-export function initiateEmailSignUp(authInstance: Auth, email: string, password: string): void {
-  // CRITICAL: Call createUserWithEmailAndPassword directly. Do NOT use 'await createUserWithEmailAndPassword(...)'.
-  createUserWithEmailAndPassword(authInstance, email, password);
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
+/** Initiate email/password sign-up (blocking to allow for error handling). */
+export async function initiateEmailSignUp(authInstance: Auth, email: string, password: string) {
+  return await createUserWithEmailAndPassword(authInstance, email, password);
 }
 
-/** Initiate email/password sign-in (non-blocking). */
-export function initiateEmailSignIn(authInstance: Auth, email: string, password: string): void {
-  // CRITICAL: Call signInWithEmailAndPassword directly. Do NOT use 'await signInWithEmailAndPassword(...)'.
-  signInWithEmailAndPassword(authInstance, email, password);
-  // Code continues immediately. Auth state change is handled by onAuthStateChanged listener.
+/** Initiate email/password sign-in (blocking to allow for error handling). */
+export async function initiateEmailSignIn(authInstance: Auth, email: string, password: string) {
+  return await signInWithEmailAndPassword(authInstance, email, password);
+}
+
+/** Initiate Google Sign-In with a popup (blocking). */
+export async function initiateGoogleSignIn(authInstance: Auth) {
+  const provider = new GoogleAuthProvider();
+  return await signInWithPopup(authInstance, provider);
 }

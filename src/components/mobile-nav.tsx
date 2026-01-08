@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link, { LinkProps } from 'next/link';
 import { useRouter } from 'next/navigation';
-import { History, LogOut, PlusCircle, Copy, BookOpen, Edit } from 'lucide-react';
+import { History, LogOut, PlusCircle, Copy, BookOpen, Edit, LogIn } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirebase } from '@/firebase';
 import { HistoryMenu } from './history-menu';
@@ -39,7 +39,7 @@ function MobileLink({
 }
 
 export function MobileNav({ setOpen }: { setOpen: (open: boolean) => void }) {
-    const { auth } = useFirebase();
+    const { auth, user } = useFirebase();
 
     const handleLogout = async () => {
         if (auth) {
@@ -67,10 +67,17 @@ export function MobileNav({ setOpen }: { setOpen: (open: boolean) => void }) {
           <Copy className="w-5 h-5" />
           <span>Flashcards</span>
         </MobileLink>
-        <button onClick={handleLogout} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted w-full text-left">
-          <LogOut className="w-5 h-5" />
-          <span>Logout</span>
-        </button>
+         {user ? (
+            <button onClick={handleLogout} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted w-full text-left">
+              <LogOut className="w-5 h-5" />
+              <span>Logout</span>
+            </button>
+        ) : (
+             <MobileLink href="/login" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+                <LogIn className="w-5 h-5" />
+                <span>Login</span>
+            </MobileLink>
+        )}
       </div>
       <div className="flex-1">
         <HistoryMenu isMobile={true} onLinkClick={handleLinkClick} />

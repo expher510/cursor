@@ -3,6 +3,7 @@ import './globals.css';
 import { FirebaseClientProvider } from '@/firebase';
 import { AuthProvider } from '@/components/auth-provider';
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google';
+import { Toaster } from '@/components/ui/toaster';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const plusJakartaSans = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-plus-jakarta-sans' });
@@ -28,6 +29,7 @@ export default function RootLayout({
             </div>
           </AuthProvider>
         </FirebaseClientProvider>
+        <Toaster />
       </body>
     </html>
   );

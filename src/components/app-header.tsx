@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/mobile-nav";
-import { Menu, Copy, ArrowLeft } from "lucide-react";
+import { Menu, Copy, ArrowLeft, LogOut, LogIn } from "lucide-react";
 import Link from "next/link";
 import {
   Sheet,
@@ -13,17 +13,25 @@ import {
 } from "@/components/ui/sheet";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useFirebase } from "@/firebase";
 
 export function AppHeader({ children, showBackButton = false }: { children?: React.ReactNode, showBackButton?: boolean }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const { auth, user } = useFirebase();
+
+  const handleLogout = () => {
+    if (auth) {
+      auth.signOut();
+    }
+  };
   
   return (
-    <header className="fixed top-0 z-50 w-full">
+    <header className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-14 items-center">
-        <div className="flex items-center gap-2 md:gap-4" style={{minWidth: '60px'}}>
+        <div className="flex items-center gap-2 md:gap-4" style={{minWidth: '150px'}}>
             {showBackButton ? (
-                 <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full border border-border" onClick={() => router.back()}>
+                 <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => router.back()}>
                     <ArrowLeft className="h-5 w-5" />
                     <span className="sr-only">Back</span>
                  </Button>
@@ -50,13 +58,26 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
            <div className="hidden md:flex">{children}</div>
         </div>
         
-        <nav className="flex items-center justify-end gap-2" style={{minWidth: '60px'}}>
-            <Button asChild variant="default" className="gap-2">
+        <nav className="flex items-center justify-end gap-2" style={{minWidth: '150px'}}>
+            <Button asChild variant="secondary" className="gap-2">
                 <Link href="/flashcards">
                     <Copy className="h-5 w-5" />
                     <span className="hidden sm:inline">Flashcards</span>
                 </Link>
             </Button>
+             {user ? (
+                <Button variant="outline" size="icon" onClick={handleLogout} className="h-10 w-10">
+                    <LogOut className="h-5 w-5" />
+                    <span className="sr-only">Logout</span>
+                </Button>
+             ) : (
+                <Button asChild variant="default" className="gap-2">
+                    <Link href="/login">
+                        <LogIn className="h-5 w-5" />
+                        <span className="hidden sm:inline">Login</span>
+                    </Link>
+                </Button>
+             )}
         </nav>
       </div>
        <div className="md:hidden flex justify-center pb-2">
