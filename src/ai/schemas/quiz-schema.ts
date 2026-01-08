@@ -1,5 +1,5 @@
 
-import { z } from 'genkit';
+import { z } from 'zod';
 
 export const QuestionSchema = z.object({
   questionText: z.string().describe('The text of the multiple-choice question.'),

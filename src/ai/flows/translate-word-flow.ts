@@ -8,7 +8,7 @@
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'genkit';
+import { z } from 'zod';
 
 const TranslateWordInputSchema = z.object({
   word: z.string().describe('The word to translate.'),
