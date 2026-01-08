@@ -11,7 +11,6 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import 'dotenv/config';
-import { google } from 'googleapis';
 
 // Schema Definitions
 
@@ -49,59 +48,6 @@ export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
 export async function processVideo(input: ProcessVideoInput): Promise<ProcessVideoOutput> {
   return processVideoFlow(input);
 }
-
-// Tool: YouTube Data API v3
-const youtubeApiTool = ai.defineTool(
-    {
-        name: 'youtubeApiTool',
-        description: 'Fetches video metadata (title, description, stats) from the YouTube Data API v3.',
-        inputSchema: z.object({ videoId: z.string() }),
-        outputSchema: z.object({
-            title: z.string().nullable(),
-            description: z.string().nullable(),
-            stats: VideoStatsSchema.nullable(),
-        }),
-    },
-    async ({ videoId }) => {
-        const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
-        if (!YOUTUBE_API_KEY) {
-            console.warn('YouTube API key is not configured. Skipping YouTube API call.');
-            return { title: null, description: null, stats: null };
-        }
-        
-        try {
-            const youtube = google.youtube({
-                version: 'v3',
-                auth: YOUTUBE_API_KEY,
-            });
-
-            const response = await youtube.videos.list({
-                part: ['snippet', 'statistics'],
-                id: [videoId],
-            });
-
-            const video = response.data.items?.[0];
-            if (!video) {
-                return { title: null, description: null, stats: null };
-            }
-
-            return {
-                title: video.snippet?.title || null,
-                description: video.snippet?.description || null,
-                stats: {
-                    viewCount: video.statistics?.viewCount,
-                    likeCount: video.statistics?.likeCount,
-                    commentCount: video.statistics?.commentCount,
-                },
-            };
-        } catch (error: any) {
-            console.error(`YouTube API failed: ${error.message}`);
-            // Don't throw, just return nulls so the fallback can be used.
-            return { title: null, description: null, stats: null };
-        }
-    }
-);
-
 
 // Tool: Supadata API (Primary Source for Transcript and Fallback Metadata)
 const supadataApiTool = ai.defineTool(
@@ -162,11 +108,7 @@ const processVideoFlow = ai.defineFlow(
   },
   async ({ videoId }) => {
 
-    // Run API calls in parallel
-    const [youtubeResult, supadataResult] = await Promise.all([
-        youtubeApiTool({ videoId }),
-        supadataApiTool({ videoId })
-    ]);
+    const supadataResult = await supadataApiTool({ videoId });
     
     // Ensure transcript exists, otherwise it's a critical failure
     const transcript = supadataResult.transcript;
@@ -174,20 +116,13 @@ const processVideoFlow = ai.defineFlow(
         throw new Error("Failed to retrieve transcript. The video may not have one available.");
     }
     
-    // Combine results with fallback logic
-    const title = youtubeResult?.title || supadataResult?.title || 'YouTube Video';
-    const description = youtubeResult?.description ?? null;
-    const stats = youtubeResult?.stats ?? null;
-
-    if (!title) {
-        throw new Error("Failed to retrieve video title from any source.");
-    }
-
+    const title = supadataResult.title || 'YouTube Video';
+    
     return {
       title,
-      description,
+      description: null, // Supadata doesn't provide description
       transcript,
-      stats,
+      stats: null, // Supadata doesn't provide stats
     };
   }
 );

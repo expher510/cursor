@@ -99,8 +99,8 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
             setDocumentNonBlocking(videoDocRef, {
                 id: videoId,
                 title: result.title,
-                description: result.description ?? null,
-                stats: result.stats ?? null,
+                description: result.description,
+                stats: result.stats,
                 userId: user.uid,
                 timestamp: Date.now(),
             }, { merge: true });
