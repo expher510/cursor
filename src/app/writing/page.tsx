@@ -11,6 +11,7 @@ import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { Logo } from "@/components/logo";
 
 function WritingWorkspace() {
     const { videoData, vocabulary, isLoading: isContextLoading } = useWatchPage();
@@ -144,8 +145,8 @@ export default function WritingPage() {
       <AppHeader showBackButton={true} />
       <main className="container mx-auto pt-24 flex flex-col items-center gap-8 px-4 pb-10">
         <div className="text-center">
-            <h1 className="text-4xl font-bold font-headline tracking-tight">Writing Practice</h1>
-            <p className="text-muted-foreground max-w-2xl">
+            <Logo />
+            <p className="text-muted-foreground max-w-2xl mt-2">
                 Use the selected words to practice your writing skills. When you've used all the words, you can get AI feedback.
             </p>
         </div>
