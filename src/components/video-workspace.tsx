@@ -7,8 +7,6 @@ import { AlertTriangle, BrainCircuit } from "lucide-react";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
 import Link from "next/link";
-import { CaptionView } from "./caption-view";
-import { useState } from "react";
 
 function LoadingState() {
   return (
@@ -23,7 +21,6 @@ function LoadingState() {
       <div className="flex justify-center">
         <Skeleton className="h-12 w-48 rounded-md" />
       </div>
-      <Skeleton className="h-20 w-full rounded-lg" />
     </div>
   );
 }
@@ -51,7 +48,6 @@ function ErrorState({ message }: { message: string }) {
 
 export function VideoWorkspace() {
   const { videoData, isLoading, error } = useWatchPage();
-  const [currentTime, setCurrentTime] = useState(0);
 
   if (isLoading) {
     return <LoadingState />;
@@ -67,14 +63,7 @@ export function VideoWorkspace() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <VideoPlayer
-        videoId={videoData.videoId}
-        title={videoData.title}
-        onProgress={(e) => setCurrentTime(e.playedSeconds * 1000)}
-      />
-      
-      <CaptionView transcript={videoData.transcript} currentTime={currentTime} />
-
+      <VideoPlayer videoId={videoData.videoId} title={videoData.title} />
       <div className="flex justify-center">
         <Button asChild size="lg">
           <Link href={`/quiz?v=${videoData.videoId}`}>
