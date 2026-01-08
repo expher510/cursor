@@ -293,9 +293,7 @@ export default function QuizPage() {
     <>
       <AppHeader showBackButton={true} />
       <main className="container mx-auto pt-24 flex flex-col items-center gap-8 px-4 pb-10">
-        <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin text-primary" />}>
-            <QuizGenerator />
-        </Suspense>
+        <QuizGenerator />
       </main>
     </>
   );

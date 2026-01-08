@@ -1,11 +1,11 @@
 'use client';
 import { AppHeader } from "@/components/app-header";
 import { ReadingTabs } from "@/components/video-tabs";
-import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
+import { useWatchPage } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle } from "lucide-react";
-import { Suspense, useEffect } from "react";
+import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useFirebase } from "@/firebase";
 import { doc, getDoc } from "firebase/firestore";
@@ -165,11 +165,7 @@ export default function ReadingPage() {
       <>
         <AppHeader showBackButton={true} />
         <main className="container mx-auto flex-1 p-4 md:p-6 pt-24">
-            <Suspense fallback={<Skeleton className="h-64 w-full max-w-4xl" />}>
-                <WatchPageProvider>
-                    <ReadingPageContent />
-                </WatchPageProvider>
-            </Suspense>
+            <ReadingPageContent />
         </main>
       </>
   );

@@ -6,7 +6,6 @@ import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, Loader2 } from "lucide-react";
 import { AppHeader } from "@/components/app-header";
-import { WatchPageProvider } from "@/context/watch-page-context";
 
 function WatchPageContent() {
   const searchParams = useSearchParams();
@@ -33,25 +32,12 @@ function WatchPageContent() {
   return <VideoWorkspace videoId={videoId} />;
 }
 
-
-function SuspenseFallback() {
-  return (
-    <div className="flex h-full w-full items-center justify-center">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-    </div>
-  )
-}
-
 export default function WatchPage() {
   return (
     <>
       <AppHeader showBackButton={true} />
       <main className="container mx-auto flex-1 p-4 md:p-6 pt-24">
-        <Suspense fallback={<SuspenseFallback />}>
-          <WatchPageProvider>
-            <WatchPageContent />
-          </WatchPageProvider>
-        </Suspense>
+        <WatchPageContent />
       </main>
     </>
   );
