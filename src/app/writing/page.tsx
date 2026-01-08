@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState, useMemo } from "react";
-import { useWatchPage } from "@/context/watch-page-context";
+import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Loader2, Sparkles } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
@@ -43,7 +43,25 @@ function WritingWorkspace() {
 
     const handleWordClick = (word: string) => {
         setWritingContent(prev => prev ? `${prev} ${word}` : word);
-        setUsedWords(prev => new Set(prev).add(word));
+        // Also update the writingContent to reflect which words have been used
+        const newUsedWords = new Set(usedWords);
+        if (writingContent.toLowerCase().includes(word.toLowerCase())) {
+           newUsedWords.add(word);
+        }
+        setUsedWords(newUsedWords);
+    };
+
+    const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const currentText = e.target.value;
+        setWritingContent(currentText);
+
+        const newUsedWords = new Set<string>();
+        exerciseWords.forEach(word => {
+            if (currentText.toLowerCase().includes(word.toLowerCase())) {
+                newUsedWords.add(word);
+            }
+        });
+        setUsedWords(newUsedWords);
     };
 
     const getFeedback = async () => {
@@ -101,7 +119,7 @@ function WritingWorkspace() {
             <Card>
                 <CardHeader>
                     <CardTitle>Your Words</CardTitle>
-                    <CardDescription>Click a word to add it to your text. Used words will be highlighted.</CardDescription>
+                    <CardDescription>Click a word to add it to your text, or type freely. Used words will be highlighted.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-wrap gap-2">
@@ -127,7 +145,7 @@ function WritingWorkspace() {
                 rows={10}
                 className="text-base"
                 value={writingContent}
-                onChange={(e) => setWritingContent(e.target.value)}
+                onChange={handleTextChange}
             />
             
             <div className="flex justify-between">
@@ -156,7 +174,9 @@ export default function WritingPage() {
                 Use the selected words to practice your writing skills.
             </p>
         </div>
-        <WritingWorkspace />
+        <WatchPageProvider>
+            <WritingWorkspace />
+        </WatchPageProvider>
       </main>
     </>
   );
