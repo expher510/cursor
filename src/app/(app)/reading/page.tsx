@@ -58,13 +58,19 @@ function ReadingPracticePage() {
     return (
         <div className="w-full max-w-4xl mx-auto space-y-6">
             <div className="mb-4">
-                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
-                    <div className="flex-1">
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                    <div className="flex-1 text-center sm:text-left">
                         <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Reading</h1>
                         <p className="text-lg text-muted-foreground mt-2 max-w-3xl">
                             Click on any word in the transcript to instantly get its translation and add it to your personal vocabulary list.
                         </p>
                     </div>
+                     <Button asChild size="lg">
+                        <Link href={`/quiz?v=${videoData.videoId}`}>
+                            <Mic className="mr-2 h-5 w-5" />
+                            Start Speaking Test
+                        </Link>
+                    </Button>
                 </div>
             </div>
             
@@ -72,15 +78,6 @@ function ReadingPracticePage() {
 
              <div className="p-1 rounded-lg border bg-card text-card-foreground shadow-sm h-[50vh]">
                 <TranscriptView transcript={formattedTranscript} videoId={videoData.videoId!} />
-             </div>
-
-             <div className="flex justify-center pt-4">
-                 <Button asChild size="lg">
-                    <Link href={`/quiz?v=${videoData.videoId}`}>
-                        <Mic className="mr-2 h-5 w-5" />
-                        Start Speaking Test
-                    </Link>
-                </Button>
              </div>
         </div>
     )

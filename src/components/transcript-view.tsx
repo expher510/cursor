@@ -40,28 +40,18 @@ export function TranscriptView({ transcript, videoId }: TranscriptViewProps) {
               const cleanedWord = word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,"");
               const key = `${line.offset}-${lineIndex}-${wordIndex}`;
               const isSaved = savedWordsSet.has(cleanedWord);
-              const translation = isSaved ? vocabMap.get(cleanedWord) : null;
-
-              if (isSaved) {
-                return (
-                   <span key={key} className="inline-block relative group mx-0.5">
-                    <span 
-                      className="inline-block px-2 py-1 rounded-md bg-primary/10 text-primary font-semibold cursor-pointer text-sm"
-                    >
-                      {translation ? translation : <Skeleton className="h-5 w-16 inline-block" />}
-                    </span>
-                  </span>
-                )
-              }
 
               return (
                 <Button 
                   key={key}
                   variant="ghost" 
                   size="sm" 
-                  className="h-auto px-1 py-0.5 font-medium text-base hover:bg-primary/10 text-foreground"
+                  className={cn(
+                    "h-auto px-1 py-0.5 font-medium text-base hover:bg-primary/10 text-foreground",
+                    isSaved && "text-primary hover:bg-transparent cursor-default"
+                  )}
                   onClick={() => addVocabularyItem(cleanedWord)}
-                  disabled={!cleanedWord}
+                  disabled={isSaved || !cleanedWord}
                 >
                   {word}
                 </Button>
