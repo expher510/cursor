@@ -54,7 +54,7 @@ export function VocabularyList({ layout = 'scroll' }: VocabularyListProps) {
   const renderItem = (item: { id: string; word: string; translation: string; }) => (
     <div
       key={item.id}
-      className="group relative flex items-center gap-2 rounded-full border border-primary bg-secondary/50 pr-2 pl-4 py-1 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-secondary"
+      className="group relative inline-flex items-center gap-2 rounded-full border border-primary bg-secondary/50 px-3 py-1 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-secondary"
     >
       <div className="flex flex-col text-left pointer-events-none">
         <span className="capitalize">{item.word}</span>
