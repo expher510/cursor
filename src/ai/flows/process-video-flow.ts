@@ -139,17 +139,25 @@ const youtubeDataApiTool = ai.defineTool(
         try {
             console.log("Fetching metadata from YouTube Data API...");
             const response = await fetch(url);
+            
+            console.log("YouTube API Response Status:", response.status);
+
             if (!response.ok) {
                 const errorBody = await response.json().catch(() => ({}));
+                console.error("YouTube API Error Body:", errorBody);
                 throw new Error(errorBody?.error?.message || `YouTube API request failed with status ${response.status}`);
             }
             const data = await response.json();
+            console.log("Full YouTube API response data:", JSON.stringify(data, null, 2));
+
             const item = data.items?.[0];
 
             if (!item) {
+                console.warn("No 'items' found in YouTube API response for videoId:", videoId);
                 return { title: null, description: null, stats: null };
             }
-            console.log("Successfully fetched metadata from YouTube.");
+            console.log("Successfully parsed video item from YouTube API:", JSON.stringify(item, null, 2));
+
 
             return {
                 title: item.snippet?.title || null,
