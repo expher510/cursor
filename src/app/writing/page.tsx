@@ -131,7 +131,7 @@ function WritingWorkspace() {
             
             <div className="flex justify-between">
                 <Button variant="outline" onClick={resetExercise}>Back to Settings</Button>
-                <Button onClick={getFeedback} disabled={isGettingFeedback || !writingContent}>
+                <Button onClick={getFeedback} disabled={isGettingFeedback || availableWords.length > 0}>
                     {isGettingFeedback ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
@@ -152,7 +152,7 @@ export default function WritingPage() {
         <div className="text-center">
             <h1 className="text-4xl font-bold font-headline tracking-tight">Writing Practice</h1>
             <p className="text-muted-foreground max-w-2xl">
-                Use the selected words to practice your writing skills.
+                Use the selected words to practice your writing skills. When you've used all the words, you can get AI feedback.
             </p>
         </div>
         <WatchPageProvider>
