@@ -14,6 +14,7 @@ import { doc, setDoc, getDoc, Firestore, writeBatch } from 'firebase/firestore';
 /**
  * Ensures a user document exists in Firestore. If it doesn't, it creates one
  * along with a placeholder document in the 'videos' subcollection.
+ * This is CRITICAL for new users to avoid permission errors.
  * @param firestore The Firestore instance.
  * @param user The authenticated user object from Firebase Auth.
  */
@@ -37,7 +38,7 @@ async function ensureUserDocument(firestore: Firestore, user: User) {
             });
 
             // 2. Create a placeholder document in the 'videos' subcollection
-            // This ensures the collection exists and is readable by security rules.
+            // This is crucial to ensure the collection path exists for security rules.
             const placeholderVideoRef = doc(firestore, `users/${user.uid}/videos`, '_placeholder');
             batch.set(placeholderVideoRef, {
                 title: "Placeholder",
@@ -59,7 +60,7 @@ async function ensureUserDocument(firestore: Firestore, user: User) {
 /** Initiate email/password sign-up and create user doc. */
 export async function initiateEmailSignUp(auth: Auth, firestore: Firestore, email: string, password: string): Promise<UserCredential> {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  // After successful auth creation, create the user document in Firestore.
+  // After successful auth creation, immediately create the user document in Firestore.
   await ensureUserDocument(firestore, userCredential.user);
   return userCredential;
 }
@@ -68,7 +69,7 @@ export async function initiateEmailSignUp(auth: Auth, firestore: Firestore, emai
 /** Initiate email/password sign-in and ensure user doc exists. */
 export async function initiateEmailSignIn(auth: Auth, firestore: Firestore, email: string, password: string) {
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  // After successful sign-in, ensure the user document exists as a fallback.
+  // After successful sign-in, ensure the user document exists as a fallback for older users.
   await ensureUserDocument(firestore, userCredential.user);
   return userCredential;
 }
