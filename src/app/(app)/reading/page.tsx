@@ -8,9 +8,8 @@ import { AlertTriangle } from "lucide-react";
 import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { useFirebase } from "@/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 import { processVideo } from "@/ai/flows/process-video-flow";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 
 
 function ReadingPracticePage() {
@@ -120,8 +119,8 @@ function ReadingPageContent() {
             console.log("Video not in Firestore. Fetching from API and caching.");
             const result = await processVideo({ videoId });
             
-            // Cache the new data to Firestore (non-blocking)
-            setDocumentNonBlocking(videoDocRef, {
+            // Cache the new data to Firestore
+            await setDoc(videoDocRef, {
                 id: videoId,
                 title: result.title,
                 description: result.description,
@@ -130,7 +129,7 @@ function ReadingPageContent() {
                 timestamp: Date.now(),
             }, { merge: true });
 
-            setDocumentNonBlocking(transcriptDocRef, {
+            await setDoc(transcriptDocRef, {
                 id: videoId,
                 videoId: videoId,
                 content: result.transcript,

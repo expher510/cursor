@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { collection, query, orderBy } from 'firebase/firestore';
+import { collection, query, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { useFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
@@ -10,8 +10,6 @@ import { Button } from './ui/button';
 import { ArrowLeft, Shuffle, Trash2, Volume2 } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
-import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { doc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 
 
@@ -37,11 +35,11 @@ function Flashcard({ item }: { item: VocabularyItem }) {
   };
 
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
       e.stopPropagation();
       if (!firestore || !user) return;
       const docRef = doc(firestore, `users/${user.uid}/vocabularies`, item.id);
-      deleteDocumentNonBlocking(docRef);
+      await deleteDoc(docRef);
   };
 
   return (

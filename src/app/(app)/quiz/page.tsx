@@ -1,7 +1,7 @@
 
 
 'use client';
-import { Suspense, useEffect, useState, useMemo } from 'react';
+import { Suspense, useEffect, useState, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppHeader } from "@/components/app-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,10 +10,9 @@ import { Loader2, AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { useFirebase } from '@/firebase';
-import { doc, getDoc, collection, DocumentReference } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, collection, DocumentReference } from 'firebase/firestore';
 import { generateQuiz } from '@/ai/flows/quiz-flow';
 import { type QuizOutput } from '@/ai/schemas/quiz-schema';
-import { setDocumentNonBlocking, updateDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 
@@ -208,7 +207,7 @@ function QuizGenerator() {
 
                     // 4. Save to Firestore with predictable ID
                     const newQuizData = { ...newQuiz, id: videoId, videoId, userId: user.uid };
-                    setDocumentNonBlocking(predictableQuizDocRef, newQuizData, {});
+                    await setDoc(predictableQuizDocRef, newQuizData, {});
                     setQuizDoc(newQuizData as QuizDoc);
                 }
 
@@ -231,17 +230,17 @@ function QuizGenerator() {
 
     }, [videoId, user, firestore]);
 
-    const handleQuizFinish = (score: number, answers: AnswerState[]) => {
+    const handleQuizFinish = useCallback(async (score: number, answers: AnswerState[]) => {
         if (!quizDocRef) return;
 
         const userAnswers = answers.map(a => a.selectedAnswer || "");
         console.log("Saving score to Firestore:", { score, userAnswers });
 
-        updateDocumentNonBlocking(quizDocRef, {
+        await updateDoc(quizDocRef, {
             score: score,
             userAnswers: userAnswers,
         });
-    };
+    }, [quizDocRef]);
 
     if (isLoading) {
         return (

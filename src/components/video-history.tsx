@@ -1,16 +1,16 @@
 
+
 'use client';
 
 import { useFirebase } from '@/firebase';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, orderBy, limit, doc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, doc, deleteDoc } from 'firebase/firestore';
 import { useMemoFirebase } from '@/firebase/provider';
 import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from './ui/button';
 import { Trash2 } from 'lucide-react';
-import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import { cn } from '@/lib/utils';
 import { useMemo } from 'react';
 
@@ -23,17 +23,21 @@ type HistoryItem = {
 function HistoryCard({ item, isSelected, onSelect }: { item: HistoryItem, isSelected: boolean, onSelect: (id: string) => void }) {
     const { firestore, user } = useFirebase();
 
-    const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const handleDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
         e.preventDefault();
         
         if (!firestore || !user) return;
 
         const videoDocRef = doc(firestore, `users/${user.uid}/videos`, item.id);
-        deleteDocumentNonBlocking(videoDocRef);
-
         const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${item.id}/transcripts`, item.id);
-        deleteDocumentNonBlocking(transcriptDocRef);
+        
+        try {
+            await deleteDoc(videoDocRef);
+            await deleteDoc(transcriptDocRef);
+        } catch (error) {
+            console.error("Error deleting video history:", error);
+        }
     };
 
     return (

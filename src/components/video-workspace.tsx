@@ -3,8 +3,7 @@
 import { useEffect } from "react";
 import { VideoPlayer } from "./video-player";
 import { useFirebase } from "@/firebase";
-import { setDocumentNonBlocking } from "@/firebase/non-blocking-updates";
-import { doc, getDoc } from "firebase/firestore";
+import { setDoc, doc, getDoc } from "firebase/firestore";
 import { processVideo } from "@/ai/flows/process-video-flow";
 import { Skeleton } from "./ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
@@ -94,8 +93,8 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
             console.log("Video not in Firestore. Fetching from API and caching.");
             const result = await processVideo({ videoId });
 
-            // Save the new data to Firestore (non-blocking)
-            setDocumentNonBlocking(videoDocRef, {
+            // Save the new data to Firestore
+            await setDoc(videoDocRef, {
                 id: videoId,
                 title: result.title,
                 description: result.description,
@@ -104,7 +103,7 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
                 timestamp: Date.now(),
             }, { merge: true });
 
-            setDocumentNonBlocking(transcriptDocRef, {
+            await setDoc(transcriptDocRef, {
                 id: videoId,
                 videoId: videoId,
                 content: result.transcript,

@@ -1,8 +1,7 @@
 'use client';
 
 import { useFirebase } from '@/firebase';
-import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { collection, doc, query, where } from 'firebase/firestore';
+import { collection, doc, query, addDoc, deleteDoc } from 'firebase/firestore';
 import { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect, useRef } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
@@ -93,7 +92,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         const { translation } = await translateWord({ word: cleanedWord, sourceLang: 'en', targetLang: 'ar' });
 
         const vocabCollectionRef = collection(firestore, `users/${user.uid}/vocabularies`);
-        addDocumentNonBlocking(vocabCollectionRef, {
+        await addDoc(vocabCollectionRef, {
             word: cleanedWord,
             translation: translation || 'No translation found',
             userId: user.uid,
@@ -109,10 +108,10 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
   }, [user, firestore, videoId, savedWordsSet, showNotification]);
 
-  const removeVocabularyItem = useCallback((id: string) => {
+  const removeVocabularyItem = useCallback(async (id: string) => {
       if (!firestore || !user) return;
       const docRef = doc(firestore, `users/${user.uid}/vocabularies`, id);
-      deleteDocumentNonBlocking(docRef);
+      await deleteDoc(docRef);
   }, [firestore, user]);
 
   useEffect(() => {
