@@ -76,6 +76,10 @@ function ReadingPracticePage() {
             
             <VocabularyList />
 
+            <Card className="h-[50vh]">
+                <TranscriptView transcript={formattedTranscript} videoId={videoData.videoId} />
+            </Card>
+
         </div>
     )
 }
