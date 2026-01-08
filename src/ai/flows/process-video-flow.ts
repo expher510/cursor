@@ -11,6 +11,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import 'dotenv/config';
+import { YoutubeTranscript } from 'youtube-transcript';
 
 // Schema Definitions
 
@@ -70,6 +71,7 @@ const supadataApiTool = ai.defineTool(
     }
     
     try {
+        console.log("Attempting to fetch transcript from Supadata...");
         const requestUrl = new URL(API_BASE_URL);
         requestUrl.searchParams.append('url', youtubeUrl);
         requestUrl.searchParams.append('lang', 'en');
@@ -86,16 +88,40 @@ const supadataApiTool = ai.defineTool(
         }
 
         const result = await response.json();
+        console.log("Successfully fetched from Supadata.");
         return {
             title: result.title || null,
             transcript: result.content || [],
         };
 
     } catch (error: any) {
-        console.error(`Supadata API failed: ${error.message}`);
-        throw new Error(`Could not get transcript from Supadata. Reason: ${error.message}`);
+        console.warn(`Supadata API failed: ${error.message}.`);
+        // Don't throw, just return empty so the flow can fall back.
+        return { title: null, transcript: [] };
     }
   }
+);
+
+// Fallback Tool: youtube-transcript library
+const youtubeTranscriptTool = ai.defineTool(
+    {
+        name: 'youtubeTranscriptTool',
+        description: 'Fetches the transcript for a given YouTube video ID directly.',
+        inputSchema: z.object({ videoId: z.string() }),
+        outputSchema: z.array(TranscriptItemSchema),
+    },
+    async ({ videoId }) => {
+        try {
+            console.log("Attempting to fetch transcript using youtube-transcript library...");
+            const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+            console.log("Successfully fetched from youtube-transcript.");
+            return transcript;
+        } catch (error: any) {
+            console.error(`youtube-transcript failed: ${error.message}`);
+            // If this also fails, we throw a final error.
+            throw new Error(`Could not get transcript from any source. Reason: ${error.message}`);
+        }
+    }
 );
 
 
@@ -108,21 +134,28 @@ const processVideoFlow = ai.defineFlow(
   },
   async ({ videoId }) => {
 
-    const supadataResult = await supadataApiTool({ videoId });
+    // 1. Try primary source
+    let { title, transcript } = await supadataApiTool({ videoId });
     
-    // Ensure transcript exists, otherwise it's a critical failure
-    const transcript = supadataResult.transcript;
+    // 2. If primary source fails for transcript, try fallback
+    if (transcript.length === 0) {
+        console.log("Supadata returned no transcript, trying youtube-transcript fallback...");
+        transcript = await youtubeTranscriptTool({ videoId });
+    }
+
+    // 3. Ensure transcript exists after all attempts, otherwise it's a critical failure
     if (transcript.length === 0) {
         throw new Error("Failed to retrieve transcript. The video may not have one available.");
     }
     
-    const title = supadataResult.title || 'YouTube Video';
+    // Use a default title if none was fetched
+    const finalTitle = title || 'YouTube Video';
     
     return {
-      title,
-      description: null, // Supadata doesn't provide description
+      title: finalTitle,
+      description: null, // No description source for now
       transcript,
-      stats: null, // Supadata doesn't provide stats
+      stats: null, // No stats source for now
     };
   }
 );
