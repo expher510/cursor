@@ -70,10 +70,10 @@ export function VocabularyList() {
             )}
           </div>
            {vocabulary && vocabulary.length > 0 && (
-                <Button asChild variant="default">
+                <Button asChild variant="secondary" size="icon" className="rounded-full">
                     <Link href="/flashcards">
                         <Copy className="h-5 w-5" />
-                        <span className="hidden sm:inline">Flashcards</span>
+                        <span className="sr-only">Flashcards</span>
                     </Link>
                 </Button>
             )}
