@@ -3,6 +3,9 @@
 import { type TranscriptItem } from "@/ai/flows/process-video-flow";
 import { useMemo } from "react";
 import { Skeleton } from "./ui/skeleton";
+import { useWatchPage } from "@/context/watch-page-context";
+import { Button } from "./ui/button";
+import { cn } from "@/lib/utils";
 
 type CaptionViewProps = {
   transcript: TranscriptItem[];
@@ -10,46 +13,78 @@ type CaptionViewProps = {
 };
 
 export function CaptionView({ transcript, currentTime }: CaptionViewProps) {
-  const activeLineText = useMemo(() => {
+  const { addVocabularyItem, savedWordsSet } = useWatchPage();
+  
+  const activeLine = useMemo(() => {
     if (!transcript || transcript.length === 0) {
       return null;
     }
 
-    // A small buffer (in ms) to show the caption slightly before it's spoken.
-    // This accounts for human reaction time and potential minor rendering delays.
     const PREDICTIVE_BUFFER = 250; 
 
-    // Find all lines that are currently "active" within the predictive buffer.
     const activeLines = transcript.filter(line => 
       currentTime >= (line.offset - PREDICTIVE_BUFFER) && currentTime < (line.offset + line.duration)
     );
 
-    // If there are active lines, join their text.
     if (activeLines.length > 0) {
-      return activeLines.map(line => line.text).join(' ');
+      return activeLines;
     }
 
-    // If no lines are active, find the most recent past line to display.
-    // This prevents the screen from going blank during short pauses in speech.
     let lastLine: TranscriptItem | null = null;
     for (const line of transcript) {
         if (line.offset <= currentTime) {
             lastLine = line;
         } else {
-            // Since the transcript is sorted by time, we can break early.
             break;
         }
     }
     
-    return lastLine ? lastLine.text : "...";
+    return lastLine ? [lastLine] : null;
 
   }, [transcript, currentTime]);
+
+  const renderContent = () => {
+    if (!activeLine) {
+       return <span>...</span>;
+    }
+    
+    return activeLine.map((line, lineIndex) => (
+        <span key={`${line.offset}-${lineIndex}`}>
+            {line.text.split(/(\s+)/).map((word, wordIndex) => {
+              const cleanedWord = word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,"");
+              const key = `${line.offset}-${lineIndex}-${wordIndex}`;
+              
+              if (!cleanedWord) {
+                return <span key={key}>{word}</span>;
+              }
+
+              const isSaved = savedWordsSet.has(cleanedWord);
+
+              return (
+                <Button 
+                  key={key}
+                  variant="ghost" 
+                  size="sm" 
+                  className={cn(
+                      "h-auto px-1 py-0.5 text-xl font-semibold leading-relaxed hover:bg-white/20 disabled:opacity-100 disabled:cursor-default text-white",
+                       isSaved && "bg-yellow-500/20 text-yellow-300 cursor-default"
+                  )}
+                  onClick={() => addVocabularyItem(cleanedWord)}
+                  disabled={isSaved}
+                >
+                  {word}
+                </Button>
+              );
+            })}
+          </span>
+    ));
+  };
 
   return (
     <div className="w-full bg-black/75 rounded-lg p-4 min-h-[80px] flex items-center justify-center text-center">
       {transcript.length > 0 ? (
         <p className="text-xl font-semibold text-white leading-relaxed">
-          {activeLineText}
+          {renderContent()}
         </p>
       ) : (
         <Skeleton className="h-8 w-3/4 bg-gray-600" />

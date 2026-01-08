@@ -28,7 +28,6 @@ type WatchPageContextType = {
   videoData: VideoData | null;
   isLoading: boolean;
   error: string | null;
-  notification: string | null;
 };
 
 const WatchPageContext = createContext<WatchPageContextType | undefined>(undefined);
@@ -41,8 +40,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [notification, setNotification] = useState<string | null>(null);
-  const notificationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const [activeVideoId, setActiveVideoId] = useState<string | null>(urlVideoId);
 
@@ -88,14 +85,16 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         }
       };
       fetchLastVideo();
+    } else if (!user) {
+        // If there's no user, there's no history to fetch.
+        setIsLoading(false);
     }
   }, [urlVideoId, user, firestore]);
 
   // Effect to fetch already-cached data from Firestore based on activeVideoId
   useEffect(() => {
     if (!activeVideoId) {
-       // Only set loading to false if we aren't already handling an error state from the effect above.
-       if (!error) {
+       if (!error) { // Only set loading to false if not already in an error state
          setIsLoading(false);
        }
       return;
@@ -107,7 +106,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // If data is already loaded for this videoId, don't refetch
     if (videoData?.videoId === activeVideoId) {
         setIsLoading(false);
         return;
@@ -126,7 +124,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         const transcriptDocSnap = await getDoc(transcriptDocRef);
 
         if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
-          console.log("Loading video data from Firestore cache for videoId:", activeVideoId);
           const combinedData: VideoData = {
             title: videoDocSnap.data().title,
             description: videoDocSnap.data().description,
@@ -136,7 +133,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           };
           setVideoData(combinedData);
         } else {
-          console.error("Data not found in cache for videoId:", activeVideoId);
           setError("Could not find pre-processed data for this video. Please try again from the homepage.");
         }
       } catch (e: any) {
@@ -152,23 +148,12 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   }, [activeVideoId, user, firestore, videoData?.videoId, error]);
 
 
-  const showNotification = useCallback((message: string) => {
-    if (notificationTimeoutRef.current) {
-        clearTimeout(notificationTimeoutRef.current);
-    }
-    setNotification(message);
-    notificationTimeoutRef.current = setTimeout(() => {
-        setNotification(null);
-    }, 2000);
-  }, []);
-
-
   const vocabQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return query(collection(firestore, `users/${user.uid}/vocabularies`));
   }, [user, firestore]);
 
-  const { data: allVocabulary } = useCollection<VocabularyItem>(vocabQuery);
+  const { data: allVocabulary, setData: setAllVocabulary } = useCollection<VocabularyItem>(vocabQuery);
 
   const savedWordsSet = useMemo(() => {
     return new Set(allVocabulary?.map(item => item.word) ?? []);
@@ -178,49 +163,52 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const addVocabularyItem = useCallback(async (word: string) => {
     if (!user || !firestore || !activeVideoId) return;
 
-    const cleanedWord = word.toLowerCase().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g,"");
-    if (!cleanedWord) return;
+    const cleanedWord = word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,"");
+    if (!cleanedWord || savedWordsSet.has(cleanedWord)) return;
+    
+    const tempId = `temp_${Date.now()}`;
+    const optimisticItem: VocabularyItem = {
+      id: tempId,
+      word: cleanedWord,
+      translation: 'Translating...',
+      userId: user.uid,
+      videoId: activeVideoId,
+    };
 
-    if (savedWordsSet.has(cleanedWord)) {
-        showNotification(`"${cleanedWord}" is already saved.`);
-        return;
-    }
-
-    showNotification(`Saving "${cleanedWord}"...`);
+    // Optimistic UI update
+    setAllVocabulary(prev => [optimisticItem, ...(prev || [])]);
 
     try {
         const { translation } = await translateWord({ word: cleanedWord, sourceLang: 'en', targetLang: 'ar' });
 
         const vocabCollectionRef = collection(firestore, `users/${user.uid}/vocabularies`);
-        await addDoc(vocabCollectionRef, {
+        const docRef = await addDoc(vocabCollectionRef, {
             word: cleanedWord,
             translation: translation || 'No translation found',
             userId: user.uid,
             videoId: activeVideoId,
         });
-        
-        showNotification(`Saved!`);
+
+        // Replace temporary item with real one from Firestore
+        setAllVocabulary(prev => prev?.map(item => item.id === tempId ? { ...item, id: docRef.id, translation: translation || 'No translation found' } : item));
 
     } catch (e: any) {
         console.error("Failed to translate or save word", e);
-        showNotification(`Error saving word.`);
+        // Revert optimistic update on failure
+        setAllVocabulary(prev => prev?.filter(item => item.id !== tempId) || null);
     }
 
-  }, [user, firestore, activeVideoId, savedWordsSet, showNotification]);
+  }, [user, firestore, activeVideoId, savedWordsSet, setAllVocabulary]);
 
   const removeVocabularyItem = useCallback(async (id: string) => {
       if (!firestore || !user) return;
+      if (id.startsWith('temp_')) {
+          setAllVocabulary(prev => prev?.filter(item => item.id !== id) || null);
+          return;
+      }
       const docRef = doc(firestore, `users/${user.uid}/vocabularies`, id);
       await deleteDoc(docRef);
-  }, [firestore, user]);
-
-  useEffect(() => {
-      return () => {
-          if(notificationTimeoutRef.current) {
-              clearTimeout(notificationTimeoutRef.current);
-          }
-      }
-  }, []);
+  }, [firestore, user, setAllVocabulary]);
 
 
   const value = {
@@ -231,7 +219,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     videoData,
     isLoading,
     error,
-    notification,
   };
 
   return (
