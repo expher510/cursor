@@ -99,14 +99,14 @@ export function VideoWorkspace() {
             </div>
             
             <div className="w-full">
-                 <VocabularyList layout="grid" />
+                 <VocabularyList layout="flex" />
             </div>
         
             <div className="mt-4">
                 <Button asChild size="lg">
                 <Link href={`/quiz?v=${videoData.videoId}`}>
                     <Edit className="mr-2 h-5 w-5" />
-                    Comprehensive Quiz
+                    AI Generated Quiz
                 </Link>
                 </Button>
             </div>
