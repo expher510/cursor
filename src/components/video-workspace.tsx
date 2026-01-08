@@ -69,35 +69,41 @@ export function VideoWorkspace() {
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-8 max-w-7xl mx-auto">
-      <div className="flex-1 space-y-8">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+      <div className="md:col-span-2 space-y-8">
         <div className="space-y-2 text-center md:text-left">
             <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Listening</h1>
             <p className="text-lg text-muted-foreground max-w-3xl">
                 Listen to the video and follow along with the synchronized transcript. Click any word to save it.
             </p>
         </div>
-
-        <div className="aspect-video w-full overflow-hidden rounded-lg bg-black/75 p-1">
-            <ReactPlayer
-                url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                width="100%"
-                height="100%"
-                controls={true}
-                playing={true}
-                onProgress={(progress) => setCurrentTime(progress.playedSeconds * 1000)}
-                config={{
-                    youtube: {
-                        playerVars: {
-                            modestbranding: 1,
-                            rel: 0,
-                        }
-                    }
-                }}
-            />
+        
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_25%] gap-4 items-start">
+             <div className="space-y-4">
+                <div className="aspect-video w-full overflow-hidden rounded-lg bg-black/75 p-1">
+                    <ReactPlayer
+                        url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                        width="100%"
+                        height="100%"
+                        controls={true}
+                        playing={true}
+                        onProgress={(progress) => setCurrentTime(progress.playedSeconds * 1000)}
+                        config={{
+                            youtube: {
+                                playerVars: {
+                                    modestbranding: 1,
+                                    rel: 0,
+                                }
+                            }
+                        }}
+                    />
+                </div>
+                <CaptionView transcript={videoData.transcript} currentTime={currentTime} />
+             </div>
+             <div className="h-full">
+                <VocabularyList />
+             </div>
         </div>
-  
-        <CaptionView transcript={videoData.transcript} currentTime={currentTime} />
 
         <div className="flex justify-center">
             <Button asChild size="lg">
@@ -109,12 +115,7 @@ export function VideoWorkspace() {
         </div>
       </div>
       
-      <div className="md:w-[40%] flex flex-col gap-4">
-        <h2 className="text-lg font-semibold tracking-tight">Vocabulary</h2>
-        <div className="aspect-video">
-             <VocabularyList />
-        </div>
-      </div>
+      {/* This outer vocabulary list is now removed, integrated into the grid above */}
     </div>
   );
 }
