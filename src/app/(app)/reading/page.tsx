@@ -3,9 +3,11 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, BookOpenCheck } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 
 function ReadingPracticePage() {
@@ -55,11 +57,21 @@ function ReadingPracticePage() {
 
     return (
         <div className="w-full max-w-4xl mx-auto space-y-6">
-            <div className="text-center mb-4">
-                <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Reading</h1>
-                <p className="text-lg text-muted-foreground mt-2 max-w-3xl mx-auto">
-                    Click on any word in the transcript to instantly get its translation and add it to your personal vocabulary list.
-                </p>
+            <div className="mb-4">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-center sm:text-left">
+                    <div className="flex-1">
+                        <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Reading</h1>
+                        <p className="text-lg text-muted-foreground mt-2 max-w-3xl">
+                            Click on any word in the transcript to instantly get its translation and add it to your personal vocabulary list.
+                        </p>
+                    </div>
+                    <Button asChild>
+                        <Link href={`/quiz?v=${videoData.videoId}`}>
+                            <BookOpenCheck className="mr-2 h-5 w-5" />
+                            Start Quiz
+                        </Link>
+                    </Button>
+                </div>
             </div>
             
             <VocabularyList />
