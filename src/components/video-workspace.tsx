@@ -65,9 +65,9 @@ export function VideoWorkspace() {
 
   return (
      <div className="flex flex-col items-center w-full max-w-4xl mx-auto">
-        <div className="w-full space-y-2 text-center md:text-left mb-8">
-            <h1 className="text-4xl font-bold font-headline tracking-tight">Interactive Listening</h1>
-            <p className="text-lg text-muted-foreground max-w-3xl">
+        <div className="w-full space-y-2 text-center mb-8">
+            <h1 className="text-3xl font-bold font-headline tracking-tight">Interactive Listening</h1>
+            <p className="text-base text-muted-foreground max-w-3xl mx-auto">
                 Listen to the video and follow along with the synchronized transcript. Click any word to save it.
             </p>
         </div>
