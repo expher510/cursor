@@ -65,7 +65,18 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           const querySnapshot = await getDocs(videosQuery);
           if (!querySnapshot.empty) {
             const lastVideo = querySnapshot.docs[0];
-            setActiveVideoId(lastVideo.id);
+             // Filter out placeholder if it's the most recent
+            if (lastVideo.id !== '_placeholder') {
+                setActiveVideoId(lastVideo.id);
+            } else if (querySnapshot.docs.length > 1) {
+                 // This logic is imperfect, ideally we'd fetch more to find the "real" last one
+                 // But for now, we just know the placeholder isn't what we want.
+                 setError("No recent videos found to display.");
+                 setIsLoading(false);
+            } else {
+                setError("No videos found in your history.");
+                setIsLoading(false);
+            }
           } else {
              setError("No videos found in your history.");
              setIsLoading(false);
@@ -83,10 +94,10 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   // Effect to fetch already-cached data from Firestore based on activeVideoId
   useEffect(() => {
     if (!activeVideoId) {
-       if (!urlVideoId) { // Only set error if no ID was ever present
-          setError("No video ID provided and no history found.");
-        }
-      setIsLoading(false);
+       // Only set loading to false if we aren't already handling an error state from the effect above.
+       if (!error) {
+         setIsLoading(false);
+       }
       return;
     }
 
@@ -108,8 +119,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
     async function fetchCachedVideoData() {
       try {
-        const videoDocRef = doc(firestore, `users/${user.uid}/videos/${activeVideoId}`);
-        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${activeVideoId}/transcripts`, activeVideoId);
+        const videoDocRef = doc(firestore, `users/${user!.uid}/videos/${activeVideoId}`);
+        const transcriptDocRef = doc(firestore, `users/${user!.uid}/videos/${activeVideoId}/transcripts`, activeVideoId);
         
         const videoDocSnap = await getDoc(videoDocRef);
         const transcriptDocSnap = await getDoc(transcriptDocRef);
@@ -138,7 +149,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     
     fetchCachedVideoData();
 
-  }, [activeVideoId, user, firestore, videoData?.videoId]);
+  }, [activeVideoId, user, firestore, videoData?.videoId, error]);
 
 
   const showNotification = useCallback((message: string) => {
