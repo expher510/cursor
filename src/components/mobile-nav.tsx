@@ -7,7 +7,6 @@ import { History, LogOut, PlusCircle, Copy, BookOpen, Edit } from 'lucide-react'
 import { cn } from '@/lib/utils';
 import { useFirebase } from '@/firebase';
 import { HistoryMenu } from './history-menu';
-import { Logo } from './logo';
 
 interface MobileLinkProps extends LinkProps {
   onOpenChange?: (open: boolean) => void;
