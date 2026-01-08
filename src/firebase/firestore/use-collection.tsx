@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -68,7 +69,7 @@ export function useCollection<T = any>(
       throw new Error('useCollection query was not properly memoized with useMemoFirebase. This will cause infinite loops.');
     }
     
-    if (!memoizedTargetRefOrQuery) {
+    if (!memoizedTargetRefOrQuery || !auth) {
       setData(null);
       setIsLoading(false);
       setError(null);

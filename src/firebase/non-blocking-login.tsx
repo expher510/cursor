@@ -9,7 +9,7 @@ import {
   User,
   UserCredential,
 } from 'firebase/auth';
-import { doc, getDoc, Firestore, writeBatch } from 'firebase/firestore';
+import { doc, getDoc, Firestore, writeBatch, setDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 
@@ -33,47 +33,36 @@ export async function ensureUserDocument(firestore: Firestore, user: User, auth:
         if (!userDocSnap.exists()) {
             console.log(`User document for ${user.uid} does not exist. Creating...`);
             
-            const batch = writeBatch(firestore);
             const userData = { id: user.uid, email: user.email };
-
-            // 1. Create the main user document
-            batch.set(userDocRef, userData);
-
-            // 2. Create a placeholder document in the 'videos' subcollection
-            // This is crucial to ensure the collection path exists for security rules.
-            const placeholderVideoRef = doc(firestore, `users/${user.uid}/videos`, '_placeholder');
-            batch.set(placeholderVideoRef, {
-                title: "Placeholder",
-                timestamp: Date.now()
-            });
             
-            await batch.commit()
-              .catch((error) => {
-                // This catch block is specifically for the batch.commit() promise
-                console.error("Firestore batch commit failed:", error);
+            // Try to set the user document.
+            // We do NOT use a batch here anymore. We try to create the user doc first.
+            // If this fails, the error handler will catch it and show the detailed error.
+            // This is better for debugging security rules than a silent batch failure.
+            await setDoc(userDocRef, userData).catch(error => {
+                console.error("Firestore setDoc failed for user document:", error);
                 const contextualError = new FirestorePermissionError({
-                    operation: 'write',
-                    path: userDocRef.path, // Path of the primary document being created
+                    operation: 'create',
+                    path: userDocRef.path,
                     requestResourceData: userData
                 }, auth);
                 errorEmitter.emit('permission-error', contextualError);
-                // Re-throw to indicate failure to the caller
-                throw contextualError;
+                throw contextualError; // Re-throw to stop execution
             });
 
-            console.log(`Successfully created document and videos subcollection for user ${user.uid}.`);
+            console.log(`Successfully created user document for ${user.uid}.`);
         }
     } catch (error: any) {
-        // This will catch errors from getDoc and from the re-thrown batch commit error.
+        // This will catch errors from getDoc and from the re-thrown setDoc error.
         console.error("Error in ensureUserDocument:", error);
-
-        // Avoid re-throwing if it's already our custom error
-        if (error instanceof FirestorePermissionError) {
-          throw error;
+        
+        // If it's not our custom error, it's an unexpected issue.
+        // We don't emit it as a permission error, just log it.
+        // The custom error is already emitted and thrown inside the catch block above.
+        if (!(error instanceof FirestorePermissionError)) {
+             // We can choose to wrap it or just rethrow
+            throw error;
         }
-
-        // We re-throw the error to ensure the calling function is aware of the failure.
-        throw error;
     }
 }
 

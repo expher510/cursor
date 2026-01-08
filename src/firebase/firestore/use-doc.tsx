@@ -1,3 +1,4 @@
+
 'use client';
     
 import { useState, useEffect } from 'react';
@@ -54,7 +55,7 @@ export function useDoc<T = any>(
       throw new Error('useDoc ref was not properly memoized with useMemoFirebase. This will cause infinite loops.');
     }
 
-    if (!memoizedDocRef) {
+    if (!memoizedDocRef || !auth) {
       setData(null);
       setIsLoading(false);
       setError(null);

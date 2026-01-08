@@ -90,14 +90,18 @@ export function FirebaseErrorListener({ children }: { children: React.ReactNode 
 
   const resetError = () => setError(null);
 
-  return (
-    <ErrorBoundary
+  if (error) {
+    return (
+      <ErrorBoundary
         FallbackComponent={ErrorFallback}
         onReset={resetError}
         resetKeys={[error]}
-        {...(error && { error })}
-    >
+        error={error}
+      >
         {children}
-    </ErrorBoundary>
-  );
+      </ErrorBoundary>
+    );
+  }
+
+  return <>{children}</>;
 }

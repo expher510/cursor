@@ -1,7 +1,8 @@
+
 'use client';
 import type { Auth, User } from 'firebase/auth';
 
-type SecurityRuleContext = {
+export type SecurityRuleContext = {
   path: string;
   operation: 'get' | 'list' | 'create' | 'update' | 'delete' | 'write';
   requestResourceData?: any;
@@ -14,7 +15,7 @@ interface FirebaseAuthToken {
   phone_number: string | null;
   sub: string;
   firebase: {
-    identities: Record<string, string[]>;
+    identities: Record<string, any>;
     sign_in_provider: string;
     tenant: string | null;
   };
@@ -34,15 +35,17 @@ interface SecurityRuleRequest {
   };
 }
 
-/**
- * Builds a security-rule-compliant auth object from the Firebase User.
- * @param currentUser The currently authenticated Firebase user.
- * @returns An object that mirrors request.auth in security rules, or null.
- */
 function buildAuthObject(currentUser: User | null): FirebaseAuthObject | null {
   if (!currentUser) {
     return null;
   }
+  
+  const identities: Record<string, any> = {};
+  currentUser.providerData.forEach(profile => {
+    if (profile.providerId) {
+      identities[profile.providerId] = [profile.uid];
+    }
+  });
 
   const token: FirebaseAuthToken = {
     name: currentUser.displayName,
@@ -51,13 +54,8 @@ function buildAuthObject(currentUser: User | null): FirebaseAuthObject | null {
     phone_number: currentUser.phoneNumber,
     sub: currentUser.uid,
     firebase: {
-      identities: currentUser.providerData.reduce((acc, p) => {
-        if (p.providerId) {
-          acc[p.providerId] = [p.uid];
-        }
-        return acc;
-      }, {} as Record<string, string[]>),
-      sign_in_provider: currentUser.providerData[0]?.providerId || 'custom',
+      identities,
+      sign_in_provider: currentUser.providerId,
       tenant: currentUser.tenantId,
     },
   };
@@ -68,13 +66,7 @@ function buildAuthObject(currentUser: User | null): FirebaseAuthObject | null {
   };
 }
 
-/**
- * Builds the complete, simulated request object for the error message.
- * It safely tries to get the current authenticated user.
- * @param context The context of the failed Firestore operation.
- * @param auth The Firebase Auth instance.
- * @returns A structured request object.
- */
+
 function buildRequestObject(context: SecurityRuleContext, auth: Auth): SecurityRuleRequest {
   const currentUser = auth.currentUser;
   const authObject = buildAuthObject(currentUser);
@@ -83,26 +75,17 @@ function buildRequestObject(context: SecurityRuleContext, auth: Auth): SecurityR
     auth: authObject,
     method: context.operation,
     path: `/databases/(default)/documents/${context.path}`,
-    resource: context.requestResourceData ? { data: context.requestResourceData } : undefined,
+    ...(context.requestResourceData && { resource: { data: context.requestResourceData } }),
   };
 }
 
 
-/**
- * Builds the final, formatted error message for the LLM.
- * @param requestObject The simulated request object.
- * @returns A string containing the error message and the JSON payload.
- */
 function buildErrorMessage(requestObject: SecurityRuleRequest): string {
   return `FirestoreError: Missing or insufficient permissions: The following request was denied by Firestore Security Rules:
 ${JSON.stringify(requestObject, null, 2)}`;
 }
 
-/**
- * A custom error class designed to be consumed by an LLM for debugging.
- * It structures the error information to mimic the request object
- * available in Firestore Security Rules.
- */
+
 export class FirestorePermissionError extends Error {
   public readonly request: SecurityRuleRequest;
 
@@ -111,5 +94,11 @@ export class FirestorePermissionError extends Error {
     super(buildErrorMessage(requestObject));
     this.name = 'FirebaseError';
     this.request = requestObject;
+    
+    // This is to make sure that the error is re-thrown in the console
+    // so it's visible in the dev tools.
+    setTimeout(() => {
+        throw this;
+    }, 0);
   }
 }
