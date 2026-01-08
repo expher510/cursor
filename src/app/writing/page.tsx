@@ -10,18 +10,19 @@ import { Loader2, Sparkles } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
 
 function WritingWorkspace() {
     const { videoData, vocabulary, isLoading: isContextLoading } = useWatchPage();
     const [wordCount, setWordCount] = useState(10);
     const [exerciseWords, setExerciseWords] = useState<string[]>([]);
-    const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
+    const [availableWords, setAvailableWords] = useState<string[]>([]);
     const [writingContent, setWritingContent] = useState("");
     const [isStarted, setIsStarted] = useState(false);
     const [isGettingFeedback, setIsGettingFeedback] = useState(false);
     
     const transcriptText = useMemo(() => {
-        return videoData?.transcript.map(t => t.text).join(' ').toLowerCase().match(/\b(\w+)\b/g) || [];
+        return videoData?.transcript.map(t => t.text).toLowerCase().match(/\b(\w+)\b/g) || [];
     }, [videoData]);
     
     const startExercise = () => {
@@ -40,35 +41,25 @@ function WritingWorkspace() {
             words = [...words, ...shuffledTranscript.slice(0, wordsNeeded)];
         }
 
-        setExerciseWords(words.sort(() => 0.5 - Math.random()));
+        const finalWords = words.sort(() => 0.5 - Math.random());
+        setExerciseWords(finalWords);
+        setAvailableWords(finalWords);
         setWritingContent("");
-        setUsedWords(new Set());
         setIsStarted(true);
     };
 
     const handleWordClick = (word: string) => {
         setWritingContent(prev => prev ? `${prev} ${word}` : word);
-        // Also update the writingContent to reflect which words have been used
-        const newUsedWords = new Set(usedWords);
-        if (writingContent.toLowerCase().includes(word.toLowerCase())) {
-           newUsedWords.add(word);
-        }
-        setUsedWords(newUsedWords);
+        setAvailableWords(prev => prev.filter(w => w !== word));
     };
+    
+    const resetExercise = () => {
+        setIsStarted(false);
+        setWritingContent("");
+        setExerciseWords([]);
+        setAvailableWords([]);
+    }
 
-    const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const currentText = e.target.value;
-        setWritingContent(currentText);
-
-        const newUsedWords = new Set<string>();
-        exerciseWords.forEach(word => {
-            // A simple includes check is sufficient here
-            if (currentText.toLowerCase().includes(word.toLowerCase())) {
-                newUsedWords.add(word);
-            }
-        });
-        setUsedWords(newUsedWords);
-    };
 
     const getFeedback = async () => {
         setIsGettingFeedback(true);
@@ -86,7 +77,7 @@ function WritingWorkspace() {
             <Card className="w-full max-w-2xl">
                 <CardHeader>
                     <CardTitle>Configure Your Writing Exercise</CardTitle>
-                    <CardDescription>Choose how many words to practice with. We'll use words from your vocabulary list first.</CardDescription>
+                    <CardDescription>Choose how many words to practice with. We'll use words from your vocabulary list first, then add random words from the transcript if needed.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-8">
                     <div className="space-y-4">
@@ -111,22 +102,19 @@ function WritingWorkspace() {
             <Card>
                 <CardHeader>
                     <CardTitle>Your Words</CardTitle>
-                    <CardDescription>Click a word to add it to your text, or type freely. Used words will be highlighted.</CardDescription>
+                    <CardDescription>Click a word bubble to use it in your text. It will disappear from the list once used.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                        {exerciseWords.map(word => (
-                            <Button
+                <CardContent className="min-h-[6rem]">
+                    <div className="flex flex-wrap gap-3">
+                        {availableWords.map(word => (
+                             <Badge 
                                 key={word}
-                                variant={usedWords.has(word) ? "secondary" : "outline"}
-                                className={cn(
-                                    "font-semibold capitalize transition-all",
-                                    usedWords.has(word) && "text-muted-foreground line-through"
-                                )}
+                                variant="outline"
+                                className="cursor-pointer border-primary text-primary text-base font-semibold capitalize transition-all hover:bg-primary/10 px-4 py-2"
                                 onClick={() => handleWordClick(word)}
                             >
                                 {word}
-                            </Button>
+                            </Badge>
                         ))}
                     </div>
                 </CardContent>
@@ -137,11 +125,11 @@ function WritingWorkspace() {
                 rows={10}
                 className="text-base"
                 value={writingContent}
-                onChange={handleTextChange}
+                onChange={(e) => setWritingContent(e.target.value)}
             />
             
             <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setIsStarted(false)}>Back to Settings</Button>
+                <Button variant="outline" onClick={resetExercise}>Back to Settings</Button>
                 <Button onClick={getFeedback} disabled={isGettingFeedback || !writingContent}>
                     {isGettingFeedback ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
