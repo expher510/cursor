@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npx genkit start -- npm run next:dev",
+    "dev": "npx genkit start -- next dev",
     "next:dev": "next dev",
     "build": "NODE_ENV=production next build",
     "start": "next start",
