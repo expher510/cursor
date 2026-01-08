@@ -43,7 +43,7 @@ function ActivityButtons({ videoIdToUse, isProcessing, onActivitySelect }: { vid
             Start Reading
         </Button>
 
-        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleNavigation('quiz')}>
+        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleNavigation('writing')}>
             {isProcessing && <Loader2 className="mr-2 animate-spin" />}
             <Edit className="mr-2" />
             Start Writing
