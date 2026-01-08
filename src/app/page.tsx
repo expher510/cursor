@@ -47,10 +47,10 @@ function ActivityButtons({ videoIdToUse, isHistoryLoading }: { videoIdToUse: str
             Start Reading
         </Button>
 
-        <Button size="lg" disabled={!isEnabled} onClick={() => handleNavigation('writing')}>
+        <Button size="lg" disabled={!isEnabled} onClick={() => handleNavigation('quiz')}>
             {isHistoryLoading && <Loader2 className="mr-2 animate-spin" />}
             <Edit className="mr-2" />
-            Start Writing
+            Start Quiz
         </Button>
       </div>
     </div>

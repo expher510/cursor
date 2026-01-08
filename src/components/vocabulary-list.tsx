@@ -6,7 +6,7 @@ import { Button } from "./ui/button";
 import { X, List, Search, BrainCircuit, Copy } from "lucide-react";
 import { useFirebase } from "@/firebase";
 import { useCollection } from "@/firebase/firestore/use-collection";
-import { collection, doc } from "firebase/firestore";
+import { collection, doc, query } from "firebase/firestore";
 import { deleteDocumentNonBlocking } from "@/firebase/non-blocking-updates";
 import { useMemoFirebase } from "@/firebase/provider";
 import { Skeleton } from "./ui/skeleton";
@@ -46,7 +46,7 @@ export function VocabularyList({ isSheet = false }: { isSheet?: boolean }) {
 
   const vocabQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
-    return collection(firestore, `users/${user.uid}/vocabularies`);
+    return query(collection(firestore, `users/${user.uid}/vocabularies`));
   }, [user, firestore]);
 
   const { isLoading } = useCollection<VocabularyItem>(vocabQuery);
