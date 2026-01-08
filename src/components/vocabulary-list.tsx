@@ -20,40 +20,47 @@ export function VocabularyList() {
     <div className="flex flex-col h-full rounded-lg border bg-card text-card-foreground shadow-sm flex-1">
         <ScrollArea className="flex-1 p-4">
           {isLoading ? (
-             <div className="space-y-2">
-               <Skeleton className="h-16 w-full" />
-               <Skeleton className="h-16 w-full" />
-               <Skeleton className="h-16 w-full" />
+             <div className="flex flex-wrap gap-2">
+               <Skeleton className="h-10 w-24 rounded-full" />
+               <Skeleton className="h-10 w-32 rounded-full" />
+               <Skeleton className="h-10 w-28 rounded-full" />
             </div>
           ) : !vocabulary || vocabulary.length === 0 ? (
-            <div className="flex h-full min-h-[200px] items-center justify-center rounded-md text-center p-4">
+            <div className="flex h-full min-h-[100px] items-center justify-center rounded-md text-center p-4">
                 <p className="text-sm text-muted-foreground">
                     Words you save will appear here.
                 </p>
             </div>
           ) : (
              <TooltipProvider>
-                <ul className="space-y-2">
+                <div className="flex flex-wrap gap-3">
                   {vocabulary.map((item) => (
-                    <li key={item.id} className="flex items-center justify-between gap-2 rounded-md border p-3 bg-background">
-                      <div>
-                        <p className="font-semibold capitalize text-primary">{item.word}</p>
-                        <p className="text-sm text-muted-foreground">{item.translation}</p>
+                    <div 
+                      key={item.id} 
+                      className="group relative flex items-center gap-2 rounded-full border bg-secondary/50 pr-2 pl-4 py-1 text-sm font-semibold text-secondary-foreground transition-colors hover:bg-secondary"
+                    >
+                      <div className="flex flex-col">
+                        <span className="capitalize">{item.word}</span>
+                        <span className="text-xs text-muted-foreground font-normal">{item.translation}</span>
                       </div>
+                      
                       <Tooltip>
                         <TooltipTrigger asChild>
-                           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => removeVocabularyItem(item.id)}>
-                                <X className="h-4 w-4" />
+                           <button 
+                             onClick={() => removeVocabularyItem(item.id)}
+                             className="ml-1 flex h-5 w-5 items-center justify-center rounded-full bg-muted text-muted-foreground opacity-75 transition-all hover:bg-destructive hover:text-destructive-foreground hover:opacity-100"
+                           >
+                                <X className="h-3 w-3" />
                                 <span className="sr-only">Remove</span>
-                           </Button>
+                           </button>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p>Remove</p>
                         </TooltipContent>
                       </Tooltip>
-                    </li>
+                    </div>
                   ))}
-                </ul>
+                </div>
             </TooltipProvider>
           )}
         </ScrollArea>
