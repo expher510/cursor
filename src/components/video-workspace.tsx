@@ -10,6 +10,7 @@ import ReactPlayer from 'react-player/youtube';
 import { useState, useRef } from "react";
 import { CaptionView } from "./caption-view";
 import { VocabularyList } from "./vocabulary-list";
+import { Logo } from "./logo";
 
 
 function LoadingState() {
@@ -66,7 +67,9 @@ export function VideoWorkspace() {
   return (
      <div className="flex flex-col items-center w-full max-w-4xl mx-auto">
         <div className="w-full space-y-2 text-center mb-8">
-            <h1 className="text-3xl font-bold font-headline tracking-tight">Interactive Listening</h1>
+            <div className="flex justify-center">
+              <Logo />
+            </div>
             <p className="text-base text-muted-foreground max-w-3xl mx-auto">
                 Listen to the video and follow along with the synchronized transcript. Click any word to save it.
             </p>
