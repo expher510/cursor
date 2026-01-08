@@ -1,10 +1,9 @@
 'use client';
 import { useState } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
-import { Logo } from "@/components/logo";
 import { VideoHistory } from "@/components/video-history";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, BookOpen, Edit, Headphones, Loader2 } from "lucide-react";
+import { Headphones, BookOpen, Edit, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { extractYouTubeVideoId } from "@/lib/utils";
 import { useFirebase } from "@/firebase";
@@ -18,11 +17,9 @@ type HistoryItem = {
   timestamp: number;
 };
 
-function ActivityButtons({ newVideoId, latestHistoryVideoId, isHistoryLoading }: { newVideoId: string | null, latestHistoryVideoId: string | null, isHistoryLoading: boolean }) {
+function ActivityButtons({ videoIdToUse, isHistoryLoading }: { videoIdToUse: string | null, isHistoryLoading: boolean }) {
   const router = useRouter();
 
-  // A button is active if there's a new video OR if there's history.
-  const videoIdToUse = newVideoId || latestHistoryVideoId;
   const isEnabled = !!videoIdToUse;
 
   const handleNavigation = (path: string) => {
@@ -61,15 +58,15 @@ function ActivityButtons({ newVideoId, latestHistoryVideoId, isHistoryLoading }:
 
 export default function Home() {
   const [url, setUrl] = useState('');
+  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
   const { firestore, user } = useFirebase();
 
-  // Fetch the latest video from history to enable the buttons
   const historyQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return query(
       collection(firestore, `users/${user.uid}/videos`),
       orderBy("timestamp", "desc"),
-      limit(1)
+      limit(20)
     );
   }, [user, firestore]);
 
@@ -77,12 +74,13 @@ export default function Home() {
 
   const newVideoId = extractYouTubeVideoId(url);
   const latestHistoryVideoId = history?.[0]?.id ?? null;
+  const videoIdToUse = newVideoId || selectedVideoId || latestHistoryVideoId;
 
   return (
     <>
       <main className="flex min-h-screen w-full flex-col items-center bg-background p-4 pt-24">
         <div className="flex flex-col items-center gap-8 text-center max-w-5xl w-full">
-          <Logo />
+          
           <div className="flex flex-col gap-2 max-w-2xl">
             <h1 className="font-headline text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
               Unlock Languages with Video
@@ -94,8 +92,11 @@ export default function Home() {
           <div className="w-full max-w-lg pt-4">
             <YoutubeUrlForm onUrlChange={setUrl} />
           </div>
-          <ActivityButtons newVideoId={newVideoId} latestHistoryVideoId={latestHistoryVideoId} isHistoryLoading={isHistoryLoading} />
-          <VideoHistory />
+          <ActivityButtons videoIdToUse={videoIdToUse} isHistoryLoading={isHistoryLoading} />
+          <VideoHistory 
+            selectedVideoId={selectedVideoId}
+            onVideoSelect={setSelectedVideoId}
+          />
         </div>
       </main>
     </>

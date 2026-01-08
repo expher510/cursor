@@ -10,8 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from './ui/button';
 import { Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { cn } from '@/lib/utils';
 
 type HistoryItem = {
     id: string;
@@ -19,8 +19,7 @@ type HistoryItem = {
     timestamp: number;
 };
 
-function HistoryCard({ item }: { item: HistoryItem }) {
-    const router = useRouter();
+function HistoryCard({ item, isSelected, onSelect }: { item: HistoryItem, isSelected: boolean, onSelect: (id: string) => void }) {
     const { firestore, user } = useFirebase();
 
     const handleDelete = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -32,20 +31,18 @@ function HistoryCard({ item }: { item: HistoryItem }) {
         const videoDocRef = doc(firestore, `users/${user.uid}/videos`, item.id);
         deleteDocumentNonBlocking(videoDocRef);
 
-        // Also delete the transcript subcollection
         const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${item.id}/transcripts`, item.id);
         deleteDocumentNonBlocking(transcriptDocRef);
     };
-    
-    const handleCardClick = () => {
-        router.push(`/watch?v=${item.id}`);
-    }
 
     return (
         <div className="group relative">
             <Card 
-                className="overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full"
-                onClick={handleCardClick}
+                className={cn(
+                    "overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 cursor-pointer h-full",
+                    isSelected && "ring-2 ring-primary shadow-lg"
+                )}
+                onClick={() => onSelect(item.id)}
             >
                 <div className="relative aspect-video">
                     <Image
@@ -72,8 +69,12 @@ function HistoryCard({ item }: { item: HistoryItem }) {
     );
 }
 
+type VideoHistoryProps = {
+    selectedVideoId: string | null;
+    onVideoSelect: (id: string) => void;
+};
 
-export function VideoHistory() {
+export function VideoHistory({ selectedVideoId, onVideoSelect }: VideoHistoryProps) {
     const { firestore, user } = useFirebase();
 
     const historyQuery = useMemoFirebase(() => {
@@ -104,7 +105,7 @@ export function VideoHistory() {
     }
     
     if (!history || history.length === 0) {
-        return null; // Don't show the section if there is no history
+        return null; 
     }
 
     return (
@@ -112,7 +113,12 @@ export function VideoHistory() {
              <h2 className="text-2xl font-bold font-headline mb-6">Your Recent Videos</h2>
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {history.map((item) => (
-                    <HistoryCard key={item.id} item={item} />
+                    <HistoryCard 
+                        key={item.id} 
+                        item={item}
+                        isSelected={item.id === selectedVideoId}
+                        onSelect={onVideoSelect}
+                    />
                 ))}
              </div>
         </div>
