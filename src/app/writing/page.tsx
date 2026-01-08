@@ -100,25 +100,21 @@ function WritingWorkspace() {
 
     return (
         <div className="w-full max-w-4xl space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardDescription>Click a word bubble to use it in your text. It will disappear from the list once used.</CardDescription>
-                </CardHeader>
-                <CardContent className="min-h-[6rem]">
-                    <div className="flex flex-wrap gap-3">
-                        {availableWords.map(word => (
-                             <Badge 
-                                key={word}
-                                variant="outline"
-                                className="cursor-pointer border-primary text-primary text-base font-semibold capitalize transition-all hover:bg-primary/10 px-4 py-2"
-                                onClick={() => handleWordClick(word)}
-                            >
-                                {word}
-                            </Badge>
-                        ))}
-                    </div>
-                </CardContent>
-            </Card>
+            <div className="min-h-[6rem]">
+                <p className="text-sm text-muted-foreground mb-4">Click a word bubble to use it in your text. It will disappear from the list once used.</p>
+                <div className="flex flex-wrap gap-3 justify-center">
+                    {availableWords.map(word => (
+                         <Badge 
+                            key={word}
+                            variant="outline"
+                            className="cursor-pointer border-primary text-primary text-base font-semibold capitalize transition-all hover:bg-primary/10 px-4 py-2"
+                            onClick={() => handleWordClick(word)}
+                        >
+                            {word}
+                        </Badge>
+                    ))}
+                </div>
+            </div>
 
             <Textarea
                 placeholder="Click words above or type here..."
