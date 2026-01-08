@@ -56,7 +56,6 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
   const { setVideoData, videoData, isLoading, error, setError, setIsLoading } = useWatchPage();
   
   useEffect(() => {
-    // If data for this videoId is already in context, don't refetch.
     if (videoData && videoData.videoId === videoId) {
         if (isLoading) setIsLoading(false);
         return;
@@ -92,7 +91,7 @@ export function VideoWorkspace({ videoId }: { videoId: string }) {
               transcript: transcriptInfo.content,
           };
         } else {
-            console.log("Video not in Firestore. Fetching from API.");
+            console.log("Video not in Firestore. Fetching from API and caching.");
             const result = await processVideo({ videoId });
 
             // Save the new data to Firestore (non-blocking)
