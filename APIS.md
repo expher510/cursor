@@ -8,6 +8,7 @@ Firebase is the primary backend platform for this application, providing authent
 
 -   **Service**: Firebase Authentication
 -   **Usage**: Manages user sign-in with Google and Email/Password. This requires the **Identity Toolkit API** to be enabled in your Google Cloud project.
+-   **API Key**: The Firebase API key is located in `src/firebase/config.ts` and is safe to be public.
 -   **Website**: [firebase.google.com/docs/auth](https://firebase.google.com/docs/auth)
 
 -   **Service**: Firestore
@@ -17,19 +18,17 @@ Firebase is the primary backend platform for this application, providing authent
 ## 2. Google Cloud for YouTube Data
 
 -   **Service**: YouTube Data API v3
--   **Usage**: Used to fetch essential video metadata, such as the title and description. This requires a **YouTube Data API Key** to be added to your `.env` file. Without this key, video titles will not be fetched.
+-   **Usage**: Used to fetch essential video metadata, such as the title and description. This requires a **YouTube Data API Key** to be added to your `.env` file. See `.env.example` for the required format.
+-   **API Key**: This key is **secret** and should be stored in the `.env` file.
 -   **Website**: [developers.google.com/youtube/v3](https://developers.google.com/youtube/v3)
 
-## 3. Translation and AI
+## 3. Translation
 
 -   **Service**: MyMemory API
 -   **Usage**: A free, public API used for translating individual words for the vocabulary list. No API key is required.
 -   **Website**: [mymemory.translated.net/doc/spec.php](https://mymemory.translated.net/doc/spec.php)
 
--   **Service**: youtube-transcript (Library)
--   **Usage**: An open-source library used to scrape and fetch transcripts for YouTube videos directly. It does not require an API key.
+## 4. Transcript Fetching
 
-## Deprecated APIs (No Longer Used)
-
--   **Supadata**: This service was previously considered but has been replaced by a direct implementation using `youtube-transcript` and the YouTube Data API.
--   **Genkit**: AI features were temporarily removed to resolve dependency conflicts.
+-   **Service**: `youtube-transcript` (Library Logic)
+-   **Usage**: The application uses internal logic equivalent to this library to scrape and fetch transcripts for YouTube videos directly. It does not require an API key.
