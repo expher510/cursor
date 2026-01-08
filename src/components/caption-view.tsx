@@ -15,9 +15,13 @@ export function CaptionView({ transcript, currentTime }: CaptionViewProps) {
       return null;
     }
 
-    // Find all lines that are currently active
+    // A small buffer (in ms) to show the caption slightly before it's spoken.
+    // This accounts for human reaction time and potential minor rendering delays.
+    const PREDICTIVE_BUFFER = 250; 
+
+    // Find all lines that are currently "active" within the predictive buffer.
     const activeLines = transcript.filter(line => 
-      currentTime >= line.offset && currentTime < (line.offset + line.duration)
+      currentTime >= (line.offset - PREDICTIVE_BUFFER) && currentTime < (line.offset + line.duration)
     );
 
     // If there are active lines, join their text.
@@ -26,13 +30,13 @@ export function CaptionView({ transcript, currentTime }: CaptionViewProps) {
     }
 
     // If no lines are active, find the most recent past line to display.
-    // This prevents the screen from going blank during short pauses.
+    // This prevents the screen from going blank during short pauses in speech.
     let lastLine: TranscriptItem | null = null;
     for (const line of transcript) {
         if (line.offset <= currentTime) {
             lastLine = line;
         } else {
-            // Since the transcript is sorted, we can break early.
+            // Since the transcript is sorted by time, we can break early.
             break;
         }
     }
