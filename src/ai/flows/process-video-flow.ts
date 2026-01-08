@@ -62,9 +62,6 @@ const transcriptApiTool = ai.defineTool(
       throw new Error('Supadata API key is not configured in .env file (SUPADATA_API_KEY).');
     }
     
-    // For now, we'll just use a generic title. A robust solution might fetch this separately.
-    const title = "YouTube Video";
-
     try {
         const requestUrl = new URL(API_BASE_URL);
         requestUrl.searchParams.append('url', youtubeUrl);
@@ -85,7 +82,7 @@ const transcriptApiTool = ai.defineTool(
 
         const result = await response.json();
         
-        // The Supadata API response for text=false has content as an array of objects
+        const title = result.title || "Untitled Video";
         const transcript = result.content || [];
 
         return { title, transcript };
@@ -113,3 +110,4 @@ const processVideoFlow = ai.defineFlow(
     };
   }
 );
+
