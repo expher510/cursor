@@ -18,7 +18,7 @@ import { doc, setDoc, getDoc, Firestore, writeBatch } from 'firebase/firestore';
  * @param firestore The Firestore instance.
  * @param user The authenticated user object from Firebase Auth.
  */
-async function ensureUserDocument(firestore: Firestore, user: User) {
+export async function ensureUserDocument(firestore: Firestore, user: User) {
     if (!user || !firestore) return;
 
     const userDocRef = doc(firestore, `users/${user.uid}`);
@@ -57,28 +57,25 @@ async function ensureUserDocument(firestore: Firestore, user: User) {
 }
 
 
-/** Initiate email/password sign-up and create user doc. */
+/** Initiate email/password sign-up. */
 export async function initiateEmailSignUp(auth: Auth, firestore: Firestore, email: string, password: string): Promise<UserCredential> {
   const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-  // After successful auth creation, immediately create the user document in Firestore.
-  await ensureUserDocument(firestore, userCredential.user);
+  // The AuthProvider will handle ensuring the user document exists.
   return userCredential;
 }
 
 
-/** Initiate email/password sign-in and ensure user doc exists. */
+/** Initiate email/password sign-in. */
 export async function initiateEmailSignIn(auth: Auth, firestore: Firestore, email: string, password: string) {
   const userCredential = await signInWithEmailAndPassword(auth, email, password);
-  // After successful sign-in, ensure the user document exists as a fallback for older users.
-  await ensureUserDocument(firestore, userCredential.user);
+  // The AuthProvider will handle ensuring the user document exists.
   return userCredential;
 }
 
-/** Initiate Google Sign-In and ensure user doc exists. */
+/** Initiate Google Sign-In. */
 export async function initiateGoogleSignIn(auth: Auth, firestore: Firestore): Promise<UserCredential> {
   const provider = new GoogleAuthProvider();
   const userCredential = await signInWithPopup(auth, provider);
-  // After successful sign-in, ensure the user document exists.
-  await ensureUserDocument(firestore, userCredential.user);
+  // The AuthProvider will handle ensuring the user document exists.
   return userCredential;
 }

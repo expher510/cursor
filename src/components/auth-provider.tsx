@@ -4,7 +4,7 @@ import { FirebaseContext } from '@/firebase/provider';
 import { usePathname, useRouter } from 'next/navigation';
 import { useContext, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { doc, getDoc, writeBatch } from 'firebase/firestore';
+import { ensureUserDocument } from '@/firebase/non-blocking-login';
 
 const PUBLIC_PATHS = ['/login', '/signup'];
 
@@ -13,7 +13,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // We can't know the user's state until the context is available.
   if (context === undefined) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -23,6 +22,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const { user, isUserLoading, firestore } = context;
+
+  // Effect to sync user document to Firestore on auth state change
+  useEffect(() => {
+    if (user && firestore) {
+      ensureUserDocument(firestore, user).catch(error => {
+        console.error("Failed to ensure user document on auth change:", error);
+      });
+    }
+  }, [user, firestore]);
+
 
   // Effect for handling redirection based on auth state
   useEffect(() => {
