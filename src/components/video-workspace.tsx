@@ -99,7 +99,7 @@ export function VideoWorkspace() {
             </div>
             
             <div className="w-full">
-                 <VocabularyList />
+                 <VocabularyList layout="grid" />
             </div>
         
             <div className="mt-4">
