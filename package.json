@@ -52,7 +52,8 @@
     "zod": "^3.24.2",
     "genkit": "^1.20.0",
     "@genkit-ai/google-genai": "^1.20.0",
-    "react-error-boundary": "^4.0.13"
+    "react-error-boundary": "^4.0.13",
+    "youtube-transcript": "^1.2.1"
   },
   "devDependencies": {
     "@types/node": "^20",

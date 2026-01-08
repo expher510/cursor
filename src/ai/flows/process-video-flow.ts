@@ -11,6 +11,8 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import 'dotenv/config';
+import { YoutubeTranscript } from 'youtube-transcript';
+
 
 // Schema Definitions
 
@@ -60,61 +62,21 @@ const youtubeTranscriptTool = ai.defineTool(
     },
     async ({ videoId }) => {
         try {
-            console.log("Attempting to fetch transcript using direct scraping method...");
+            console.log(`Attempting to fetch transcript for ${videoId} using youtube-transcript library...`);
             
-            const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
-            const html = await response.text();
-            
-            const playerResponseMatch = html.match(/var ytInitialPlayerResponse = ({.*?});/);
-            if (!playerResponseMatch) {
-              throw new Error('Could not find ytInitialPlayerResponse in the YouTube page. The video may not be available or the page structure has changed.');
-            }
-            
-            const playerResponse = JSON.parse(playerResponseMatch[1]);
-            const captionTracks = playerResponse?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+            const transcript = await YoutubeTranscript.fetchTranscript(videoId);
 
-            if (!captionTracks || captionTracks.length === 0) {
-              throw new Error('No caption tracks found for this video. It might not have subtitles enabled.');
-            }
-            
-            // Prefer an English track, but fall back to the first available if no English track is found.
-            const transcriptTrack = captionTracks.find((track: any) => track.languageCode === 'en') || captionTracks[0];
-
-            if (!transcriptTrack?.baseUrl) {
-                throw new Error("Could not find a valid transcript track URL. Subtitles might be disabled for this video.");
-            }
-
-            const transcriptResponse = await fetch(transcriptTrack.baseUrl);
-            if (!transcriptResponse.ok) {
-                throw new Error(`Failed to fetch transcript XML. Status: ${transcriptResponse.status}`);
-            }
-            const transcriptXml = await transcriptResponse.text();
-
-            const transcriptItems = Array.from(transcriptXml.matchAll(/<text start="(.*?)" dur="(.*?)">(.*?)<\/text>/g))
-              .map(match => ({
-                  offset: parseFloat(match[1]) * 1000,
-                  duration: parseFloat(match[2]) * 1000,
-                  text: match[3]
-                      .replace(/&amp;/g, '&')
-                      .replace(/&quot;/g, '"')
-                      .replace(/&#39;/g, "'")
-                      .replace(/&lt;/g, '<')
-                      .replace(/&gt;/g, '>')
-                      .replace(/<[^>]*>/g, '') // Strip any remaining HTML tags from subtitles
-                      .trim()
-              })).filter(item => item.text); // Filter out empty text items
-
-
-            if (transcriptItems.length === 0) {
+            if (!transcript || transcript.length === 0) {
                  throw new Error("Transcript was found but contained no text content.");
             }
 
-            console.log(`Successfully fetched and parsed ${transcriptItems.length} transcript lines.`);
-            return transcriptItems;
+            console.log(`Successfully fetched and parsed ${transcript.length} transcript lines.`);
+            return transcript;
+
         } catch (error: any) {
             console.error(`Transcript fetching failed: ${error.message}`);
             // Re-throw the specific error message to be displayed to the user.
-            throw new Error(`Could not retrieve transcript: ${error.message}`);
+            throw new Error(`Could not retrieve transcript. The video may not have subtitles enabled or is otherwise unavailable.`);
         }
     }
 );
