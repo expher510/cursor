@@ -89,7 +89,7 @@ export function useCollection<T = any>(
         setError(null);
         setIsLoading(false);
       },
-      (error: FirestoreError) => {
+      (err: FirestoreError) => {
         const path: string =
           memoizedTargetRefOrQuery.type === 'collection'
             ? (memoizedTargetRefOrQuery as CollectionReference).path
@@ -100,10 +100,12 @@ export function useCollection<T = any>(
           path,
         }, auth);
 
-        setError(contextualError)
-        setData(null)
-        setIsLoading(false)
+        // Set the rich, contextual error to the state so the UI can display it
+        setError(contextualError);
+        setData(null);
+        setIsLoading(false);
 
+        // Also emit the error for any central listener components
         errorEmitter.emit('permission-error', contextualError);
       }
     );
