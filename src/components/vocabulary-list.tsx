@@ -18,9 +18,9 @@ export function VocabularyList() {
   const { vocabulary, removeVocabularyItem, isLoading } = useWatchPage();
   
   return (
-    <div className="flex flex-col h-full rounded-lg border bg-card text-card-foreground shadow-sm flex-1 p-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
+    <div className="flex h-full rounded-lg border bg-card text-card-foreground shadow-sm flex-1 p-4">
+        <div className="flex w-full items-center justify-between gap-4">
+          <div className="flex-1 min-w-0">
             {isLoading ? (
                <div className="flex flex-wrap gap-2">
                  <Skeleton className="h-10 w-24 rounded-full" />
