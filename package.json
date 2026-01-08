@@ -4,18 +4,14 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "genkit:dev": "genkit start -- tsx src/ai/dev.ts",
-    "genkit:watch": "genkit start -- tsx --watch src/ai/dev.ts",
+    "genkit:dev": "echo 'Genkit dev server temporarily disabled'",
+    "genkit:watch": "echo 'Genkit watch server temporarily disabled'",
     "build": "NODE_ENV=production next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit",
-    "postinstall": "patch-package"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@dnd-kit/core": "^6.1.0",
-    "@genkit-ai/google-genai": "^1.20.0",
-    "@genkit-ai/next": "^0.5.2",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.2.0",
     "@radix-ui/react-alert-dialog": "^1.1.1",
@@ -44,10 +40,8 @@
     "dotenv": "^16.5.0",
     "embla-carousel-react": "^8.1.5",
     "firebase": "10.12.3",
-    "genkit": "^1.20.0",
     "lucide-react": "^0.475.0",
     "next": "14.2.3",
-    "patch-package": "^8.0.0",
     "react": "^18.2.0",
     "react-day-picker": "^9.11.3",
     "react-dom": "^18.2.0",
@@ -61,7 +55,6 @@
     "@types/node": "^20",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
-    "genkit-cli": "^1.20.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
