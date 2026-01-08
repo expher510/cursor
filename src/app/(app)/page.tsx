@@ -76,8 +76,7 @@ function MainContent({ url }: { url: string; }) {
   const { data: history, isLoading: isHistoryLoading } = useCollection<HistoryItem>(historyQuery);
 
   const newVideoId = extractYouTubeVideoId(url);
-  const latestHistoryVideoId = history?.[0]?.id ?? null;
-  const videoIdToUse = newVideoId || selectedVideoId || latestHistoryVideoId;
+  const videoIdToUse = newVideoId || selectedVideoId;
 
   const handlePracticeNavigation = async (path: string, videoId: string) => {
     if (!user || !firestore) return;
