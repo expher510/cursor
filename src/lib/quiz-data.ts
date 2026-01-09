@@ -6,9 +6,6 @@ export type QuizQuestion = {
 };
 
 export type QuizData = {
-  id: string;
-  videoId: string;
-  userId: string;
   questions: QuizQuestion[];
 };
 

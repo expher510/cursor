@@ -102,9 +102,6 @@ function MainContent() {
         }, { merge: true });
 
         await setDoc(quizDocRef, {
-          id: 'comprehensive-test',
-          videoId: videoIdToUse,
-          userId: user.uid,
           questions: MOCK_QUIZ_QUESTIONS,
         });
 

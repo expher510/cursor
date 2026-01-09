@@ -56,9 +56,6 @@ export async function ensureUserDocument(firestore: Firestore, user: User, auth:
             const quizVideoId = 'xVOtjsqcElg';
             const quizDocRef = doc(firestore, `users/${user.uid}/videos/${quizVideoId}/quizzes`, 'initial-quiz');
             batch.set(quizDocRef, {
-                videoId: quizVideoId,
-                userId: user.uid,
-                id: 'initial-quiz',
                 questions: MOCK_QUIZ_QUESTIONS,
             });
 
