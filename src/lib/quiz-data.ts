@@ -15,54 +15,54 @@ export type QuizData = {
 export const MOCK_QUIZ_DATA: Omit<QuizData, 'id' | 'videoId' | 'userId'> = {
   questions: [
     {
-      questionText: "What is the main topic of the video transcript?",
+      questionText: "(Dummy Question) What is the capital of France?",
       options: [
-        "The history of the internet",
-        "The basics of the Arabic language",
-        "Learning to cook Arabic food",
-        "Traveling to the Middle East"
+        "London",
+        "Berlin",
+        "Paris",
+        "Madrid"
       ],
-      correctAnswer: "The basics of the Arabic language"
+      correctAnswer: "Paris"
     },
     {
-      questionText: "How many people speak Arabic worldwide according to the transcript?",
+      questionText: "(Dummy Question) Which of these is a color?",
       options: [
-        "Less than 100 million",
-        "Around 250 million",
-        "Over 420 million",
-        "Exactly 1 billion"
+        "Blue",
+        "Apple",
+        "Chair",
+        "Water"
       ],
-      correctAnswer: "Over 420 million"
+      correctAnswer: "Blue"
     },
     {
-      questionText: "In which direction is the Arabic script written?",
+      questionText: "(Dummy Question) What is 2 + 2?",
       options: [
-        "Left to right",
-        "Top to bottom",
-        "Right to left",
-        "Bottom to top"
+        "3",
+        "4",
+        "5",
+        "6"
       ],
-      correctAnswer: "Right to left"
+      correctAnswer: "4"
     },
     {
-      questionText: "What does the root 'k-t-b' relate to?",
+      questionText: "(Dummy Question) Which planet is known as the Red Planet?",
       options: [
-        "Speaking",
-        "Reading",
-        "Writing",
-        "Listening"
+        "Earth",
+        "Mars",
+        "Jupiter",
+        "Venus"
       ],
-      correctAnswer: "Writing"
+      correctAnswer: "Mars"
     },
     {
-      questionText: "What does the word 'Kitab' mean?",
+      questionText: "(Dummy Question) What is the opposite of 'hot'?",
       options: [
-        "Writer",
-        "Book",
-        "Library",
-        "Paper"
+        "Warm",
+        "Cold",
+        "Spicy",
+        "Large"
       ],
-      correctAnswer: "Book"
+      correctAnswer: "Cold"
     }
   ]
 };
