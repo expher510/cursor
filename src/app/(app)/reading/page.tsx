@@ -133,9 +133,10 @@ function ReadingPracticePageContent() {
     const playerRef = useRef<ReactPlayer>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [volume, setVolume] = useState(0); // Start muted
-    const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [isPlaying, setIsPlaying] = useState(true); // Video plays constantly in background
+    const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
+    const [isAudioGloballyPlaying, setIsAudioGloballyPlaying] = useState(false);
 
 
     useEffect(() => {
@@ -149,20 +150,19 @@ function ReadingPracticePageContent() {
         };
     }, []);
     
-    const handlePlaySegment = useCallback((offset: number, duration: number, segmentId: string) => {
+    const handlePlaySegment = useCallback((offset: number, segmentId: string) => {
         if (!playerRef.current || !isPlayerReady) return;
-        
-        // This ensures any currently playing segment is silenced before the next one starts.
-        setVolume(0); 
 
-        // A tiny delay can help ensure the state update is processed before seeking and playing.
-        setTimeout(() => {
+        if (isAudioGloballyPlaying) {
+             setVolume(0);
+             setIsAudioGloballyPlaying(false);
+        } else {
             playerRef.current?.seekTo(offset / 1000, 'seconds');
             setVolume(1);
-            setActiveSegmentId(segmentId);
-        }, 50);
+            setIsAudioGloballyPlaying(true);
+        }
 
-    }, [isPlayerReady]);
+    }, [isPlayerReady, isAudioGloballyPlaying]);
     
      const handleTogglePlayPause = () => {
         setVolume(prev => prev > 0 ? 0 : 1);
@@ -384,8 +384,7 @@ function ReadingPracticePageContent() {
                            transcript={formattedTranscript} 
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
-                           activeSegmentId={activeSegmentId}
-                           isPlaying={volume > 0} 
+                           isGloballyPlaying={isAudioGloballyPlaying}
                         />
                     </Card>
                 </>
@@ -478,5 +477,6 @@ export default function ReadingPage() {
       </>
   );
 }
+
 
     

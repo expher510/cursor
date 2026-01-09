@@ -12,13 +12,12 @@ import { Play, Pause } from "lucide-react";
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
   videoId: string;
-  onPlaySegment?: (offset: number, duration: number, segmentId: string) => void;
-  activeSegmentId?: string | null;
-  isPlaying?: boolean;
+  onPlaySegment?: (offset: number, segmentId: string) => void;
+  isGloballyPlaying?: boolean;
 };
 
 
-export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegmentId, isPlaying }: TranscriptViewProps) {
+export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyPlaying }: TranscriptViewProps) {
   const { addVocabularyItem, savedWordsSet } = useWatchPage();
   const { translations, toggleTranslation, isTranslating } = useTranslationStore();
 
@@ -39,8 +38,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
     <div className={cn("p-4 leading-relaxed text-lg space-y-4", isRtl && "text-right")} dir={isRtl ? "rtl" : "ltr"}>
         {transcript.map((line, lineIndex) => {
             const segmentId = `${videoId}-${lineIndex}`;
-            const isActive = activeSegmentId === segmentId;
-
+            
             return (
                 <div key={line.offset} className="flex items-start gap-3">
                     {onPlaySegment && (
@@ -48,9 +46,9 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 mt-1 text-muted-foreground hover:text-primary"
-                            onClick={() => onPlaySegment(line.offset, line.duration, segmentId)}
+                            onClick={() => onPlaySegment(line.offset, segmentId)}
                         >
-                            {isActive && isPlaying ? <Pause className="h-5 w-5 text-primary" /> : <Play className="h-5 w-5" />}
+                            {isGloballyPlaying ? <Pause className="h-5 w-5 text-primary" /> : <Play className="h-5 w-5" />}
                         </Button>
                     )}
                     <p className="flex-1">
@@ -96,3 +94,6 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
     </div>
   );
 }
+
+
+    
