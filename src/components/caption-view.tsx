@@ -1,3 +1,4 @@
+
 "use client";
 
 import { type TranscriptItem } from "@/ai/flows/process-video-flow";
@@ -20,17 +21,11 @@ export function CaptionView({ transcript, currentTime }: CaptionViewProps) {
       return null;
     }
     
-    // Find the single, most appropriate line for the current time.
-    // This will be the last line that has started.
-    let currentLine: TranscriptItem | null = null;
-    for (const line of transcript) {
-        if (line.offset <= currentTime) {
-            currentLine = line;
-        } else {
-            break; // Stop as soon as we pass the current time
-        }
-    }
-    return currentLine;
+    const currentLine = transcript.find(line => 
+        currentTime >= line.offset && currentTime < (line.offset + line.duration)
+    );
+    
+    return currentLine || null;
 
   }, [transcript, currentTime]);
 
@@ -92,3 +87,5 @@ export function CaptionView({ transcript, currentTime }: CaptionViewProps) {
     </div>
   );
 }
+
+    

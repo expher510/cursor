@@ -133,7 +133,7 @@ function ReadingPracticePageContent() {
     const playerRef = useRef<ReactPlayer>(null);
     const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
     const segmentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const [isPlaying, setIsPlaying] = useState(false);
+    const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [volume, setVolume] = useState(0);
 
 
@@ -152,9 +152,7 @@ function ReadingPracticePageContent() {
     }, []);
 
     const handleReady = () => {
-      // Start playing muted once the player is ready
-      setIsPlaying(true);
-      setVolume(0);
+      setIsPlayerReady(true);
     }
     
     const handlePlaySegment = useCallback((offset: number, duration: number, segmentId: string) => {
@@ -173,7 +171,6 @@ function ReadingPracticePageContent() {
             playerRef.current.seekTo(startTimeInSeconds, 'seconds');
             setVolume(1);
             setActiveSegmentId(segmentId);
-            setIsPlaying(true);
 
             segmentTimeoutRef.current = setTimeout(() => {
                 setVolume(0);
@@ -327,7 +324,7 @@ function ReadingPracticePageContent() {
                 <ReactPlayer
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={isPlaying}
+                    playing={isPlayerReady}
                     volume={volume}
                     onReady={handleReady}
                     controls={false}
@@ -458,3 +455,4 @@ export default function ReadingPage() {
   );
 }
 
+    
