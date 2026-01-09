@@ -1,4 +1,3 @@
-
 'use client';
 import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
@@ -150,22 +149,20 @@ function ReadingPracticePageContent() {
         };
     }, []);
     
-    const handlePlaySegment = useCallback((offset: number, segmentId: string) => {
+    const handlePlaySegment = useCallback((offset: number) => {
         if (!playerRef.current || !isPlayerReady) return;
 
-        const isCurrentlyPlayingThisSegment = isAudioPlaying && activeSegmentId === segmentId;
-
-        if (isCurrentlyPlayingThisSegment) {
-            // If the clicked segment is already playing, pause it.
+        if (isAudioPlaying) {
+            // If playing, stop the sound by setting volume to 0
+            setVolume(0);
             setIsAudioPlaying(false);
-            setActiveSegmentId(null);
         } else {
-            // If it's paused or a different segment is playing, play the new one.
+            // If stopped, start playing from the specified offset
             playerRef.current.seekTo(offset / 1000, 'seconds');
+            setVolume(1); // Ensure volume is at 100%
             setIsAudioPlaying(true);
-            setActiveSegmentId(segmentId);
         }
-    }, [isPlayerReady, isAudioPlaying, activeSegmentId]);
+    }, [isPlayerReady, isAudioPlaying]);
     
     const handleToggleSpeed = () => {
         setPlaybackRate(prev => {
@@ -326,7 +323,7 @@ function ReadingPracticePageContent() {
                 <ReactPlayer
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={isAudioPlaying} 
+                    playing={isAudioPlaying}
                     volume={volume}
                     onReady={() => setIsPlayerReady(true)}
                     playbackRate={playbackRate}

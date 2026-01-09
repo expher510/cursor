@@ -12,7 +12,7 @@ import { Volume2, VolumeX } from "lucide-react";
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
   videoId: string;
-  onPlaySegment?: (offset: number, segmentId: string) => void;
+  onPlaySegment?: (offset: number) => void;
   isGloballyPlaying?: boolean;
   activeSegmentId?: string | null;
 };
@@ -47,9 +47,9 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyP
                             variant="ghost"
                             size="icon"
                             className="h-7 w-7 mt-1 text-muted-foreground hover:text-primary"
-                            onClick={() => onPlaySegment(line.offset, segmentId)}
+                            onClick={() => onPlaySegment(line.offset)}
                         >
-                            {isGloballyPlaying && activeSegmentId === segmentId ? (
+                            {isGloballyPlaying ? (
                                 <Volume2 className="h-5 w-5 text-primary" />
                             ) : (
                                 <VolumeX className="h-5 w-5" />
