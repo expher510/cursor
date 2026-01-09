@@ -11,7 +11,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import 'dotenv/config';
 import { getVideoDetails, type Subtitle } from 'youtube-caption-extractor';
 
 // Schema Definitions
