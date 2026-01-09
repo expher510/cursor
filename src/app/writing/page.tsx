@@ -88,7 +88,6 @@ function WritingWorkspace() {
 
         let range: Range;
 
-        // Use last saved selection if available and editor is focused, otherwise create a new one
         if (lastSelectionRef.current && document.activeElement === editor) {
              range = lastSelectionRef.current;
              selection.removeAllRanges();
@@ -103,34 +102,23 @@ function WritingWorkspace() {
         
         range.deleteContents();
 
-        // Smart spacing
-        const precedingText = range.startContainer.textContent?.substring(0, range.startOffset) ?? '';
-        const needsLeadingSpace = precedingText.length > 0 && !/\s$/.test(precedingText);
-        
-        // Create styled word
         const span = document.createElement('span');
         span.className = 'text-primary font-semibold';
         span.textContent = text;
         
-        // Create text nodes for spacing
-        const leadingSpace = document.createTextNode(needsLeadingSpace ? ' ' : '');
+        const leadingSpace = document.createTextNode(' ');
         const trailingSpace = document.createTextNode(' ');
 
-        // Insert nodes
         range.insertNode(trailingSpace);
         range.insertNode(span);
-        if (needsLeadingSpace) {
-            range.insertNode(leadingSpace);
-        }
+        range.insertNode(leadingSpace);
         
-        // Move cursor to after the inserted word and space
         range.setStartAfter(trailingSpace);
         range.collapse(true);
         
         selection.removeAllRanges();
         selection.addRange(range);
-
-        // Save the new cursor position
+        
         lastSelectionRef.current = range.cloneRange();
     };
 
@@ -208,7 +196,7 @@ function WritingWorkspace() {
                 ref={editorRef}
                 contentEditable={true}
                 className={cn(
-                    'min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-xl ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+                    'min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-xl ring-offset-background text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
                     'leading-relaxed break-words'
                 )}
                 data-placeholder="Start writing or click a word bubble..."
