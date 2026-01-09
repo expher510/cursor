@@ -26,16 +26,9 @@ export function VocabularyList({ layout = 'scroll' }: VocabularyListProps) {
   // Effect to auto-scroll when a new word is added
   useEffect(() => {
     if (layout === 'scroll' && scrollRef.current) {
-        // Use a timeout to ensure the DOM has updated with the new item
-        // before we try to scroll.
-        const timer = setTimeout(() => {
-            if (scrollRef.current) {
-                // Directly set scrollLeft to scrollWidth to ensure it goes 100% to the end.
-                scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
-            }
-        }, 100); // A small delay is often sufficient
-
-        return () => clearTimeout(timer);
+        if (scrollRef.current) {
+            scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+        }
     }
   }, [vocabulary.length, layout]);
 
