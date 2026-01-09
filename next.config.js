@@ -29,18 +29,6 @@ const nextConfig = {
       }
     ],
   },
-  async rewrites() {
-    return [
-      {
-        source: '/instrumentation.js',
-        destination: 'http://localhost:4033/instrumentation.js',
-      },
-      {
-        source: '/v1/trace',
-        destination: 'http://localhost:4033/v1/trace',
-      },
-    ];
-  },
 };
 
 module.exports = nextConfig;
