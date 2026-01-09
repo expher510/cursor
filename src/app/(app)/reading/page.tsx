@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, X, UploadCloud, Pause, Turtle, Zap, Wind, Leaf } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, X, UploadCloud, Pause, Turtle, Zap, Glasses } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -171,8 +171,8 @@ function ReadingPracticePageContent() {
     }
 
     const SpeedIcon = ({rate}: {rate: number}) => {
-        if (rate === 0.75) return <Turtle className="h-8 w-8" />;
-        if (rate === 0.5) return <Wind className="h-8 w-8" />;
+        if (rate === 0.75) return <Glasses className="h-8 w-8" />;
+        if (rate === 0.5) return <Turtle className="h-8 w-8" />;
         return <Zap className="h-8 w-8" />; // Normal speed
     }
 
