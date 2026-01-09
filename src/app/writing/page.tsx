@@ -88,7 +88,7 @@ function WritingWorkspace() {
         if (!selection) return;
 
         let range;
-        if (lastSelectionRef.current && selection.rangeCount > 0) {
+        if (lastSelectionRef.current && selection.rangeCount > 0 && editor.contains(lastSelectionRef.current.commonAncestorContainer)) {
             range = lastSelectionRef.current;
             selection.removeAllRanges();
             selection.addRange(range);
@@ -98,7 +98,6 @@ function WritingWorkspace() {
             range = document.createRange();
             range.selectNodeContents(editor);
             range.collapse(false); // to the end
-            selection.addRange(range);
         }
         
         range.deleteContents();
@@ -114,6 +113,7 @@ function WritingWorkspace() {
         range.insertNode(span);
         range.insertNode(leadingSpace);
         
+        // Move cursor after the trailing space
         range.setStartAfter(trailingSpace);
         range.collapse(true);
 
@@ -196,10 +196,10 @@ function WritingWorkspace() {
                 ref={editorRef}
                 contentEditable={true}
                 className={cn(
-                    'min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-xl ring-offset-background text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+                    'h-[200px] overflow-y-auto w-full rounded-md border border-input bg-background px-3 py-2 text-xl ring-offset-background text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
                     'leading-relaxed'
                 )}
-                style={{ overflowWrap: 'break-word', wordWrap: 'break-word' }}
+                style={{ overflowWrap: 'break-word' }}
                 data-placeholder="Start writing or click a word bubble..."
              />
             
