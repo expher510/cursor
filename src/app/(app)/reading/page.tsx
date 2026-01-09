@@ -159,18 +159,13 @@ function ReadingPracticePageContent() {
     
     const handlePlaySegment = useCallback((offset: number, duration: number, segmentId: string) => {
         if (!playerRef.current || !isPlayerReady) return;
-    
-        // If this segment is already active and playing, pause it.
-        if (isPlaying && activeSegmentId === segmentId) {
-            setIsPlaying(false);
-        } else {
-            // Otherwise, play the new segment.
-            playerRef.current.seekTo(offset / 1000, 'seconds');
-            setVolume(1);
-            setIsPlaying(true);
-            setActiveSegmentId(segmentId);
-        }
-    }, [isPlayerReady, isPlaying, activeSegmentId]);
+
+        playerRef.current.seekTo(offset / 1000, 'seconds');
+        setVolume(1);
+        setIsPlaying(true);
+        setActiveSegmentId(segmentId);
+
+    }, [isPlayerReady]);
 
 
     const startRecording = async () => {
