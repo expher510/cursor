@@ -8,5 +8,5 @@ export const ai = genkit({
     // Specify the API version.
     apiVersion: 'v1beta'
   })],
-  model: 'gemini-2.5-flash',
+  model: 'gemini-1.5-flash',
 });
