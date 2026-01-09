@@ -1,3 +1,4 @@
+
 'use client';
 import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
@@ -291,6 +292,15 @@ function ReadingPracticePageContent() {
                         {testState === 'recorded' && "Review your recording or upload it for feedback."}
                         {testState === 'uploading' && "Uploading your recording..."}
                     </p>
+                </div>
+            )}
+
+            {testState === 'idle' && (
+                <div className="text-center my-6">
+                    <Button onClick={startRecording} size="lg">
+                        <Mic className="mr-2 h-5 w-5" />
+                        Read Out Loud
+                    </Button>
                 </div>
             )}
 
