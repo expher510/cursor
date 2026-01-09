@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, X, UploadCloud, Play, Pause, Wind } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, X, UploadCloud, Play, Pause, Turtle } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -15,15 +15,7 @@ import { useFirebase } from "@/firebase";
 import { doc, getDoc, addDoc, collection } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import ReactPlayer from "react-player/youtube";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { cn } from "@/lib/utils";
 
 
 function SpeakingTestFeedback({ attemptId, onRetry }: { attemptId: string; onRetry: () => void }) {
@@ -160,12 +152,16 @@ function ReadingPracticePageContent() {
         if (!playerRef.current || !isPlayerReady) return;
 
         playerRef.current.seekTo(offset / 1000, 'seconds');
-        setVolume(1); // Unmute
+        setVolume(1);
         setActiveSegmentId(segmentId);
     }, [isPlayerReady]);
     
     const handleToggleMute = () => {
       setVolume(prev => prev > 0 ? 0 : 1);
+    }
+    
+    const handleToggleSpeed = () => {
+        setPlaybackRate(prev => prev === 1 ? 0.75 : 1);
     }
 
 
@@ -313,7 +309,7 @@ function ReadingPracticePageContent() {
                 <ReactPlayer
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={true} // Always playing
+                    playing={true} 
                     volume={volume}
                     onReady={() => setIsPlayerReady(true)}
                     playbackRate={playbackRate}
@@ -381,7 +377,7 @@ function ReadingPracticePageContent() {
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
                            activeSegmentId={activeSegmentId}
-                           isPlaying={volume > 0} // isPlaying is now based on volume
+                           isPlaying={volume > 0} 
                         />
                     </Card>
                 </>
@@ -391,24 +387,15 @@ function ReadingPracticePageContent() {
              <div className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-3">
                 {testState === 'idle' && (
                     <>
-                        <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                                <Button size="icon" variant="secondary" className="h-14 w-14 rounded-full shadow-lg">
-                                    <Wind className="h-7 w-7" />
-                                </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent className="w-32" align="end">
-                                <DropdownMenuLabel>Playback Speed</DropdownMenuLabel>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuRadioGroup value={playbackRate.toString()} onValueChange={(val) => setPlaybackRate(parseFloat(val))}>
-                                    <DropdownMenuRadioItem value="0.75">0.75x</DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem value="1">Normal</DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem value="1.25">1.25x</DropdownMenuRadioItem>
-                                    <DropdownMenuRadioItem value="1.5">1.5x</DropdownMenuRadioItem>
-                                </DropdownMenuRadioGroup>
-                            </DropdownMenuContent>
-                        </DropdownMenu>
-
+                        <Button
+                            size="icon"
+                            variant={playbackRate === 1 ? "secondary" : "default"}
+                            className="h-14 w-14 rounded-full shadow-lg"
+                            onClick={handleToggleSpeed}
+                        >
+                            <Turtle className="h-7 w-7" />
+                        </Button>
+                        
                         <Button
                             size="icon"
                             variant="secondary"
@@ -417,6 +404,7 @@ function ReadingPracticePageContent() {
                         >
                             {volume > 0 ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
                         </Button>
+
                         <Button
                             size="icon"
                             className="h-16 w-16 rounded-full shadow-lg"
@@ -474,5 +462,3 @@ export default function ReadingPage() {
       </>
   );
 }
-
-    
