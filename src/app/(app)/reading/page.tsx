@@ -131,7 +131,7 @@ function ReadingPracticePageContent() {
     const { firestore, user } = useFirebase();
 
     const playerRef = useRef<ReactPlayer>(null);
-    const [segmentPlayback, setSegmentPlayback] = useState<{ seekTo: number, isPlaying: boolean, currentSegmentId: string | null }>({ seekTo: 0, isPlaying: false, currentSegmentId: null });
+    const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
     const segmentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 
@@ -155,12 +155,18 @@ function ReadingPracticePageContent() {
                 clearTimeout(segmentTimeoutRef.current);
             }
 
+            // If the same segment is clicked again, toggle pause.
+            if (activeSegmentId === segmentId) {
+                setActiveSegmentId(null);
+                return;
+            }
+
             const startTimeInSeconds = offset / 1000;
             playerRef.current.seekTo(startTimeInSeconds, 'seconds');
-            setSegmentPlayback({ seekTo: startTimeInSeconds, isPlaying: true, currentSegmentId: segmentId });
+            setActiveSegmentId(segmentId);
 
             segmentTimeoutRef.current = setTimeout(() => {
-                 setSegmentPlayback(prev => ({ ...prev, isPlaying: false, currentSegmentId: null }));
+                setActiveSegmentId(null);
             }, duration);
         }
     };
@@ -310,11 +316,11 @@ function ReadingPracticePageContent() {
                 <ReactPlayer
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={segmentPlayback.isPlaying}
+                    playing={!!activeSegmentId}
                     controls={false}
                     width="0"
                     height="0"
-                    onReady={() => playerRef.current?.seekTo(segmentPlayback.seekTo, 'seconds')}
+                    onReady={() => playerRef.current?.seekTo(0)}
                 />
             </div>
 
@@ -375,7 +381,7 @@ function ReadingPracticePageContent() {
                            transcript={formattedTranscript} 
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
-                           activeSegmentId={segmentPlayback.currentSegmentId}
+                           activeSegmentId={activeSegmentId}
                         />
                     </Card>
                 </>
