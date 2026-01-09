@@ -60,13 +60,18 @@ export async function generateQuiz(
 
 // Function to create vocabulary-based questions
 async function createVocabularyQuestions(vocabulary: z.infer<typeof VocabularyItemSchema>[]) {
+    // Filter out numbers and words shorter than 4 characters
+    const filteredVocabulary = vocabulary.filter(item => 
+        item.word.length > 3 && isNaN(Number(item.word))
+    );
+
     const questions = [];
-    if (vocabulary.length < 4) {
+    if (filteredVocabulary.length < 4) {
         console.warn("Not enough vocabulary words to generate diverse vocabulary questions. Need at least 4 for good distractors.");
     }
 
     const vocabWithTranslations = (await Promise.all(
-        vocabulary.map(async (item) => {
+        filteredVocabulary.map(async (item) => {
             if (item.translation) {
                 return item;
             }
