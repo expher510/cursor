@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, CheckCircle, XCircle } from 'lucide-react';
@@ -8,16 +8,27 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { type QuizData } from '@/lib/quiz-data';
+import { type QuizData, type QuizQuestion } from '@/lib/quiz-data';
+
+// Fisher-Yates shuffle algorithm
+const shuffleArray = (array: any[]) => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+};
 
 
-function useQuiz(questions: QuizData['questions']) {
+function useQuiz(questions: QuizQuestion[]) {
+    const [shuffledQuestions, setShuffledQuestions] = useState(() => shuffleArray(questions));
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [userAnswers, setUserAnswers] = useState<string[]>(Array(questions.length).fill(''));
     const [isFinished, setIsFinished] = useState(false);
 
-    const currentQuestion = questions[currentQuestionIndex];
-    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+    const currentQuestion = shuffledQuestions[currentQuestionIndex];
+    const progress = ((currentQuestionIndex + 1) / shuffledQuestions.length) * 100;
 
     const selectAnswer = (answer: string) => {
         const newAnswers = [...userAnswers];
@@ -26,7 +37,7 @@ function useQuiz(questions: QuizData['questions']) {
     };
 
     const nextQuestion = () => {
-        if (currentQuestionIndex < questions.length - 1) {
+        if (currentQuestionIndex < shuffledQuestions.length - 1) {
             setCurrentQuestionIndex(prev => prev + 1);
         }
     };
@@ -41,17 +52,18 @@ function useQuiz(questions: QuizData['questions']) {
         setIsFinished(true);
     };
     
-    const resetQuiz = () => {
+    const resetQuiz = useCallback(() => {
+        setShuffledQuestions(shuffleArray(questions));
         setCurrentQuestionIndex(0);
         setUserAnswers(Array(questions.length).fill(''));
         setIsFinished(false);
-    }
+    }, [questions]);
 
     const score = useMemo(() => {
         return userAnswers.reduce((correctCount, answer, index) => {
-            return answer === questions[index].correctAnswer ? correctCount + 1 : correctCount;
+            return answer === shuffledQuestions[index]?.correctAnswer ? correctCount + 1 : correctCount;
         }, 0);
-    }, [userAnswers, questions]);
+    }, [userAnswers, shuffledQuestions]);
 
     return {
         currentQuestionIndex,
@@ -65,7 +77,8 @@ function useQuiz(questions: QuizData['questions']) {
         prevQuestion,
         finishQuiz,
         resetQuiz,
-        totalQuestions: questions.length,
+        shuffledQuestions,
+        totalQuestions: shuffledQuestions.length,
     };
 }
 
@@ -82,6 +95,7 @@ function QuizView({ quiz, onRetry }: { quiz: QuizData, onRetry: () => void }) {
         nextQuestion,
         prevQuestion,
         finishQuiz,
+        shuffledQuestions,
         totalQuestions
      } = useQuiz(quiz.questions);
 
@@ -96,7 +110,7 @@ function QuizView({ quiz, onRetry }: { quiz: QuizData, onRetry: () => void }) {
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="space-y-4">
-                        {quiz.questions.map((q, index) => {
+                        {shuffledQuestions.map((q, index) => {
                             const userAnswer = userAnswers[index];
                             const isCorrect = userAnswer === q.correctAnswer;
                             return (
@@ -121,6 +135,12 @@ function QuizView({ quiz, onRetry }: { quiz: QuizData, onRetry: () => void }) {
             </Card>
         );
     }
+    
+    if (!currentQuestion) {
+        // This can happen briefly while shuffling, show a loader or nothing.
+        return null;
+    }
+
 
     return (
         <Card className="w-full max-w-3xl mx-auto">
@@ -160,7 +180,12 @@ function QuizView({ quiz, onRetry }: { quiz: QuizData, onRetry: () => void }) {
 }
 
 export function QuizPlayer({ quiz }: { quiz: QuizData }) {
-    const { resetQuiz } = useQuiz(quiz.questions);
+    // We need a key to force re-mounting of the component on retry
+    const [quizKey, setQuizKey] = useState(0);
 
-    return <QuizView quiz={quiz} onRetry={resetQuiz} />;
+    const handleRetry = () => {
+        setQuizKey(prev => prev + 1);
+    }
+
+    return <QuizView key={quizKey} quiz={quiz} onRetry={handleRetry} />;
 }
