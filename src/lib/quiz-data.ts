@@ -15,7 +15,7 @@ export type QuizData = {
 export const MOCK_QUIZ_DATA: Omit<QuizData, 'id' | 'videoId' | 'userId'> = {
   questions: [
     {
-      questionText: "(Dummy Question) What is the capital of France?",
+      questionText: "This is a dummy question. What is the capital of France?",
       options: [
         "London",
         "Berlin",
@@ -25,7 +25,7 @@ export const MOCK_QUIZ_DATA: Omit<QuizData, 'id' | 'videoId' | 'userId'> = {
       correctAnswer: "Paris"
     },
     {
-      questionText: "(Dummy Question) Which of these is a color?",
+      questionText: "This is a sample question. Which of these is a color?",
       options: [
         "Blue",
         "Apple",
@@ -35,7 +35,7 @@ export const MOCK_QUIZ_DATA: Omit<QuizData, 'id' | 'videoId' | 'userId'> = {
       correctAnswer: "Blue"
     },
     {
-      questionText: "(Dummy Question) What is 2 + 2?",
+      questionText: "Placeholder Question: What is 2 + 2?",
       options: [
         "3",
         "4",
@@ -45,7 +45,7 @@ export const MOCK_QUIZ_DATA: Omit<QuizData, 'id' | 'videoId' | 'userId'> = {
       correctAnswer: "4"
     },
     {
-      questionText: "(Dummy Question) Which planet is known as the Red Planet?",
+      questionText: "Example: Which planet is known as the Red Planet?",
       options: [
         "Earth",
         "Mars",
@@ -55,7 +55,7 @@ export const MOCK_QUIZ_DATA: Omit<QuizData, 'id' | 'videoId' | 'userId'> = {
       correctAnswer: "Mars"
     },
     {
-      questionText: "(Dummy Question) What is the opposite of 'hot'?",
+      questionText: "This is for demo purposes. What is the opposite of 'hot'?",
       options: [
         "Warm",
         "Cold",
