@@ -132,10 +132,9 @@ function ReadingPracticePageContent() {
 
     const playerRef = useRef<ReactPlayer>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
-    const [volume, setVolume] = useState(0); // Start muted and playing
+    const [volume, setVolume] = useState(0); // Start muted
     const [isPlaying, setIsPlaying] = useState(true); // Always playing in background
     const [playbackRate, setPlaybackRate] = useState(1);
-    
     const [isAudioGloballyPlaying, setIsAudioGloballyPlaying] = useState(false);
 
 
@@ -150,7 +149,7 @@ function ReadingPracticePageContent() {
         };
     }, []);
     
-    const handlePlaySegment = useCallback((offset: number) => {
+    const handlePlaySegment = useCallback((offset: number, segmentId: string) => {
         if (!playerRef.current || !isPlayerReady) return;
 
         if (isAudioGloballyPlaying) {
@@ -463,3 +462,5 @@ export default function ReadingPage() {
       </>
   );
 }
+
+    
