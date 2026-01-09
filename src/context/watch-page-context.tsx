@@ -133,7 +133,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           };
           setVideoData(combinedData);
         } else {
-          toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
           const result = await processVideo({ videoId: activeVideoId });
 
           // After getting transcript, immediately generate the quiz
