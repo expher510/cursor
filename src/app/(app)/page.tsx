@@ -93,7 +93,7 @@ function MainContent() {
             <div className="flex items-center gap-2 rounded-full bg-muted p-1">
                 <Button variant={sourceType === 'youtube' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'youtube' && 'bg-background shadow-sm')} onClick={() => setSourceType('youtube')}>
                     <History className="mr-2" />
-                    هيستوري
+                    History
                 </Button>
                 <Button variant={sourceType === 'cards' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'cards' && 'bg-background shadow-sm')} onClick={() => setSourceType('cards')}>
                     <Copy className="mr-2" />
