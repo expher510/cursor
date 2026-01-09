@@ -26,11 +26,16 @@ export function VocabularyList({ layout = 'scroll' }: VocabularyListProps) {
   // Effect to auto-scroll when a new word is added
   useEffect(() => {
     if (layout === 'scroll' && scrollRef.current) {
-        // Scroll to the end when vocabulary list grows
-        scrollRef.current.scrollTo({
-            left: scrollRef.current.scrollWidth,
-            behavior: 'smooth'
-        });
+        // Use a timeout to ensure the DOM has updated with the new item
+        // before we try to scroll.
+        const timer = setTimeout(() => {
+            if (scrollRef.current) {
+                // Directly set scrollLeft to scrollWidth to ensure it goes 100% to the end.
+                scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
+            }
+        }, 100); // A small delay is often sufficient
+
+        return () => clearTimeout(timer);
     }
   }, [vocabulary.length, layout]);
 
