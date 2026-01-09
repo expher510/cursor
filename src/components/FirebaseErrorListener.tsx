@@ -77,7 +77,7 @@ export function FirebaseErrorListener({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     const handlePermissionError = (err: FirestorePermissionError) => {
-      console.error('Caught permission error from emitter:', err);
+      console.error('Firestore Permission Error Caught:', err);
       setError(err);
     };
 
@@ -91,17 +91,14 @@ export function FirebaseErrorListener({ children }: { children: React.ReactNode 
   const resetError = () => setError(null);
 
   if (error) {
-    return (
-      <ErrorBoundary
-        FallbackComponent={ErrorFallback}
-        onReset={resetError}
-        resetKeys={[error]}
-        error={error}
-      >
-        {children}
-      </ErrorBoundary>
-    );
+    // When an error is caught, we throw it to let ErrorBoundary handle it.
+    // This makes the error visible in Next.js dev overlay.
+    throw error;
   }
-
-  return <>{children}</>;
+  
+  return (
+    <ErrorBoundary FallbackComponent={ErrorFallback} onReset={resetError}>
+      {children}
+    </ErrorBoundary>
+  );
 }

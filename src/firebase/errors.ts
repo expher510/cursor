@@ -94,11 +94,5 @@ export class FirestorePermissionError extends Error {
     super(buildErrorMessage(requestObject));
     this.name = 'FirebaseError';
     this.request = requestObject;
-    
-    // This is to make sure that the error is re-thrown in the console
-    // so it's visible in the dev tools.
-    setTimeout(() => {
-        throw this;
-    }, 0);
   }
 }
