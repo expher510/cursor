@@ -168,6 +168,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             videoId: activeVideoId,
             userId: user.uid,
             questions: quizQuestions.questions,
+            userAnswers: [],
+            score: 0
           }, { merge: true });
 
           setVideoData({ ...result, videoId: activeVideoId });
@@ -290,3 +292,5 @@ export function useWatchPage() {
   }
   return context;
 }
+
+    
