@@ -77,54 +77,9 @@ function MainContent() {
         return;
     };
     
-    setIsProcessing(true);
-
-    try {
-        const videoDocRef = doc(firestore, `users/${user.uid}/videos`, videoIdToUse);
-        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoIdToUse}/transcripts`, videoIdToUse);
-
-        const transcriptSnap = await getDoc(transcriptDocRef);
-
-        if (!transcriptSnap.exists()) {
-            // Data doesn't exist, process it
-            toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
-            const result = await processVideo({ videoId: videoIdToUse });
-            const quizDocRef = doc(firestore, `users/${user.uid}/videos/${videoIdToUse}/quizzes`, 'comprehensive-test');
-
-            await setDoc(videoDocRef, {
-                id: videoIdToUse,
-                title: result.title,
-                description: result.description,
-                stats: result.stats,
-                userId: user.uid,
-                timestamp: Date.now(),
-            }, { merge: true });
-
-            await setDoc(transcriptDocRef, {
-                id: videoIdToUse,
-                videoId: videoIdToUse,
-                content: result.transcript,
-            }, { merge: true });
-
-            await setDoc(quizDocRef, {
-              id: 'comprehensive-test',
-              videoId: videoIdToUse,
-              userId: user.uid,
-              questions: MOCK_QUIZ_QUESTIONS,
-            }, { merge: true });
-        } else {
-            // Data exists, just navigate
-            toast({ title: "Loading Existing Lesson", description: "Your lesson is ready." });
-        }
-
-        router.push(`/${activity}?v=${videoIdToUse}`);
-
-    } catch (e: any) {
-        console.error("Failed to process and save video:", e);
-        toast({ variant: "destructive", title: "Processing Failed", description: e.message || "Could not process the video. Please try another one." });
-    } finally {
-        setIsProcessing(false);
-    }
+    // The responsibility of fetching/checking data is now in the WatchPageProvider.
+    // This component's only job is to navigate.
+    router.push(`/${activity}?v=${videoIdToUse}`);
   };
 
 

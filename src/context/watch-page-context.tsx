@@ -3,13 +3,15 @@
 
 import { useFirebase } from '@/firebase';
 import { collection, doc, query, addDoc, deleteDoc, getDoc, setDoc, orderBy, limit, getDocs } from 'firebase/firestore';
-import { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
-import { type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
+import { processVideo, type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 import { translateWord } from '@/ai/flows/translate-word-flow';
 import { useSearchParams } from 'next/navigation';
-import { type QuizData } from '@/lib/quiz-data';
+import { type QuizData, MOCK_QUIZ_QUESTIONS } from '@/lib/quiz-data';
+import { useToast } from '@/hooks/use-toast';
+
 
 type VocabularyItem = {
   id: string;
@@ -39,6 +41,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const { firestore, user } = useFirebase();
   const searchParams = useSearchParams();
   const urlVideoId = searchParams.get('v');
+  const { toast } = useToast();
 
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,14 +68,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           const querySnapshot = await getDocs(videosQuery);
           if (!querySnapshot.empty) {
             const lastVideo = querySnapshot.docs[0];
-             // Filter out placeholder if it's the most recent
             if (lastVideo.id !== '_placeholder') {
                 setActiveVideoId(lastVideo.id);
-            } else if (querySnapshot.docs.length > 1) {
-                 // This logic is imperfect, ideally we'd fetch more to find the "real" last one
-                 // But for now, we just know the placeholder isn't what we want.
-                 setError("No recent videos found to display.");
-                 setIsLoading(false);
             } else {
                 setError("No videos found in your history.");
                 setIsLoading(false);
@@ -89,15 +86,14 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
       };
       fetchLastVideo();
     } else if (!user) {
-        // If there's no user, there's no history to fetch.
         setIsLoading(false);
     }
   }, [urlVideoId, user, firestore]);
 
-  // Effect to fetch already-cached data from Firestore based on activeVideoId
+  // Effect to fetch OR process video data based on activeVideoId
   useEffect(() => {
     if (!activeVideoId) {
-       if (!error) { // Only set loading to false if not already in an error state
+       if (!error) { 
          setIsLoading(false);
        }
       return;
@@ -118,15 +114,17 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     setError(null);
     setVideoData(null);
 
-    async function fetchCachedVideoData() {
+    async function fetchAndProcessVideoData() {
       try {
-        const videoDocRef = doc(firestore, `users/${user!.uid}/videos/${activeVideoId}`);
+        const videoDocRef = doc(firestore, `users/${user!.uid}/videos`, activeVideoId);
         const transcriptDocRef = doc(firestore, `users/${user!.uid}/videos/${activeVideoId}/transcripts`, activeVideoId);
+        const quizDocRef = doc(firestore, `users/${user.uid}/videos/${activeVideoId}/quizzes`, 'comprehensive-test');
         
         const videoDocSnap = await getDoc(videoDocRef);
         const transcriptDocSnap = await getDoc(transcriptDocRef);
 
         if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
+           toast({ title: "Loading Existing Lesson", description: "Your lesson is ready." });
           const combinedData: VideoData = {
             title: videoDocSnap.data().title,
             description: videoDocSnap.data().description,
@@ -136,19 +134,45 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           };
           setVideoData(combinedData);
         } else {
-          setError("Could not find pre-processed data for this video. Please try again from the homepage.");
+          toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
+          const result = await processVideo({ videoId: activeVideoId });
+
+          await setDoc(videoDocRef, {
+              id: activeVideoId,
+              title: result.title,
+              description: result.description,
+              stats: result.stats,
+              userId: user.uid,
+              timestamp: Date.now(),
+          }, { merge: true });
+
+          await setDoc(transcriptDocRef, {
+              id: activeVideoId,
+              videoId: activeVideoId,
+              content: result.transcript,
+          }, { merge: true });
+
+          await setDoc(quizDocRef, {
+            id: 'comprehensive-test',
+            videoId: activeVideoId,
+            userId: user.uid,
+            questions: MOCK_QUIZ_QUESTIONS,
+          }, { merge: true });
+
+          setVideoData({ ...result, videoId: activeVideoId });
         }
       } catch (e: any) {
-        console.error("Error fetching cached video data:", e);
+        console.error("Error fetching or processing video data:", e);
         setError(e.message || "An error occurred while loading video data.");
+        toast({ variant: "destructive", title: "Processing Failed", description: e.message || "Could not process the video. Please try another one." });
       } finally {
         setIsLoading(false);
       }
     }
     
-    fetchCachedVideoData();
+    fetchAndProcessVideoData();
 
-  }, [activeVideoId, user, firestore, videoData?.videoId, error]);
+  }, [activeVideoId, user, firestore, toast]);
 
 
   const vocabQuery = useMemoFirebase(() => {
