@@ -9,9 +9,9 @@
 
 import { ai } from '@/ai/genkit';
 import { QuizInputSchema, QuizOutputSchema, type QuizInput, type QuizOutput } from '@/ai/schemas/quiz-schema';
+import { googleAI } from '@genkit-ai/google-genai';
 import 'dotenv/config';
 import { z } from 'zod';
-import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 // This is a wrapper function that we will call from our components.
 export async function generateQuiz(input: QuizInput): Promise<QuizOutput> {
@@ -38,14 +38,13 @@ const quizPrompt = `
     2.  Each question must have exactly 4 possible answers.
     3.  Only one answer per question can be correct.
     4.  The questions should test comprehension of the main topics in the transcript, not just simple word recall.
-    5.  The entire output must be a valid JSON object. Do not include any extra text, explanations, or markdown.
+    5.  The entire output must be a valid JSON object that conforms to the provided schema. Do not include any extra text, explanations, or markdown.
 
     Here is the transcript:
     ---
     {{{transcript}}}
     ---
 `;
-
 
 const generateQuizFlow = ai.defineFlow(
   {
@@ -56,43 +55,20 @@ const generateQuizFlow = ai.defineFlow(
   },
   async ({ transcript }) => {
     
-    // Initialize the GoogleGenerativeAI client directly
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-        throw new Error("GEMINI_API_KEY environment variable not set.");
-    }
-    const genAI = new GoogleGenerativeAI(apiKey);
-
-    const safetySettings = [
-        {
-            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-        },
-        {
-            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-        },
-        {
-            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-        },
-        {
-            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
-        },
-    ];
-
     try {
-        const model = genAI.getGenerativeModel({ model: "gemini-pro", safetySettings });
+        const llmResponse = await ai.generate({
+            model: googleAI.model('gemini-pro'),
+            prompt: quizPrompt.replace('{{{transcript}}}', transcript),
+            config: {
+                // Ensure the output is JSON
+                responseMimeType: "application/json",
+            }
+        });
         
-        const fullPrompt = quizPrompt.replace('{{{transcript}}}', transcript);
-        
-        const result = await model.generateContent(fullPrompt);
-        const response = result.response;
-        const text = response.text();
-        
+        const text = llmResponse.text();
+
         if (!text) {
-             const finishReason = response.promptFeedback?.blockReason;
+             const finishReason = llmResponse.finishReason;
              if (finishReason === 'SAFETY') {
                  throw new Error("The AI blocked quiz generation due to safety policies. The video content may be too sensitive.");
              }
@@ -104,7 +80,7 @@ const generateQuizFlow = ai.defineFlow(
 
     } catch (error: any) {
       console.error("Error calling Gemini API for quiz generation:", error);
-      // Re-throw the original error if it's specific, or the generic one.
+      // Re-throw the original error if it's specific, or a generic one.
       throw new Error(error.message || "Failed to generate quiz from Gemini API.");
     }
   }

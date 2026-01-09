@@ -8,6 +8,7 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'zod';
 
 // Define the input schema for the flow
@@ -42,7 +43,7 @@ const helloFlowInternal = ai.defineFlow(
     // Call the model to generate the content.
     const { text } = await ai.generate({
         prompt: `Please say a friendly hello to ${name}`,
-        model: 'gemini-pro',
+        model: googleAI.model('gemini-pro'),
     });
     return text;
   }
