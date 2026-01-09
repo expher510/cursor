@@ -40,7 +40,10 @@ const helloFlowInternal = ai.defineFlow(
   },
   async ({ name }) => {
     // Call the model to generate the content.
-    const { text } = await ai.generate(`Please say a friendly hello to ${name}`);
-    return text();
+    const { text } = await ai.generate({
+        prompt: `Please say a friendly hello to ${name}`,
+        model: 'gemini-pro',
+    });
+    return text;
   }
 );
