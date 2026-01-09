@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { MOCK_QUIZ_DATA } from "@/lib/quiz-data";
 
 type ActivityType = 'watch' | 'reading' | 'writing';
 
@@ -83,6 +84,7 @@ function MainContent() {
 
         const videoDocRef = doc(firestore, `users/${user.uid}/videos`, videoIdToUse);
         const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoIdToUse}/transcripts`, videoIdToUse);
+        const quizDocRef = doc(firestore, `users/${user.uid}/videos/${videoIdToUse}/quizzes`, 'comprehensive-test');
 
         await setDoc(videoDocRef, {
             id: videoIdToUse,
@@ -98,6 +100,13 @@ function MainContent() {
             videoId: videoIdToUse,
             content: result.transcript,
         }, { merge: true });
+
+        await setDoc(quizDocRef, {
+          ...MOCK_QUIZ_DATA,
+          id: 'comprehensive-test',
+          videoId: videoIdToUse,
+          userId: user.uid,
+        });
 
         router.push(`/${activity}?v=${videoIdToUse}`);
 
