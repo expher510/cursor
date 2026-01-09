@@ -7,14 +7,17 @@ import { useWatchPage } from "@/context/watch-page-context";
 import { cn } from "@/lib/utils";
 import { useTranslationStore } from "@/hooks/use-translation-store";
 import { useMemo } from "react";
-import { Volume2 } from "lucide-react";
+import { Volume2, PlayCircle, PauseCircle } from "lucide-react";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
   videoId: string;
+  onPlaySegment?: (offset: number, duration: number, segmentId: string) => void;
+  activeSegmentId?: string | null;
 };
 
-export function TranscriptView({ transcript }: TranscriptViewProps) {
+
+export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegmentId }: TranscriptViewProps) {
   const { addVocabularyItem, savedWordsSet } = useWatchPage();
   const { translations, toggleTranslation, isTranslating } = useTranslationStore();
 
@@ -34,60 +37,81 @@ export function TranscriptView({ transcript }: TranscriptViewProps) {
   const speakWord = (e: React.MouseEvent, word: string) => {
       e.stopPropagation();
       if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-          window.speechSynthesis.cancel(); // Stop any currently speaking utterance
+          window.speechSynthesis.cancel();
           const utterance = new SpeechSynthesisUtterance(word);
-          utterance.lang = 'en-US'; // Set the language
+          utterance.lang = 'en-US';
           window.speechSynthesis.speak(utterance);
       }
   };
 
 
   return (
-    <div className={cn("p-4 leading-relaxed text-lg", isRtl && "text-right")} dir={isRtl ? "rtl" : "ltr"}>
-      {fullText.split(/(\s+)/).map((word, wordIndex) => {
-        const originalText = word;
-        const key = `${wordIndex}`;
-        
-        if (!word.trim()) {
-          return <span key={`${key}-space`}>{word}</span>;
-        }
-        
-        const cleanedWord = word
-          .toLowerCase()
-          .replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g, "");
+    <div className={cn("p-4 leading-relaxed text-lg space-y-4", isRtl && "text-right")} dir={isRtl ? "rtl" : "ltr"}>
+        {transcript.map((line, lineIndex) => {
+            const segmentId = `${videoId}-${lineIndex}`;
+            const isPlaying = activeSegmentId === segmentId;
 
-        const isSaved = savedWordsSet.has(cleanedWord);
-        const translation = translations[key];
-        const displayedText = translation ? translation.translatedText : originalText;
-        const isCurrentlyTranslating = isTranslating[key];
+            return (
+                <div key={line.offset} className="flex items-start gap-3">
+                    {onPlaySegment && (
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 mt-1 text-muted-foreground hover:text-primary"
+                            onClick={() => onPlaySegment(line.offset, line.duration, segmentId)}
+                        >
+                            {isPlaying ? <PauseCircle className="h-5 w-5 text-primary" /> : <PlayCircle className="h-5 w-5" />}
+                        </Button>
+                    )}
+                    <p className="flex-1">
+                        {line.text.split(/(\s+)/).map((word, wordIndex) => {
+                            const originalText = word;
+                            const key = `${lineIndex}-${wordIndex}`;
+                            
+                            if (!word.trim()) {
+                            return <span key={`${key}-space`}>{word}</span>;
+                            }
+                            
+                            const cleanedWord = word
+                            .toLowerCase()
+                            .replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g, "");
 
-        return (
-            <span key={key} className="inline-block relative group/word">
-              <Button
-                variant="ghost"
-                size="sm"
-                className={cn(
-                  "h-auto px-1 py-0.5 font-medium text-lg hover:bg-primary/10 text-foreground align-baseline",
-                  isSaved && !translation && "bg-amber-100 text-amber-900 cursor-help",
-                  translation && "bg-blue-100 text-blue-900"
-                )}
-                onClick={() => handleWordClick(cleanedWord, originalText, key)}
-                disabled={isCurrentlyTranslating || !cleanedWord}
-              >
-                {isCurrentlyTranslating ? '...' : displayedText}
-              </Button>
-               <Button
-                    variant="ghost"
-                    size="icon"
-                    className="absolute -top-6 right-1/2 translate-x-1/2 h-6 w-6 z-10 opacity-0 group-hover/word:opacity-100 transition-opacity"
-                    onClick={(e) => speakWord(e, cleanedWord)}
-                >
-                    <Volume2 className="h-4 w-4" />
-                    <span className="sr-only">Speak</span>
-                </Button>
-            </span>
-        );
-      })}
+                            const isSaved = savedWordsSet.has(cleanedWord);
+                            const translation = translations[key];
+                            const displayedText = translation ? translation.translatedText : originalText;
+                            const isCurrentlyTranslating = isTranslating[key];
+
+                            return (
+                                <span key={key} className="inline-block relative group/word">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className={cn(
+                                    "h-auto px-1 py-0.5 font-medium text-lg hover:bg-primary/10 text-foreground align-baseline",
+                                    isSaved && !translation && "bg-amber-100 text-amber-900 cursor-help",
+                                    translation && "bg-blue-100 text-blue-900"
+                                    )}
+                                    onClick={() => handleWordClick(cleanedWord, originalText, key)}
+                                    disabled={isCurrentlyTranslating || !cleanedWord}
+                                >
+                                    {isCurrentlyTranslating ? '...' : displayedText}
+                                </Button>
+                                <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute -top-6 right-1/2 translate-x-1/2 h-6 w-6 z-10 opacity-0 group-hover/word:opacity-100 transition-opacity"
+                                        onClick={(e) => speakWord(e, cleanedWord)}
+                                    >
+                                        <Volume2 className="h-4 w-4" />
+                                        <span className="sr-only">Speak</span>
+                                    </Button>
+                                </span>
+                            );
+                        })}
+                    </p>
+                </div>
+            )
+        })}
     </div>
   );
 }

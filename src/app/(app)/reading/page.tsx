@@ -16,7 +16,7 @@ import { useFirebase } from "@/firebase";
 import { doc, getDoc, addDoc, collection } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
+import ReactPlayer from "react-player/youtube";
 
 function SpeakingTestFeedback({ attemptId, onRetry }: { attemptId: string; onRetry: () => void }) {
     const { firestore, user } = useFirebase();
@@ -130,6 +130,11 @@ function ReadingPracticePageContent() {
     const { toast } = useToast();
     const { firestore, user } = useFirebase();
 
+    const playerRef = useRef<ReactPlayer>(null);
+    const [segmentPlayback, setSegmentPlayback] = useState<{ seekTo: number, isPlaying: boolean, currentSegmentId: string | null }>({ seekTo: 0, isPlaying: false, currentSegmentId: null });
+    const segmentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+
     useEffect(() => {
         return () => {
             if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
@@ -138,8 +143,28 @@ function ReadingPracticePageContent() {
             if (timerRef.current) {
                 clearInterval(timerRef.current);
             }
+            if (segmentTimeoutRef.current) {
+                clearTimeout(segmentTimeoutRef.current);
+            }
         };
     }, []);
+
+    const handlePlaySegment = (offset: number, duration: number, segmentId: string) => {
+        if (playerRef.current) {
+            if (segmentTimeoutRef.current) {
+                clearTimeout(segmentTimeoutRef.current);
+            }
+
+            const startTimeInSeconds = offset / 1000;
+            playerRef.current.seekTo(startTimeInSeconds, 'seconds');
+            setSegmentPlayback({ seekTo: startTimeInSeconds, isPlaying: true, currentSegmentId: segmentId });
+
+            segmentTimeoutRef.current = setTimeout(() => {
+                 setSegmentPlayback(prev => ({ ...prev, isPlaying: false, currentSegmentId: null }));
+            }, duration);
+        }
+    };
+
 
     const startRecording = async () => {
         if (testState !== 'idle' && testState !== 'recorded') return;
@@ -281,6 +306,18 @@ function ReadingPracticePageContent() {
     return (
         <div className="w-full max-w-4xl mx-auto space-y-6">
             
+            <div style={{ display: 'none' }}>
+                <ReactPlayer
+                    ref={playerRef}
+                    url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                    playing={segmentPlayback.isPlaying}
+                    controls={false}
+                    width="0"
+                    height="0"
+                    onReady={() => playerRef.current?.seekTo(segmentPlayback.seekTo, 'seconds')}
+                />
+            </div>
+
             {testState !== 'finished' && (
                  <div className="mb-4 text-center">
                     <div className="flex justify-center">
@@ -334,7 +371,12 @@ function ReadingPracticePageContent() {
                 <>
                     <VocabularyList layout="scroll" />
                     <Card>
-                        <TranscriptView transcript={formattedTranscript} videoId={videoData.videoId} />
+                        <TranscriptView 
+                           transcript={formattedTranscript} 
+                           videoId={videoData.videoId}
+                           onPlaySegment={handlePlaySegment}
+                           activeSegmentId={segmentPlayback.currentSegmentId}
+                        />
                     </Card>
                 </>
             )}
