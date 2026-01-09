@@ -2,7 +2,7 @@
 
 import { Skeleton } from "./ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { AlertTriangle, Edit, Eye, EyeOff } from "lucide-react";
+import { AlertTriangle, Edit, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
 import ReactPlayer from 'react-player/youtube';
@@ -50,6 +50,7 @@ export function VideoWorkspace() {
   const [currentTime, setCurrentTime] = useState(0);
   const [showTranscript, setShowTranscript] = useState(true);
   const [isQuizVisible, setIsQuizVisible] = useState(false);
+  const [isBuffering, setIsBuffering] = useState(false);
 
   if (isLoading) {
     return <LoadingState />;
@@ -76,7 +77,12 @@ export function VideoWorkspace() {
 
         <div className="w-full flex flex-col gap-4 items-center">
              <div className="w-full">
-                <div className="aspect-video w-full overflow-hidden rounded-lg bg-black/75 p-1">
+                <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black/75">
+                     {isBuffering && (
+                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                            <Loader2 className="h-12 w-12 animate-spin text-white" />
+                        </div>
+                    )}
                     <ReactPlayer
                         url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                         width="100%"
@@ -84,11 +90,14 @@ export function VideoWorkspace() {
                         controls={true}
                         playing={true}
                         onProgress={(progress) => setCurrentTime(progress.playedSeconds * 1000)}
+                        onBuffer={() => setIsBuffering(true)}
+                        onBufferEnd={() => setIsBuffering(false)}
                         config={{
                             youtube: {
                                 playerVars: {
                                     modestbranding: 1,
                                     rel: 0,
+                                    vq: 'tiny' // Attempt to request 144p quality
                                 }
                             }
                         }}
@@ -132,3 +141,5 @@ export function VideoWorkspace() {
     </div>
   );
 }
+
+    

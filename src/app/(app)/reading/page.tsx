@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, X, Wind, Leaf } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, X, Wind } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -134,8 +134,8 @@ function ReadingPracticePageContent() {
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [isAudioPlaying, setIsAudioPlaying] = useState(false);
     const [playbackRate, setPlaybackRate] = useState(1);
-    const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
-    const [volume, setVolume] = useState(1);
+    const [volume, setVolume] = useState(0);
+    const [isBuffering, setIsBuffering] = useState(false);
 
 
     useEffect(() => {
@@ -153,13 +153,11 @@ function ReadingPracticePageContent() {
         if (!playerRef.current || !isPlayerReady) return;
 
         if (isAudioPlaying) {
-            // If playing, stop the sound by setting volume to 0
             setVolume(0);
             setIsAudioPlaying(false);
         } else {
-            // If stopped, start playing from the specified offset
             playerRef.current.seekTo(offset / 1000, 'seconds');
-            setVolume(1); // Ensure volume is at 100%
+            setVolume(1);
             setIsAudioPlaying(true);
         }
     }, [isPlayerReady, isAudioPlaying]);
@@ -168,14 +166,14 @@ function ReadingPracticePageContent() {
         setPlaybackRate(prev => {
             if (prev === 1) return 0.75;
             if (prev === 0.75) return 0.5;
-            return 1; // From 0.5 back to 1
+            return 1;
         });
     }
 
     const SpeedIcon = ({rate}: {rate: number}) => {
         if (rate === 0.75) return <Glasses className="h-8 w-8" />;
         if (rate === 0.5) return <Turtle className="h-8 w-8" />;
-        return <Zap className="h-8 w-8" />; // Normal speed
+        return <Zap className="h-8 w-8" />;
     }
 
 
@@ -319,17 +317,34 @@ function ReadingPracticePageContent() {
     return (
         <div className="w-full max-w-4xl mx-auto space-y-6">
             
-            <div style={{ display: 'none' }}>
+            <div className="relative" style={{ paddingTop: '56.25%', display: 'none' }}>
+                {isBuffering && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                        <Loader2 className="h-12 w-12 animate-spin text-white" />
+                    </div>
+                )}
                 <ReactPlayer
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={isAudioPlaying}
+                    playing={true}
                     volume={volume}
                     onReady={() => setIsPlayerReady(true)}
                     playbackRate={playbackRate}
+                    onBuffer={() => setIsBuffering(true)}
+                    onBufferEnd={() => setIsBuffering(false)}
+                    config={{
+                        youtube: {
+                            playerVars: {
+                                modestbranding: 1,
+                                rel: 0,
+                                vq: 'tiny'
+                            }
+                        }
+                    }}
                     controls={false}
-                    width="0"
-                    height="0"
+                    width="100%"
+                    height="100%"
+                    style={{ position: 'absolute', top: 0, left: 0 }}
                 />
             </div>
 
@@ -391,7 +406,6 @@ function ReadingPracticePageContent() {
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
                            isGloballyPlaying={isAudioPlaying}
-                           activeSegmentId={activeSegmentId}
                         />
                     </Card>
                 </>
@@ -467,3 +481,5 @@ export default function ReadingPage() {
       </>
   );
 }
+
+    
