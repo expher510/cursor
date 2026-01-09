@@ -72,12 +72,19 @@ async function createVocabularyQuestions(vocabulary: z.infer<typeof VocabularyIt
 
     const vocabWithTranslations = (await Promise.all(
         filteredVocabulary.map(async (item) => {
-            if (item.translation) {
-                return item;
+            if (item.translation && item.translation !== 'Translating...') {
+                 const cleanedTranslation = item.translation.split(',')[0].trim();
+                return { word: item.word, translation: cleanedTranslation };
             }
-            const { translation } = await translateWord({ word: item.word, sourceLang: 'en', targetLang: 'ar' });
-            if (translation) {
-                return { word: item.word, translation };
+            try {
+                const { translation } = await translateWord({ word: item.word, sourceLang: 'en', targetLang: 'ar' });
+                if (translation) {
+                    // Clean up the translation: take the first part if there are commas.
+                    const cleanedTranslation = translation.split(',')[0].trim();
+                    return { word: item.word, translation: cleanedTranslation };
+                }
+            } catch (e) {
+                console.error(`Failed to translate word "${item.word}"`, e);
             }
             return null;
         })
@@ -205,3 +212,4 @@ const generateQuizFlow = ai.defineFlow(
     return { questions: allQuestions };
   }
 );
+
