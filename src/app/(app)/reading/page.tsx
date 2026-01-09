@@ -140,8 +140,7 @@ function ReadingPracticePageContent() {
 
     const playerRef = useRef<ReactPlayer>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [volume, setVolume] = useState(0);
+    const [volume, setVolume] = useState(0); // Start muted
     const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
     const [playbackRate, setPlaybackRate] = useState(1);
 
@@ -161,11 +160,13 @@ function ReadingPracticePageContent() {
         if (!playerRef.current || !isPlayerReady) return;
 
         playerRef.current.seekTo(offset / 1000, 'seconds');
-        setVolume(1);
-        setIsPlaying(true);
+        setVolume(1); // Unmute
         setActiveSegmentId(segmentId);
-
     }, [isPlayerReady]);
+    
+    const handleToggleMute = () => {
+      setVolume(prev => prev > 0 ? 0 : 1);
+    }
 
 
     const startRecording = async () => {
@@ -312,10 +313,9 @@ function ReadingPracticePageContent() {
                 <ReactPlayer
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={isPlaying}
+                    playing={true} // Always playing
                     volume={volume}
                     onReady={() => setIsPlayerReady(true)}
-                    onEnded={() => setIsPlaying(false)}
                     playbackRate={playbackRate}
                     controls={false}
                     width="0"
@@ -381,7 +381,7 @@ function ReadingPracticePageContent() {
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
                            activeSegmentId={activeSegmentId}
-                           isPlaying={isPlaying}
+                           isPlaying={volume > 0} // isPlaying is now based on volume
                         />
                     </Card>
                 </>
@@ -413,10 +413,9 @@ function ReadingPracticePageContent() {
                             size="icon"
                             variant="secondary"
                             className="h-14 w-14 rounded-full shadow-lg"
-                            onClick={() => setIsPlaying(prev => !prev)}
-                            disabled={!activeSegmentId}
+                            onClick={handleToggleMute}
                         >
-                            {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
+                            {volume > 0 ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
                         </Button>
                         <Button
                             size="icon"
@@ -475,3 +474,5 @@ export default function ReadingPage() {
       </>
   );
 }
+
+    
