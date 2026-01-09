@@ -1,3 +1,4 @@
+
 'use client';
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -143,6 +144,9 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
                 <CardHeader className="text-center">
                     <CardTitle>Quiz Results</CardTitle>
                     <CardDescription>You scored {score} out of {totalQuestions}!</CardDescription>
+                    <p className="text-sm text-muted-foreground pt-2">
+                        سنرسل لك تقييمًا مفصلاً لأدائك عبر بريدك الإلكتروني.
+                    </p>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="space-y-4">
