@@ -132,9 +132,10 @@ function ReadingPracticePageContent() {
 
     const playerRef = useRef<ReactPlayer>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
-    const [volume, setVolume] = useState(0); // Start muted
+    const [volume, setVolume] = useState(0); // Start muted and playing
+    const [isPlaying, setIsPlaying] = useState(true); // Always playing in background
     const [playbackRate, setPlaybackRate] = useState(1);
-    const [isPlaying, setIsPlaying] = useState(true);
+    
     const [isAudioGloballyPlaying, setIsAudioGloballyPlaying] = useState(false);
 
 
@@ -161,10 +162,6 @@ function ReadingPracticePageContent() {
             setIsAudioGloballyPlaying(true);
         }
     }, [isPlayerReady, isAudioGloballyPlaying]);
-    
-    const handleTogglePlayPause = () => {
-        setVolume(prev => prev > 0 ? 0 : 1);
-    };
     
     const handleToggleSpeed = () => {
         setPlaybackRate(prev => prev === 1 ? 0.75 : 1);
@@ -418,7 +415,7 @@ function ReadingPracticePageContent() {
                         className="h-16 w-16 rounded-full shadow-lg z-50 animate-pulse"
                         onClick={stopRecording}
                     >
-                        <X className="h-8 w-8" />
+                        <Pause className="h-8 w-8" />
                     </Button>
                 )}
                 
@@ -466,6 +463,3 @@ export default function ReadingPage() {
       </>
   );
 }
-
-
-    
