@@ -62,33 +62,44 @@ export async function generateQuiz(
 async function createVocabularyQuestions(vocabulary: z.infer<typeof VocabularyItemSchema>[]) {
     const questions = [];
     if (vocabulary.length < 4) {
-        console.warn("Not enough vocabulary words to generate vocabulary questions. Need at least 4.");
-        return [];
+        console.warn("Not enough vocabulary words to generate diverse vocabulary questions. Need at least 4 for good distractors.");
+        // We can still proceed if there's at least one word.
     }
 
-    for (const item of vocabulary) {
-        // 1. Define the correct answer (the translation)
-        const { translation: correctAnswer } = await translateWord({ word: item.word, sourceLang: 'en', targetLang: 'ar' });
-        if (!correctAnswer) continue;
+    const vocabWithTranslations = (await Promise.all(
+        vocabulary.map(async (item) => {
+            // Re-fetch translation to ensure it's correct and available.
+            const { translation } = await translateWord({ word: item.word, sourceLang: 'en', targetLang: 'ar' });
+            if (translation) {
+                return { word: item.word, translation };
+            }
+            return null;
+        })
+    )).filter((item): item is { word: string; translation: string } => item !== null);
 
-        // 2. Find distractors (translations of other words from the vocab list)
-        const distractors = vocabulary.filter(v => v.word !== item.word);
-        const shuffledDistractors = shuffleArray(distractors);
 
-        // 3. Get translations for the distractors
-        const distractorOptions = (await Promise.all(
-            shuffledDistractors.slice(0, 3).map(async d => {
-                const { translation } = await translateWord({ word: d.word, sourceLang: 'en', targetLang: 'ar' });
-                return translation;
-            })
-        )).filter(t => t); // Filter out any failed translations
+    if (vocabWithTranslations.length < 1) return [];
 
-        if (distractorOptions.length < 3) continue; // Skip if we couldn't get enough distractors
+    for (const item of vocabWithTranslations) {
+        const correctAnswer = item.translation;
 
-        // 4. Combine and shuffle options
+        // Find distractors (translations of other words from the list)
+        let distractorPool = vocabWithTranslations.filter(v => v.word !== item.word);
+        
+        // If the pool is too small, we can't get unique distractors.
+        if (distractorPool.length < 3) {
+           distractorPool = [...distractorPool, ...vocabWithTranslations.filter(v => v.word !== item.word)];
+        }
+
+        const shuffledDistractors = shuffleArray(distractorPool);
+        const distractorOptions = shuffledDistractors.slice(0, 3).map(d => d.translation);
+
+        if (distractorOptions.length < 3) continue; // Skip if we still couldn't get enough distractors
+
+        // Combine and shuffle options
         const options = shuffleArray([correctAnswer, ...distractorOptions]);
 
-        // 5. Create the question object
+        // Create the question object
         questions.push({
             questionText: `What is the Arabic translation of the word "${item.word}"?`,
             options: options,
@@ -101,10 +112,10 @@ async function createVocabularyQuestions(vocabulary: z.infer<typeof VocabularyIt
 // Function to create fill-in-the-blank questions from the transcript
 function createFillInTheBlankQuestions(transcript: string, count: number) {
     const questions = [];
-    const sentences = transcript.split(/[.?!]/).filter(s => s.trim().length > 10);
+    const sentences = transcript.split(/[.?!]/).filter(s => s.trim().length > 10 && s.split(/\s+/).length > 5);
     const allWords = Array.from(new Set(transcript.toLowerCase().match(/\b([a-zA-Z]{4,})\b/g) || []));
 
-    if (sentences.length < count || allWords.length < 4) {
+    if (sentences.length === 0 || allWords.length < 4) {
         console.warn("Not enough sentences or unique words in transcript to generate fill-in-the-blank questions.");
         return [];
     }
@@ -119,6 +130,8 @@ function createFillInTheBlankQuestions(transcript: string, count: number) {
         
         const wordToRemove = shuffleArray(candidateWords)[0];
         const correctAnswer = wordToRemove.replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g, "");
+        
+        if (!correctAnswer) continue;
 
         const questionText = sentence.replace(wordToRemove, '_______');
 

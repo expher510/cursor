@@ -137,15 +137,16 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           const result = await processVideo({ videoId: activeVideoId });
 
           // After getting transcript, immediately generate the quiz
-           const vocabForQuiz = result.transcript
-            .flatMap(item => item.text.split(' '))
-            .map(word => word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,""))
-            .filter((word, index, self) => word && self.indexOf(word) === index)
-            .slice(0, 15); // Take first 15 unique words for quiz generation
+           const vocabForQuiz = Array.from(new Set(
+                result.transcript
+                .flatMap(item => item.text.split(' '))
+                .map(word => word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,""))
+                .filter(Boolean)
+            )).slice(0, 15); // Take first 15 unique words for quiz generation
           
           const quizQuestions = await generateQuiz({
               transcript: result.transcript.map(t => t.text).join(' '),
-              vocabulary: vocabForQuiz.map(word => ({word, translation: ''})) // dummy translation
+              vocabulary: vocabForQuiz.map(word => ({word, translation: ''})) // dummy translation for input
           });
 
           await setDoc(videoDocRef, {
