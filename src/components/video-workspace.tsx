@@ -6,7 +6,7 @@ import { AlertTriangle, Edit, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
 import ReactPlayer from 'react-player/youtube';
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { CaptionView } from "./caption-view";
 import { VocabularyList } from "./vocabulary-list";
 import { Logo } from "./logo";
@@ -51,6 +51,7 @@ export function VideoWorkspace() {
   const [showTranscript, setShowTranscript] = useState(true);
   const [isQuizVisible, setIsQuizVisible] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
+  const playerRef = useRef<ReactPlayer>(null);
 
   if (isLoading) {
     return <LoadingState />;
@@ -63,6 +64,13 @@ export function VideoWorkspace() {
   if (!videoData || !videoData.videoId || !videoData.transcript) {
     return <ErrorState message="Video data could not be loaded." />;
   }
+
+  const handleVideoEnd = () => {
+    if (playerRef.current) {
+      playerRef.current.seekTo(0);
+    }
+  };
+
 
   return (
      <div className="flex flex-col items-center w-full max-w-4xl mx-auto">
@@ -84,6 +92,7 @@ export function VideoWorkspace() {
                         </div>
                     )}
                     <ReactPlayer
+                        ref={playerRef}
                         url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                         width="100%"
                         height="100%"
@@ -92,6 +101,7 @@ export function VideoWorkspace() {
                         onProgress={(progress) => setCurrentTime(progress.playedSeconds * 1000)}
                         onBuffer={() => setIsBuffering(true)}
                         onBufferEnd={() => setIsBuffering(false)}
+                        onEnded={handleVideoEnd}
                         config={{
                             youtube: {
                                 playerVars: {
@@ -141,5 +151,3 @@ export function VideoWorkspace() {
     </div>
   );
 }
-
-    

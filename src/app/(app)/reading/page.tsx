@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, X, Wind } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, X, Wind, Leaf } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -136,6 +136,7 @@ function ReadingPracticePageContent() {
     const [playbackRate, setPlaybackRate] = useState(1);
     const [volume, setVolume] = useState(0);
     const [isBuffering, setIsBuffering] = useState(false);
+    const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
 
 
     useEffect(() => {
@@ -149,18 +150,30 @@ function ReadingPracticePageContent() {
         };
     }, []);
     
-    const handlePlaySegment = useCallback((offset: number) => {
+    const handlePlaySegment = useCallback((offset: number, segmentId: string) => {
         if (!playerRef.current || !isPlayerReady) return;
 
         if (isAudioPlaying) {
-            setVolume(0);
-            setIsAudioPlaying(false);
+             // If clicking the currently playing segment, stop it.
+            if (activeSegmentId === segmentId) {
+                setVolume(0);
+                setIsAudioPlaying(false);
+                setActiveSegmentId(null);
+            } else { // If clicking a new segment, switch to it.
+                playerRef.current.seekTo(offset / 1000, 'seconds');
+                setActiveSegmentId(segmentId);
+                setVolume(1); // Ensure volume is up
+            }
         } else {
+            // If nothing is playing, start playing the clicked segment.
             playerRef.current.seekTo(offset / 1000, 'seconds');
             setVolume(1);
             setIsAudioPlaying(true);
+            setActiveSegmentId(segmentId);
         }
-    }, [isPlayerReady, isAudioPlaying]);
+
+    }, [isPlayerReady, isAudioPlaying, activeSegmentId]);
+    
     
     const handleToggleSpeed = () => {
         setPlaybackRate(prev => {
@@ -175,6 +188,13 @@ function ReadingPracticePageContent() {
         if (rate === 0.5) return <Turtle className="h-8 w-8" />;
         return <Zap className="h-8 w-8" />;
     }
+
+    const handleVideoEnd = () => {
+        if (playerRef.current) {
+          // Loop the video silently to keep it "alive"
+          playerRef.current.seekTo(0);
+        }
+    };
 
 
     const startRecording = async () => {
@@ -332,6 +352,7 @@ function ReadingPracticePageContent() {
                     playbackRate={playbackRate}
                     onBuffer={() => setIsBuffering(true)}
                     onBufferEnd={() => setIsBuffering(false)}
+                    onEnded={handleVideoEnd}
                     config={{
                         youtube: {
                             playerVars: {
@@ -406,6 +427,7 @@ function ReadingPracticePageContent() {
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
                            isGloballyPlaying={isAudioPlaying}
+                           activeSegmentId={activeSegmentId}
                         />
                     </Card>
                 </>
@@ -481,5 +503,3 @@ export default function ReadingPage() {
       </>
   );
 }
-
-    
