@@ -171,9 +171,10 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
                         <div className="mx-auto h-24 w-24 rounded-full bg-primary/10 border-4 border-primary flex items-center justify-center">
                             <span className="text-3xl font-bold text-primary">{score} / {totalQuestions}</span>
                         </div>
-                        <p className="text-sm text-muted-foreground pt-2">
-                            A detailed performance evaluation will be sent to: {user?.email}
-                        </p>
+                        <div className="text-sm text-muted-foreground pt-2">
+                          <p>A detailed performance evaluation will be sent to:</p>
+                          <p className="text-base font-semibold text-primary">{user?.email}</p>
+                        </div>
                     </div>
                     <div className="flex justify-center gap-4 pt-4">
                         <Button onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4"/> Try Again</Button>
