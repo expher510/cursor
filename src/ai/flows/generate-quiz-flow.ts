@@ -112,11 +112,16 @@ async function createVocabularyQuestions(vocabulary: z.infer<typeof VocabularyIt
 // Function to create fill-in-the-blank questions from the transcript
 function createFillInTheBlankQuestions(transcript: string, count: number) {
     const questions = [];
-    const sentences = transcript.split(/[.?!]/).filter(s => s.trim().length > 10 && s.split(/\s+/).length > 5);
+    // Only use sentences that are between 5 and 30 words long for conciseness.
+    const sentences = transcript.split(/[.?!]/).filter(s => {
+        const wordCount = s.trim().split(/\s+/).length;
+        return wordCount > 5 && wordCount < 30;
+    });
+
     const allWords = Array.from(new Set(transcript.toLowerCase().match(/\b([a-zA-Z]{4,})\b/g) || []));
 
     if (sentences.length === 0 || allWords.length < 4) {
-        console.warn("Not enough sentences or unique words in transcript to generate fill-in-the-blank questions.");
+        console.warn("Not enough suitable sentences or unique words in transcript to generate fill-in-the-blank questions.");
         return [];
     }
     
