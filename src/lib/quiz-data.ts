@@ -12,8 +12,7 @@ export type QuizData = {
   questions: QuizQuestion[];
 };
 
-export const MOCK_QUIZ_DATA: Omit<QuizData, 'id' | 'videoId' | 'userId'> = {
-  questions: [
+export const MOCK_QUIZ_QUESTIONS: QuizQuestion[] = [
     {
       questionText: "This is a dummy question. What is the capital of France?",
       options: [
@@ -64,5 +63,4 @@ export const MOCK_QUIZ_DATA: Omit<QuizData, 'id' | 'videoId' | 'userId'> = {
       ],
       correctAnswer: "Cold"
     }
-  ]
-};
+];

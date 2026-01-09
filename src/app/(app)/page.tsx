@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
-import { MOCK_QUIZ_DATA } from "@/lib/quiz-data";
+import { MOCK_QUIZ_QUESTIONS } from "@/lib/quiz-data";
 
 type ActivityType = 'watch' | 'reading' | 'writing';
 
@@ -102,10 +102,10 @@ function MainContent() {
         }, { merge: true });
 
         await setDoc(quizDocRef, {
-          ...MOCK_QUIZ_DATA,
           id: 'comprehensive-test',
           videoId: videoIdToUse,
           userId: user.uid,
+          questions: MOCK_QUIZ_QUESTIONS,
         });
 
         router.push(`/${activity}?v=${videoIdToUse}`);

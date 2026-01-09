@@ -12,7 +12,7 @@ import {
 import { doc, getDoc, Firestore, writeBatch, setDoc } from 'firebase/firestore';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { MOCK_QUIZ_DATA } from '@/lib/quiz-data';
+import { MOCK_QUIZ_QUESTIONS } from '@/lib/quiz-data';
 
 
 /**
@@ -56,10 +56,10 @@ export async function ensureUserDocument(firestore: Firestore, user: User, auth:
             const quizVideoId = 'xVOtjsqcElg';
             const quizDocRef = doc(firestore, `users/${user.uid}/videos/${quizVideoId}/quizzes`, 'initial-quiz');
             batch.set(quizDocRef, {
-                ...MOCK_QUIZ_DATA,
                 videoId: quizVideoId,
                 userId: user.uid,
                 id: 'initial-quiz',
+                questions: MOCK_QUIZ_QUESTIONS,
             });
 
 
