@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { MOCK_QUIZ_DATA, type QuizData } from '@/lib/quiz-data';
+import { type QuizData } from '@/lib/quiz-data';
 
 
 function useQuiz(questions: QuizData['questions']) {
@@ -159,19 +159,8 @@ function QuizView({ quiz, onRetry }: { quiz: QuizData, onRetry: () => void }) {
     );
 }
 
-export function QuizPlayer({ videoId }: { videoId: string | null }) {
-    const { resetQuiz, ...quizState } = useQuiz(MOCK_QUIZ_DATA.questions);
+export function QuizPlayer({ quiz }: { quiz: QuizData }) {
+    const { resetQuiz } = useQuiz(quiz.questions);
 
-    if (!videoId) {
-        return (
-            <Card className="w-full max-w-md text-center mx-auto">
-                 <CardHeader>
-                    <CardTitle>No Video Selected</CardTitle>
-                    <CardDescription>Please select a video to take the quiz.</CardDescription>
-                </CardHeader>
-            </Card>
-        );
-    }
-
-    return <QuizView quiz={MOCK_QUIZ_DATA} onRetry={resetQuiz} />;
+    return <QuizView quiz={quiz} onRetry={resetQuiz} />;
 }

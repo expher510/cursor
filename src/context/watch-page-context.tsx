@@ -8,6 +8,7 @@ import { useMemoFirebase } from '@/firebase/provider';
 import { type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 import { translateWord } from '@/ai/flows/translate-word-flow';
 import { useSearchParams } from 'next/navigation';
+import { type QuizData } from '@/lib/quiz-data';
 
 type VocabularyItem = {
   id: string;
@@ -26,6 +27,7 @@ type WatchPageContextType = {
   addVocabularyItem: (word: string) => void;
   removeVocabularyItem: (id: string) => void;
   videoData: VideoData | null;
+  quizData: QuizData | null;
   isLoading: boolean;
   error: string | null;
 };
@@ -154,6 +156,16 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   }, [user, firestore]);
 
   const { data: allVocabulary, setData: setAllVocabulary } = useCollection<VocabularyItem>(vocabQuery);
+  
+  // Fetch Quiz Data
+  const quizQuery = useMemoFirebase(() => {
+    if (!user || !firestore || !activeVideoId) return null;
+    return query(collection(firestore, `users/${user.uid}/videos/${activeVideoId}/quizzes`));
+  }, [user, firestore, activeVideoId]);
+
+  const { data: quizzes } = useCollection<QuizData>(quizQuery);
+  const quizData = useMemo(() => (quizzes && quizzes.length > 0 ? quizzes[0] : null), [quizzes]);
+
 
   const videoVocabulary = useMemo(() => {
     if (!allVocabulary || !activeVideoId) return [];
@@ -223,6 +235,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     addVocabularyItem,
     removeVocabularyItem,
     videoData,
+    quizData,
     isLoading,
     error,
   };

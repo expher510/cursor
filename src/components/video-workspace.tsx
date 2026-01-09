@@ -46,7 +46,7 @@ function ErrorState({ message }: { message: string }) {
 }
 
 export function VideoWorkspace() {
-  const { videoData, isLoading, error } = useWatchPage();
+  const { videoData, quizData, isLoading, error } = useWatchPage();
   const [currentTime, setCurrentTime] = useState(0);
   const [showTranscript, setShowTranscript] = useState(true);
   const [isQuizVisible, setIsQuizVisible] = useState(false);
@@ -117,14 +117,14 @@ export function VideoWorkspace() {
             </div>
         
             <div className="mt-4 w-full flex flex-col items-center gap-6">
-                <Button onClick={() => setIsQuizVisible(prev => !prev)} size="lg">
+                <Button onClick={() => setIsQuizVisible(prev => !prev)} size="lg" disabled={!quizData}>
                     <Edit className="mr-2 h-5 w-5" />
-                    {isQuizVisible ? 'Close Quiz' : 'Take a Quiz'}
+                    {isQuizVisible ? 'Close Quiz' : (quizData ? 'Take a Quiz' : 'Quiz Coming Soon')}
                 </Button>
 
-                {isQuizVisible && (
+                {isQuizVisible && quizData && (
                     <div className="w-full">
-                        <QuizPlayer videoId={videoData.videoId} />
+                        <QuizPlayer quiz={quizData} />
                     </div>
                 )}
             </div>
