@@ -4,12 +4,12 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, X, UploadCloud } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, X, UploadCloud, PlayCircle, PauseCircle } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { useFirebase } from "@/firebase";
@@ -133,6 +133,8 @@ function ReadingPracticePageContent() {
     const playerRef = useRef<ReactPlayer>(null);
     const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
     const segmentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [volume, setVolume] = useState(0);
 
 
     useEffect(() => {
@@ -149,27 +151,36 @@ function ReadingPracticePageContent() {
         };
     }, []);
 
-    const handlePlaySegment = (offset: number, duration: number, segmentId: string) => {
+    const handleReady = () => {
+      // Start playing muted once the player is ready
+      setIsPlaying(true);
+      setVolume(0);
+    }
+    
+    const handlePlaySegment = useCallback((offset: number, duration: number, segmentId: string) => {
         if (playerRef.current) {
             if (segmentTimeoutRef.current) {
                 clearTimeout(segmentTimeoutRef.current);
             }
 
-            // If the same segment is clicked again, toggle pause.
             if (activeSegmentId === segmentId) {
                 setActiveSegmentId(null);
+                setVolume(0);
                 return;
             }
 
             const startTimeInSeconds = offset / 1000;
             playerRef.current.seekTo(startTimeInSeconds, 'seconds');
+            setVolume(1);
             setActiveSegmentId(segmentId);
+            setIsPlaying(true);
 
             segmentTimeoutRef.current = setTimeout(() => {
+                setVolume(0);
                 setActiveSegmentId(null);
             }, duration);
         }
-    };
+    }, [activeSegmentId]);
 
 
     const startRecording = async () => {
@@ -316,11 +327,12 @@ function ReadingPracticePageContent() {
                 <ReactPlayer
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={!!activeSegmentId}
+                    playing={isPlaying}
+                    volume={volume}
+                    onReady={handleReady}
                     controls={false}
                     width="0"
                     height="0"
-                    onReady={() => playerRef.current?.seekTo(0)}
                 />
             </div>
 
@@ -446,4 +458,3 @@ export default function ReadingPage() {
   );
 }
 
-    
