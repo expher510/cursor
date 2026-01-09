@@ -7,17 +7,18 @@ import { useWatchPage } from "@/context/watch-page-context";
 import { cn } from "@/lib/utils";
 import { useTranslationStore } from "@/hooks/use-translation-store";
 import { useMemo } from "react";
-import { Play, Pause } from "lucide-react";
+import { Volume2, VolumeX } from "lucide-react";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
   videoId: string;
   onPlaySegment?: (offset: number, segmentId: string) => void;
   isGloballyPlaying?: boolean;
+  activeSegmentId?: string | null;
 };
 
 
-export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyPlaying }: TranscriptViewProps) {
+export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyPlaying, activeSegmentId }: TranscriptViewProps) {
   const { addVocabularyItem, savedWordsSet } = useWatchPage();
   const { translations, toggleTranslation, isTranslating } = useTranslationStore();
 
@@ -48,7 +49,11 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyP
                             className="h-7 w-7 mt-1 text-muted-foreground hover:text-primary"
                             onClick={() => onPlaySegment(line.offset, segmentId)}
                         >
-                            {isGloballyPlaying ? <Pause className="h-5 w-5 text-primary" /> : <Play className="h-5 w-5" />}
+                            {isGloballyPlaying && activeSegmentId === segmentId ? (
+                                <Volume2 className="h-5 w-5 text-primary" />
+                            ) : (
+                                <VolumeX className="h-5 w-5" />
+                            )}
                         </Button>
                     )}
                     <p className="flex-1">
@@ -95,5 +100,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyP
   );
 }
 
+
+    
 
     

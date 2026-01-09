@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, X, UploadCloud, Pause, Turtle, Zap, Glasses } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, Wind, Leaf, X } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -136,6 +136,7 @@ function ReadingPracticePageContent() {
     const [volume, setVolume] = useState(0); // Start muted
     const [playbackRate, setPlaybackRate] = useState(1);
     const [isAudioGloballyPlaying, setIsAudioGloballyPlaying] = useState(false);
+    const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
 
 
     useEffect(() => {
@@ -151,16 +152,20 @@ function ReadingPracticePageContent() {
     
     const handlePlaySegment = useCallback((offset: number, segmentId: string) => {
         if (!playerRef.current || !isPlayerReady) return;
-    
-        if (isAudioGloballyPlaying) {
+
+        if (isAudioGloballyPlaying && activeSegmentId === segmentId) {
+            // If the clicked segment is already playing, pause it
             setVolume(0);
             setIsAudioGloballyPlaying(false);
+            setActiveSegmentId(null);
         } else {
+            // If another segment is playing, or nothing is playing, play the new one
             playerRef.current?.seekTo(offset / 1000, 'seconds');
             setVolume(1);
             setIsAudioGloballyPlaying(true);
+            setActiveSegmentId(segmentId);
         }
-    }, [isPlayerReady, isAudioGloballyPlaying]);
+    }, [isPlayerReady, isAudioGloballyPlaying, activeSegmentId]);
     
     const handleToggleSpeed = () => {
         setPlaybackRate(prev => {
@@ -389,6 +394,7 @@ function ReadingPracticePageContent() {
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
                            isGloballyPlaying={isAudioGloballyPlaying}
+                           activeSegmentId={activeSegmentId}
                         />
                     </Card>
                 </>
@@ -465,5 +471,7 @@ export default function ReadingPage() {
   );
 }
 
+
+    
 
     
