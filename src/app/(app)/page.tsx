@@ -16,34 +16,29 @@ import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
+type ActivityType = 'watch' | 'reading' | 'writing';
 
-function ActivityButtons({ videoIdToUse, isProcessing, onActivitySelect }: { videoIdToUse: string | null, isProcessing: boolean, onActivitySelect: (path: string, videoId: string) => void }) {
-  const isEnabled = !!videoIdToUse;
-
-  const handleNavigation = (path: string) => {
-    if (videoIdToUse) {
-      onActivitySelect(path, videoIdToUse);
-    }
-  };
+function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivitySelect: (activity: ActivityType) => void, isProcessing: boolean, videoId: string | null }) {
+  const isEnabled = !!videoId;
 
   return (
     <div className="w-full max-w-4xl pt-10 text-left">
        <h2 className="text-2xl font-bold font-headline mb-6 text-center">Choose Your Practice</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         
-        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleNavigation('watch')}>
+        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => onActivitySelect('watch')}>
             {isProcessing && <Loader2 className="mr-2 animate-spin" />}
             <Headphones className="mr-2" />
             Start Listening
         </Button>
         
-        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleNavigation('reading')}>
+        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => onActivitySelect('reading')}>
             {isProcessing && <Loader2 className="mr-2 animate-spin" />}
             <BookOpen className="mr-2" />
             Start Reading
         </Button>
 
-        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleNavigation('writing')}>
+        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => onActivitySelect('writing')}>
             {isProcessing && <Loader2 className="mr-2 animate-spin" />}
             <Edit className="mr-2" />
             Start Writing
@@ -60,31 +55,37 @@ function ActivityButtons({ videoIdToUse, isProcessing, onActivitySelect }: { vid
   );
 }
 
-function MainContent({ url }: { url: string; }) {
-  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null);
+function MainContent() {
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const { firestore, user } = useFirebase();
   const router = useRouter();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [sourceType, setSourceType] = useState<'youtube' | 'books'>('youtube');
 
+  const handleUrlChange = (newUrl: string) => {
+    const videoId = extractYouTubeVideoId(newUrl);
+    setActiveVideoId(videoId);
+  };
 
-  const newVideoId = extractYouTubeVideoId(url);
-  const videoIdToUse = newVideoId || selectedVideoId;
+  const handlePracticeNavigation = async (activity: ActivityType, videoId?: string) => {
+    const videoIdToUse = videoId || activeVideoId;
 
-  const handlePracticeNavigation = async (path: string, videoId: string) => {
-    if (!user || !firestore) return;
+    if (!user || !firestore || !videoIdToUse) {
+        toast({ variant: "destructive", title: "No Video Selected", description: "Please enter a URL or select a video from your history." });
+        return;
+    };
     
     setIsProcessing(true);
 
     try {
-        const result = await processVideo({ videoId });
+        const result = await processVideo({ videoId: videoIdToUse });
 
-        const videoDocRef = doc(firestore, `users/${user.uid}/videos`, videoId);
-        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}/transcripts`, videoId);
+        const videoDocRef = doc(firestore, `users/${user.uid}/videos`, videoIdToUse);
+        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoIdToUse}/transcripts`, videoIdToUse);
 
         await setDoc(videoDocRef, {
-            id: videoId,
+            id: videoIdToUse,
             title: result.title,
             description: result.description,
             stats: result.stats,
@@ -93,12 +94,12 @@ function MainContent({ url }: { url: string; }) {
         }, { merge: true });
 
         await setDoc(transcriptDocRef, {
-            id: videoId,
-            videoId: videoId,
+            id: videoIdToUse,
+            videoId: videoIdToUse,
             content: result.transcript,
         }, { merge: true });
 
-        router.push(`/${path}?v=${videoId}`);
+        router.push(`/${activity}?v=${videoIdToUse}`);
 
     } catch (e: any) {
         console.error("Failed to process and save video:", e);
@@ -111,7 +112,11 @@ function MainContent({ url }: { url: string; }) {
 
   return (
     <>
-      <ActivityButtons videoIdToUse={videoIdToUse} isProcessing={isProcessing} onActivitySelect={handlePracticeNavigation} />
+      <div className="w-full max-w-lg pt-4">
+        <YoutubeUrlForm onUrlChange={handleUrlChange} />
+      </div>
+
+      <ActivityButtons videoId={activeVideoId} isProcessing={isProcessing} onActivitySelect={(activity) => handlePracticeNavigation(activity)} />
       
       <div className="w-full max-w-4xl pt-10">
         <div className="flex justify-center items-center gap-4 mb-6">
@@ -135,8 +140,9 @@ function MainContent({ url }: { url: string; }) {
         
         {sourceType === 'youtube' && (
             <VideoHistory 
-                selectedVideoId={selectedVideoId}
-                onVideoSelect={setSelectedVideoId}
+                activeVideoId={activeVideoId}
+                onVideoSelect={setActiveVideoId}
+                onVideoAction={(videoId, activity) => handlePracticeNavigation(activity, videoId)}
             />
         )}
       </div>
@@ -146,7 +152,6 @@ function MainContent({ url }: { url: string; }) {
 
 
 export default function HomePage() {
-  const [url, setUrl] = useState('');
   const { user, isUserLoading } = useFirebase();
 
   return (
@@ -161,14 +166,11 @@ export default function HomePage() {
               Paste a YouTube link below to turn any video into an interactive language lesson.
             </p>
           </div>
-          <div className="w-full max-w-lg pt-4">
-            <YoutubeUrlForm onUrlChange={setUrl} />
-          </div>
           
           {isUserLoading ? (
             <Loader2 className="mt-12 h-8 w-8 animate-spin text-primary" />
           ) : user ? (
-            <MainContent url={url} />
+            <MainContent />
           ) : (
              <div className="text-center p-8 border-dashed border-2 rounded-lg mt-8">
                 <p className="text-muted-foreground">Please log in or sign up to see your history and start practicing.</p>

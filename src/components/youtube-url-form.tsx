@@ -36,7 +36,13 @@ export function YoutubeUrlForm({ onUrlChange }: YoutubeUrlFormProps) {
   const urlValue = form.watch('url');
 
   useEffect(() => {
-    onUrlChange(urlValue || '');
+    const handler = setTimeout(() => {
+        onUrlChange(urlValue || '');
+    }, 500); // Debounce input
+
+    return () => {
+        clearTimeout(handler);
+    };
   }, [urlValue, onUrlChange]);
 
 
