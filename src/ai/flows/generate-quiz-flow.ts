@@ -151,7 +151,7 @@ const generateQuizFlow = ai.defineFlow(
     // Generate both types of questions in parallel
     const [vocabQuestions, fillInBlankQuestions] = await Promise.all([
         createVocabularyQuestions(vocabulary),
-        createFillInTheBlankQuestions(transcript, 5) // Generate 5 fill-in-the-blank questions
+        createFillInTheBlankQuestions(transcript, 7) // Generate 7 fill-in-the-blank questions
     ]);
 
     // Combine and shuffle all questions

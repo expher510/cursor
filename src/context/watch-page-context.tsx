@@ -141,7 +141,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             .flatMap(item => item.text.split(' '))
             .map(word => word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,""))
             .filter((word, index, self) => word && self.indexOf(word) === index)
-            .slice(0, 10); // Take first 10 unique words for quiz generation
+            .slice(0, 15); // Take first 15 unique words for quiz generation
           
           const quizQuestions = await generateQuiz({
               transcript: result.transcript.map(t => t.text).join(' '),
