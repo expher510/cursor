@@ -4,7 +4,7 @@ import { useState } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
 import { VideoHistory } from "@/components/video-history";
 import { Button } from "@/components/ui/button";
-import { Headphones, BookOpen, Edit, Loader2, Youtube, Book, Copy } from "lucide-react";
+import { Headphones, BookOpen, Edit, Loader2, Youtube, Book, Copy, History } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { extractYouTubeVideoId } from "@/lib/utils";
 import { useFirebase } from "@/firebase";
@@ -92,8 +92,8 @@ function MainContent() {
         <div className="flex justify-center mb-4">
             <div className="flex items-center gap-2 rounded-full bg-muted p-1">
                 <Button variant={sourceType === 'youtube' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'youtube' && 'bg-background shadow-sm')} onClick={() => setSourceType('youtube')}>
-                    <Youtube className="mr-2" />
-                    YouTube
+                    <History className="mr-2" />
+                    هيستوري
                 </Button>
                 <Button variant={sourceType === 'cards' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'cards' && 'bg-background shadow-sm')} onClick={() => setSourceType('cards')}>
                     <Copy className="mr-2" />
