@@ -10,7 +10,7 @@ export default function FlashcardsPage() {
         <div className="text-center">
             <h1 className="text-4xl font-bold font-headline tracking-tight">Flashcards</h1>
             <p className="text-muted-foreground max-w-2xl">
-                Review all the words you've saved from different videos. Click on a card to flip it and reveal the translation.
+                Review all the words you've saved. These words will be highlighted for you across the app for easier learning. Click a card to flip it.
             </p>
         </div>
         <FlashcardGrid />
