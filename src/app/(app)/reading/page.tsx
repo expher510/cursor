@@ -133,7 +133,6 @@ function ReadingPracticePageContent() {
     const playerRef = useRef<ReactPlayer>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [volume, setVolume] = useState(0); // Start muted
-    const [isPlaying, setIsPlaying] = useState(true); // Always playing in background
     const [playbackRate, setPlaybackRate] = useState(1);
     const [isAudioGloballyPlaying, setIsAudioGloballyPlaying] = useState(false);
 
@@ -311,7 +310,7 @@ function ReadingPracticePageContent() {
                 <ReactPlayer
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={isPlaying} 
+                    playing={isAudioGloballyPlaying} 
                     volume={volume}
                     onReady={() => setIsPlayerReady(true)}
                     playbackRate={playbackRate}
@@ -422,14 +421,6 @@ function ReadingPracticePageContent() {
                     <>
                          <Button
                             size="icon"
-                            variant="secondary"
-                            className="h-14 w-14 rounded-full shadow-lg"
-                            onClick={resetTest}
-                        >
-                            <RefreshCw className="h-7 w-7" />
-                        </Button>
-                         <Button
-                            size="icon"
                             variant="destructive"
                             className="h-14 w-14 rounded-full shadow-lg"
                             onClick={resetTest}
@@ -462,5 +453,3 @@ export default function ReadingPage() {
       </>
   );
 }
-
-    
