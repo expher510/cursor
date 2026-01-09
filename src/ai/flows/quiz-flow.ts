@@ -9,9 +9,9 @@
 
 import { ai } from '@/ai/genkit';
 import { QuizInputSchema, QuizOutputSchema, type QuizInput, type QuizOutput } from '@/ai/schemas/quiz-schema';
-import { googleAI } from '@genkit-ai/google-genai';
 import 'dotenv/config';
 import { z } from 'zod';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 // This is a wrapper function that we will call from our components.
 export async function generateQuiz(input: QuizInput): Promise<QuizOutput> {
@@ -55,20 +55,27 @@ const generateQuizFlow = ai.defineFlow(
   },
   async ({ transcript }) => {
     
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY environment variable is not set.");
+    }
+
     try {
-        const llmResponse = await ai.generate({
-            model: googleAI.model('gemini-pro'),
-            prompt: quizPrompt.replace('{{{transcript}}}', transcript),
-            config: {
-                // Ensure the output is JSON
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({ 
+            model: "gemini-pro",
+            generationConfig: {
                 responseMimeType: "application/json",
             }
         });
+
+        const fullPrompt = quizPrompt.replace('{{{transcript}}}', transcript);
+        const result = await model.generateContent(fullPrompt);
+        const response = result.response;
         
-        const text = llmResponse.text();
+        const text = response.text();
 
         if (!text) {
-             const finishReason = llmResponse.finishReason;
+             const finishReason = response.promptFeedback?.blockReason;
              if (finishReason === 'SAFETY') {
                  throw new Error("The AI blocked quiz generation due to safety policies. The video content may be too sensitive.");
              }
