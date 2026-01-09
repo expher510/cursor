@@ -8,7 +8,7 @@ import { Headphones, BookOpen, Edit, Loader2, Youtube, Book, Copy } from "lucide
 import { useRouter } from "next/navigation";
 import { extractYouTubeVideoId } from "@/lib/utils";
 import { useFirebase } from "@/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc } from "firebase/firestore";
 import { AppHeader } from "@/components/app-header";
 import { processVideo } from "@/ai/flows/process-video-flow";
 import { useToast } from "@/hooks/use-toast";
@@ -80,30 +80,42 @@ function MainContent() {
     setIsProcessing(true);
 
     try {
-        const result = await processVideo({ videoId: videoIdToUse });
-
         const videoDocRef = doc(firestore, `users/${user.uid}/videos`, videoIdToUse);
         const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoIdToUse}/transcripts`, videoIdToUse);
-        const quizDocRef = doc(firestore, `users/${user.uid}/videos/${videoIdToUse}/quizzes`, 'comprehensive-test');
 
-        await setDoc(videoDocRef, {
-            id: videoIdToUse,
-            title: result.title,
-            description: result.description,
-            stats: result.stats,
-            userId: user.uid,
-            timestamp: Date.now(),
-        }, { merge: true });
+        const transcriptSnap = await getDoc(transcriptDocRef);
 
-        await setDoc(transcriptDocRef, {
-            id: videoIdToUse,
-            videoId: videoIdToUse,
-            content: result.transcript,
-        }, { merge: true });
+        if (!transcriptSnap.exists()) {
+            // Data doesn't exist, process it
+            toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
+            const result = await processVideo({ videoId: videoIdToUse });
+            const quizDocRef = doc(firestore, `users/${user.uid}/videos/${videoIdToUse}/quizzes`, 'comprehensive-test');
 
-        await setDoc(quizDocRef, {
-          questions: MOCK_QUIZ_QUESTIONS,
-        });
+            await setDoc(videoDocRef, {
+                id: videoIdToUse,
+                title: result.title,
+                description: result.description,
+                stats: result.stats,
+                userId: user.uid,
+                timestamp: Date.now(),
+            }, { merge: true });
+
+            await setDoc(transcriptDocRef, {
+                id: videoIdToUse,
+                videoId: videoIdToUse,
+                content: result.transcript,
+            }, { merge: true });
+
+            await setDoc(quizDocRef, {
+              id: 'comprehensive-test',
+              videoId: videoIdToUse,
+              userId: user.uid,
+              questions: MOCK_QUIZ_QUESTIONS,
+            }, { merge: true });
+        } else {
+            // Data exists, just navigate
+            toast({ title: "Loading Existing Lesson", description: "Your lesson is ready." });
+        }
 
         router.push(`/${activity}?v=${videoIdToUse}`);
 
