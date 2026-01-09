@@ -62,7 +62,6 @@ function MainContent() {
   const router = useRouter();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [sourceType, setSourceType] = useState<'youtube' | 'books'>('youtube');
 
   const handleUrlChange = (newUrl: string) => {
     const videoId = extractYouTubeVideoId(newUrl);
@@ -92,36 +91,11 @@ function MainContent() {
       <ActivityButtons videoId={activeVideoId} isProcessing={isProcessing} onActivitySelect={(activity) => handlePracticeNavigation(activity)} />
 
       <div className="w-full max-w-4xl pt-10">
-          <div className="flex justify-center mb-4">
-            <div className="flex items-center gap-2 rounded-full bg-muted p-1">
-              <Button 
-                  variant={sourceType === 'youtube' ? 'outline' : 'ghost'} 
-                  onClick={() => setSourceType('youtube')} 
-                  className="rounded-full gap-2 bg-background shadow-sm"
-              >
-                  <Youtube /> YouTube
-              </Button>
-              <Button 
-                  variant={sourceType === 'books' ? 'outline' : 'ghost'} 
-                  onClick={() => setSourceType('books')} 
-                  className="rounded-full gap-2"
-              >
-                  <Book /> Books
-              </Button>
-            </div>
-          </div>
-        
-        {sourceType === 'youtube' ? (
-          <VideoHistory 
-              activeVideoId={activeVideoId}
-              onVideoSelect={setActiveVideoId}
-              onVideoAction={(videoId, activity) => handlePracticeNavigation(activity, videoId)}
-          />
-        ) : (
-          <div className="text-center p-8 border-dashed border-2 rounded-lg mt-8">
-              <p className="text-muted-foreground">Book content is not yet available.</p>
-          </div>
-        )}
+        <VideoHistory 
+            activeVideoId={activeVideoId}
+            onVideoSelect={setActiveVideoId}
+            onVideoAction={(videoId, activity) => handlePracticeNavigation(activity, videoId)}
+        />
       </div>
     </>
   );
