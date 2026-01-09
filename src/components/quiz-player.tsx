@@ -49,7 +49,7 @@ function useQuiz(questions: QuizQuestion[]) {
 
     const prevQuestion = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
+            setCurrentQuestionIndex(prev => prev + 1);
         }
     };
 
@@ -117,7 +117,7 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
             const saveResults = async () => {
                 const quizDocRef = doc(firestore, `users/${user.uid}/videos/${videoData.videoId}/quizzes`, quizId);
                 
-                const detailedUserAnswers: UserAnswer[] = shuffledQuestions.map((question, index) => ({
+                const detailedUserAnswers: Omit<UserAnswer, 'id'>[] = shuffledQuestions.map((question, index) => ({
                     questionText: question.questionText,
                     userAnswer: userAnswers[index],
                     correctAnswer: question.correctAnswer,
@@ -167,10 +167,10 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
                 </CardContent>
                 <CardFooter className="flex-col gap-4 pt-6 border-t text-center">
                     <div className="space-y-2">
+                        <h3 className="text-lg font-semibold text-muted-foreground">Score</h3>
                         <div className="mx-auto h-24 w-24 rounded-full bg-primary/10 border-4 border-primary flex items-center justify-center">
-                            <span className="text-4xl font-bold text-primary">{score}</span>
+                            <span className="text-3xl font-bold text-primary">{score} / {totalQuestions}</span>
                         </div>
-                        <h3 className="text-xl font-bold">You scored {score} out of {totalQuestions}!</h3>
                         <p className="text-sm text-muted-foreground pt-2">
                             A detailed performance evaluation will be sent to your email.
                         </p>
