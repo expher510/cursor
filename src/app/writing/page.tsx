@@ -94,7 +94,7 @@ function WritingWorkspace() {
         if (editor) {
              // Add a space before the new word if there's existing content that doesn't end with a space
             const currentText = editor.innerText;
-            if (currentText && !/\s$/.test(currentText)) {
+            if (currentText && !/\s$/.test(currentText) && currentText.length > 0) {
                insertTextAtCursor(' ', false);
             }
             insertTextAtCursor(word, true);
