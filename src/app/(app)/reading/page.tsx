@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, X, UploadCloud, PlayCircle, PauseCircle } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, X, UploadCloud, PlayCircle, PauseCircle, Play, Pause, Wind } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,16 @@ import { doc, getDoc, addDoc, collection } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ReactPlayer from "react-player/youtube";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+
 
 function SpeakingTestFeedback({ attemptId, onRetry }: { attemptId: string; onRetry: () => void }) {
     const { firestore, user } = useFirebase();
@@ -135,6 +145,7 @@ function ReadingPracticePageContent() {
     const [isPlaying, setIsPlaying] = useState(false);
     const [volume, setVolume] = useState(0);
     const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
+    const [playbackRate, setPlaybackRate] = useState(1);
 
 
     useEffect(() => {
@@ -150,11 +161,6 @@ function ReadingPracticePageContent() {
 
     const handleReady = () => {
         setIsPlayerReady(true);
-        // Start playing muted to allow seeking without user interaction issues
-        // This is a crucial part of the fix for autoplay policies
-        if (playerRef.current) {
-             setIsPlaying(true); 
-        }
     }
     
     const handlePlaySegment = useCallback((offset: number, duration: number, segmentId: string) => {
@@ -315,6 +321,7 @@ function ReadingPracticePageContent() {
                     playing={isPlaying}
                     volume={volume}
                     onReady={handleReady}
+                    playbackRate={playbackRate}
                     controls={false}
                     width="0"
                     height="0"
@@ -386,47 +393,76 @@ function ReadingPracticePageContent() {
             )}
 
             {/* Floating Action Buttons */}
-            {testState === 'idle' && (
-                <Button
-                    size="icon"
-                    className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50"
-                    onClick={startRecording}
-                >
-                    <Mic className="h-8 w-8" />
-                </Button>
-            )}
+             <div className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-3">
+                {testState === 'idle' && (
+                    <>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button size="icon" variant="secondary" className="h-14 w-14 rounded-full shadow-lg">
+                                    <Wind className="h-7 w-7" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="w-32" align="end">
+                                <DropdownMenuLabel>Playback Speed</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuRadioGroup value={playbackRate.toString()} onValueChange={(val) => setPlaybackRate(parseFloat(val))}>
+                                    <DropdownMenuRadioItem value="0.75">0.75x</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="1">Normal</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="1.25">1.25x</DropdownMenuRadioItem>
+                                    <DropdownMenuRadioItem value="1.5">1.5x</DropdownMenuRadioItem>
+                                </DropdownMenuRadioGroup>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
 
-            {testState === 'recording' && (
-                <Button
-                    size="icon"
-                    variant="destructive"
-                    className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50 animate-pulse"
-                    onClick={stopRecording}
-                >
-                    <X className="h-8 w-8" />
-                </Button>
-            )}
-            
-            {testState === 'recorded' && (
-                <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-center">
+                        <Button
+                            size="icon"
+                            variant="secondary"
+                            className="h-14 w-14 rounded-full shadow-lg"
+                            onClick={() => setIsPlaying(prev => !prev)}
+                        >
+                            {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
+                        </Button>
+                        <Button
+                            size="icon"
+                            className="h-16 w-16 rounded-full shadow-lg"
+                            onClick={startRecording}
+                        >
+                            <Mic className="h-8 w-8" />
+                        </Button>
+                    </>
+                )}
+
+                {testState === 'recording' && (
                     <Button
                         size="icon"
-                        variant="secondary"
-                        className="h-14 w-14 rounded-full shadow-lg"
-                        onClick={startRecording}
+                        variant="destructive"
+                        className="h-16 w-16 rounded-full shadow-lg z-50 animate-pulse"
+                        onClick={stopRecording}
                     >
-                        <RefreshCw className="h-7 w-7" />
+                        <X className="h-8 w-8" />
                     </Button>
-                     <Button
-                        size="icon"
-                        className="h-16 w-16 rounded-full shadow-lg"
-                        onClick={handleConfirmUpload}
-                    >
-                        <UploadCloud className="h-8 w-8" />
-                    </Button>
-                </div>
-            )}
-
+                )}
+                
+                {testState === 'recorded' && (
+                    <>
+                        <Button
+                            size="icon"
+                            variant="secondary"
+                            className="h-14 w-14 rounded-full shadow-lg"
+                            onClick={startRecording}
+                        >
+                            <RefreshCw className="h-7 w-7" />
+                        </Button>
+                         <Button
+                            size="icon"
+                            className="h-16 w-16 rounded-full shadow-lg"
+                            onClick={handleConfirmUpload}
+                        >
+                            <UploadCloud className="h-8 w-8" />
+                        </Button>
+                    </>
+                )}
+            </div>
         </div>
     )
 }
@@ -443,3 +479,5 @@ export default function ReadingPage() {
       </>
   );
 }
+
+    
