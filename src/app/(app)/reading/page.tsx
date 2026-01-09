@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, X, Wind, Leaf } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, X, Wind } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -137,6 +137,7 @@ function ReadingPracticePageContent() {
     const [volume, setVolume] = useState(0);
     const [isBuffering, setIsBuffering] = useState(false);
     const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
+    const [duration, setDuration] = useState(0);
 
 
     useEffect(() => {
@@ -155,24 +156,16 @@ function ReadingPracticePageContent() {
 
         if (isAudioPlaying) {
              // If clicking the currently playing segment, stop it.
-            if (activeSegmentId === segmentId) {
-                setVolume(0);
-                setIsAudioPlaying(false);
-                setActiveSegmentId(null);
-            } else { // If clicking a new segment, switch to it.
-                playerRef.current.seekTo(offset / 1000, 'seconds');
-                setActiveSegmentId(segmentId);
-                setVolume(1); // Ensure volume is up
-            }
+            setVolume(0);
+            setIsAudioPlaying(false);
         } else {
             // If nothing is playing, start playing the clicked segment.
             playerRef.current.seekTo(offset / 1000, 'seconds');
             setVolume(1);
             setIsAudioPlaying(true);
-            setActiveSegmentId(segmentId);
         }
 
-    }, [isPlayerReady, isAudioPlaying, activeSegmentId]);
+    }, [isPlayerReady, isAudioPlaying]);
     
     
     const handleToggleSpeed = () => {
@@ -190,9 +183,10 @@ function ReadingPracticePageContent() {
     }
 
     const handleVideoEnd = () => {
-        if (playerRef.current) {
-          // Loop the video silently to keep it "alive"
-          playerRef.current.seekTo(0);
+        if (playerRef.current && duration > 0) {
+          // Loop the video silently to keep it "alive" by seeking to 1 second before the end
+          const seekToTime = duration > 1 ? duration - 1 : 0;
+          playerRef.current.seekTo(seekToTime, 'seconds');
         }
     };
 
@@ -353,6 +347,7 @@ function ReadingPracticePageContent() {
                     onBuffer={() => setIsBuffering(true)}
                     onBufferEnd={() => setIsBuffering(false)}
                     onEnded={handleVideoEnd}
+                    onDuration={setDuration}
                     config={{
                         youtube: {
                             playerVars: {

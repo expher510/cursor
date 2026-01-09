@@ -51,6 +51,7 @@ export function VideoWorkspace() {
   const [showTranscript, setShowTranscript] = useState(true);
   const [isQuizVisible, setIsQuizVisible] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
+  const [duration, setDuration] = useState(0);
   const playerRef = useRef<ReactPlayer>(null);
 
   if (isLoading) {
@@ -66,8 +67,10 @@ export function VideoWorkspace() {
   }
 
   const handleVideoEnd = () => {
-    if (playerRef.current) {
-      playerRef.current.seekTo(0);
+    if (playerRef.current && duration > 0) {
+      // Loop the video silently to keep it "alive" by seeking to 1 second before the end
+      const seekToTime = duration > 1 ? duration - 1 : 0;
+      playerRef.current.seekTo(seekToTime, 'seconds');
     }
   };
 
@@ -102,6 +105,7 @@ export function VideoWorkspace() {
                         onBuffer={() => setIsBuffering(true)}
                         onBufferEnd={() => setIsBuffering(false)}
                         onEnded={handleVideoEnd}
+                        onDuration={setDuration}
                         config={{
                             youtube: {
                                 playerVars: {
