@@ -151,16 +151,19 @@ function ReadingPracticePageContent() {
     const handleReady = () => {
         setIsPlayerReady(true);
         // Start playing muted to allow seeking without user interaction issues
-        setIsPlaying(true);
+        // This is a crucial part of the fix for autoplay policies
+        if (playerRef.current) {
+             setIsPlaying(true); 
+        }
     }
     
     const handlePlaySegment = useCallback((offset: number, duration: number, segmentId: string) => {
         if (!playerRef.current || !isPlayerReady) return;
-
+    
         playerRef.current.seekTo(offset / 1000, 'seconds');
         setVolume(1);
-        setActiveSegmentId(segmentId);
         setIsPlaying(true);
+        setActiveSegmentId(segmentId);
 
     }, [isPlayerReady]);
 
@@ -315,7 +318,6 @@ function ReadingPracticePageContent() {
                     controls={false}
                     width="0"
                     height="0"
-                    loop={true}
                 />
             </div>
 
