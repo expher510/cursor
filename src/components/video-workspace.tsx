@@ -122,9 +122,9 @@ export function VideoWorkspace() {
                     {isQuizVisible ? 'Close Quiz' : (quizData ? 'Take a Quiz' : 'Quiz Coming Soon')}
                 </Button>
 
-                {isQuizVisible && quizData && (
+                {isQuizVisible && quizData && quizData.id && (
                     <div className="w-full">
-                        <QuizPlayer quiz={quizData} />
+                        <QuizPlayer quizId={quizData.id} />
                     </div>
                 )}
             </div>

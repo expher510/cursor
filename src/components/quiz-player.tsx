@@ -1,15 +1,14 @@
 'use client';
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, CheckCircle, XCircle, Send, Check } from 'lucide-react';
+import { RefreshCw, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { type QuizData, type QuizQuestion } from '@/lib/quiz-data';
-import { Textarea } from './ui/textarea';
 import { useFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useWatchPage } from '@/context/watch-page-context';
@@ -25,62 +24,33 @@ const shuffleArray = (array: any[]) => {
     return newArray;
 };
 
-function QuizFeedback({ quizId }: { quizId: string }) {
-    const { firestore, user } = useFirebase();
-    const { videoData } = useWatchPage();
-    const { toast } = useToast();
-    const [feedback, setFeedback] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isSubmitted, setIsSubmitted] = useState(false);
 
-    const handleSubmit = async () => {
-        if (!firestore || !user || !videoData?.videoId || !feedback.trim()) return;
-
-        setIsSubmitting(true);
-        try {
-            const quizDocRef = doc(firestore, `users/${user.uid}/videos/${videoData.videoId}/quizzes`, quizId);
-            await updateDoc(quizDocRef, {
-                feedback: feedback
-            });
-            setIsSubmitted(true);
-            toast({ title: "Feedback submitted!", description: "Thank you for your feedback." });
-        } catch (error) {
-            console.error("Failed to submit feedback:", error);
-            toast({ variant: "destructive", title: "Submission Failed", description: "Could not save your feedback. Please try again." });
-        } finally {
-            setIsSubmitting(false);
-        }
+function QuizResultsFeedback({ score, totalQuestions }: { score: number, totalQuestions: number }) {
+    const feedback = {
+        nailed: "You have a great grasp of the basic concepts presented in the video!",
+        improve: "Try to pay closer attention to the specific details and terminology used."
     };
-    
-    if (isSubmitted) {
-        return (
-             <div className="flex items-center justify-center gap-2 p-4 bg-green-100/50 rounded-lg text-green-800">
-                <CheckCircle className="h-5 w-5" />
-                <p className="font-semibold">Thank you, your feedback has been received!</p>
-             </div>
-        );
-    }
 
     return (
         <Card className="w-full mt-6 bg-muted/50">
             <CardHeader>
-                <CardTitle className="text-xl">Share Your Feedback</CardTitle>
-                <CardDescription>Let us know what you thought of this quiz.</CardDescription>
+                <CardTitle className="text-xl">Feedback Summary</CardTitle>
+                <CardDescription>A quick look at your performance.</CardDescription>
             </CardHeader>
-            <CardContent>
-                <Textarea
-                    placeholder="This quiz was helpful because..."
-                    value={feedback}
-                    onChange={(e) => setFeedback(e.target.value)}
-                    rows={4}
-                />
+            <CardContent className="space-y-4">
+                 <div className="text-center">
+                    <p className="text-sm font-medium text-muted-foreground">YOUR SCORE</p>
+                    <p className="text-5xl font-bold">{score}<span className="text-2xl text-muted-foreground">/{totalQuestions}</span></p>
+                </div>
+                <div className="p-4 bg-green-100/50 rounded-lg">
+                    <h4 className="font-semibold text-green-800">You Nailed It!</h4>
+                    <p className="text-sm text-green-700">{feedback.nailed}</p>
+                </div>
+                <div className="p-4 bg-amber-100/50 rounded-lg">
+                    <h4 className="font-semibold text-amber-800">Areas to Improve</h4>
+                    <p className="text-sm text-amber-700">{feedback.improve}</p>
+                </div>
             </CardContent>
-            <CardFooter>
-                 <Button onClick={handleSubmit} disabled={isSubmitting || !feedback.trim()}>
-                    {isSubmitting ? <RefreshCw className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
-                    Submit Feedback
-                </Button>
-            </CardFooter>
         </Card>
     );
 }
@@ -88,7 +58,7 @@ function QuizFeedback({ quizId }: { quizId: string }) {
 function useQuiz(questions: QuizQuestion[]) {
     const [shuffledQuestions, setShuffledQuestions] = useState(() => shuffleArray(questions));
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [userAnswers, setUserAnswers] = useState<string[]>(Array(questions.length).fill(''));
+    const [userAnswers, setUserAnswers] = useState<(string | null)[]>(Array(questions.length).fill(null));
     const [isFinished, setIsFinished] = useState(false);
 
     const currentQuestion = shuffledQuestions[currentQuestionIndex];
@@ -119,13 +89,13 @@ function useQuiz(questions: QuizQuestion[]) {
     const resetQuiz = useCallback(() => {
         setShuffledQuestions(shuffleArray(questions));
         setCurrentQuestionIndex(0);
-        setUserAnswers(Array(questions.length).fill(''));
+        setUserAnswers(Array(questions.length).fill(null));
         setIsFinished(false);
     }, [questions]);
 
     const score = useMemo(() => {
-        return userAnswers.reduce((correctCount, answer, index) => {
-            return answer === shuffledQuestions[index]?.correctAnswer ? correctCount + 1 : correctCount;
+        return shuffledQuestions.reduce((correctCount, question, index) => {
+            return userAnswers[index] === question.correctAnswer ? correctCount + 1 : correctCount;
         }, 0);
     }, [userAnswers, shuffledQuestions]);
 
@@ -147,7 +117,14 @@ function useQuiz(questions: QuizQuestion[]) {
 }
 
 
-function QuizView({ quiz, quizId, onRetry }: { quiz: QuizData, quizId: string, onRetry: () => void }) {
+function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) {
+    const { videoData, quizData } = useWatchPage();
+    const { firestore, user } = useFirebase();
+    const { toast } = useToast();
+    const router = useRouter();
+
+    const questions = useMemo(() => quizData?.questions || [], [quizData]);
+
     const { 
         currentQuestionIndex,
         currentQuestion,
@@ -161,9 +138,27 @@ function QuizView({ quiz, quizId, onRetry }: { quiz: QuizData, quizId: string, o
         finishQuiz,
         shuffledQuestions,
         totalQuestions
-     } = useQuiz(quiz.questions);
+     } = useQuiz(questions);
 
-    const router = useRouter();
+     // Effect to save results automatically when quiz is finished
+    useEffect(() => {
+        if (isFinished && firestore && user && videoData?.videoId) {
+            const saveResults = async () => {
+                const quizDocRef = doc(firestore, `users/${user.uid}/videos/${videoData.videoId}/quizzes`, quizId);
+                try {
+                    await updateDoc(quizDocRef, {
+                        score: score,
+                        userAnswers: userAnswers,
+                    });
+                     toast({ title: "Results Saved", description: "Your quiz results have been saved." });
+                } catch (error) {
+                    console.error("Failed to save quiz results:", error);
+                    toast({ variant: "destructive", title: "Save Failed", description: "Could not save your quiz results." });
+                }
+            };
+            saveResults();
+        }
+    }, [isFinished, firestore, user, videoData?.videoId, quizId, score, userAnswers, toast]);
     
     if (isFinished) {
         return (
@@ -191,11 +186,11 @@ function QuizView({ quiz, quizId, onRetry }: { quiz: QuizData, quizId: string, o
                             );
                         })}
                     </div>
-                    <div className="flex justify-center gap-4">
+                    <QuizResultsFeedback score={score} totalQuestions={totalQuestions} />
+                    <div className="flex justify-center gap-4 pt-4">
                         <Button onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4"/> Try Again</Button>
                         <Button variant="outline" onClick={() => router.push('/')}>Go to Homepage</Button>
                     </div>
-                    <QuizFeedback quizId={quizId} />
                 </CardContent>
             </Card>
         );
@@ -216,7 +211,7 @@ function QuizView({ quiz, quizId, onRetry }: { quiz: QuizData, quizId: string, o
             </CardHeader>
             <CardContent className="space-y-6">
                 <RadioGroup
-                    value={userAnswers[currentQuestionIndex]}
+                    value={userAnswers[currentQuestionIndex] || ''}
                     onValueChange={selectAnswer}
                     className="space-y-3"
                 >
@@ -232,11 +227,11 @@ function QuizView({ quiz, quizId, onRetry }: { quiz: QuizData, quizId: string, o
                 </RadioGroup>
 
                 <div className="flex justify-between items-center">
-                    <Button variant="outline" onClick={prevQuestion} disabled={currentQuestionIndex === 0}>Back</Button>
+                    <Button variant="outline" onClick={prevQuestion} disabled={currentQuestionIndex === 0}><ChevronLeft className="mr-2 h-4 w-4"/>Back</Button>
                     {currentQuestionIndex < totalQuestions - 1 ? (
-                        <Button onClick={nextQuestion}>Next</Button>
+                        <Button onClick={nextQuestion} disabled={userAnswers[currentQuestionIndex] === null}>Next <ChevronRight className="ml-2 h-4 w-4"/></Button>
                     ) : (
-                        <Button onClick={finishQuiz}>Finish</Button>
+                        <Button onClick={finishQuiz} disabled={userAnswers[currentQuestionIndex] === null}>Finish</Button>
                     )}
                 </div>
             </CardContent>
@@ -244,13 +239,13 @@ function QuizView({ quiz, quizId, onRetry }: { quiz: QuizData, quizId: string, o
     );
 }
 
-export function QuizPlayer({ quiz, quizId }: { quiz: QuizData, quizId: string }) {
+export function QuizPlayer({ quizId }: { quizId: string }) {
     // We need a key to force re-mounting of the component on retry
-    const [quizKey, setQuizKey] = useState(0);
+    const [quizKey, setQuizKey] = useState(Date.now());
 
     const handleRetry = () => {
-        setQuizKey(prev => prev + 1);
+        setQuizKey(Date.now());
     }
 
-    return <QuizView key={quizKey} quiz={quiz} quizId={quizId} onRetry={handleRetry} />;
+    return <QuizView key={quizKey} quizId={quizId} onRetry={handleRetry} />;
 }
