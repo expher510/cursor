@@ -6,10 +6,13 @@ export type QuizQuestion = {
 };
 
 export type QuizData = {
+  id: string;
+  videoId: string;
+  userId: string;
   questions: QuizQuestion[];
 };
 
-export const MOCK_QUIZ_DATA: QuizData = {
+export const MOCK_QUIZ_DATA: Omit<QuizData, 'id' | 'videoId' | 'userId'> = {
   questions: [
     {
       questionText: "What is the main topic of the video transcript?",
