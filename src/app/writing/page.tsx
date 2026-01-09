@@ -65,41 +65,35 @@ function WritingWorkspace() {
 
         editor.focus();
         const selection = window.getSelection();
-        if (!selection) return;
+        if (!selection || selection.rangeCount === 0) return;
 
-        // Move cursor to the end
-        const range = document.createRange();
-        range.selectNodeContents(editor);
-        range.collapse(false); // false collapses to the end
-        selection.removeAllRanges();
-        selection.addRange(range);
+        let range = selection.getRangeAt(0);
+        range.deleteContents(); // Clear any selected text
+
+        const nodeBefore = range.startContainer.nodeType === Node.TEXT_NODE
+            ? range.startContainer.textContent?.substring(0, range.startOffset)
+            : editor.innerText;
         
-        // Add a leading space if editor is not empty and doesn't end with a space
-        if (editor.innerText.length > 0 && !/\s$/.test(editor.innerText)) {
-             const space = document.createTextNode(' ');
-             range.insertNode(space);
-             range.collapse(false);
-        }
-
+        const leadingSpace = !/\s$/.test(nodeBefore || '') && (nodeBefore || '').length > 0 ? ' ' : '';
+        const trailingSpace = ' ';
+        
         if (isStyled) {
             const span = document.createElement('span');
             span.className = 'text-primary';
             span.textContent = text;
             
-            const trailingSpace = document.createTextNode(' ');
+            const leading = document.createTextNode(leadingSpace);
+            const trailing = document.createTextNode(trailingSpace);
 
+            range.insertNode(trailing);
             range.insertNode(span);
-            range.insertNode(trailingSpace);
+            range.insertNode(leading);
             
-            // Move cursor after the inserted styled text
-            range.setStartAfter(trailingSpace);
+            range.setStartAfter(trailing);
             range.collapse(true);
-
-
         } else {
-            const textNode = document.createTextNode(text);
+            const textNode = document.createTextNode(leadingSpace + text + trailingSpace);
             range.insertNode(textNode);
-            // Move cursor after the inserted text
             range.setStartAfter(textNode);
             range.collapse(true);
         }
@@ -107,6 +101,7 @@ function WritingWorkspace() {
         selection.removeAllRanges();
         selection.addRange(range);
     }
+
 
     const handleWordClick = (word: string) => {
         insertTextAtCursor(word, true);
