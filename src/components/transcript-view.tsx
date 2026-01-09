@@ -7,7 +7,7 @@ import { useWatchPage } from "@/context/watch-page-context";
 import { cn } from "@/lib/utils";
 import { useTranslationStore } from "@/hooks/use-translation-store";
 import { useMemo } from "react";
-import { Volume2, PlayCircle, PauseCircle } from "lucide-react";
+import { PlayCircle, PauseCircle } from "lucide-react";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
@@ -35,17 +35,6 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
     toggleTranslation(word, originalText, key);
   };
   
-  const speakWord = (e: React.MouseEvent, word: string) => {
-      e.stopPropagation();
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-          const utterance = new SpeechSynthesisUtterance(word);
-          utterance.lang = 'en-US';
-          window.speechSynthesis.speak(utterance);
-      }
-  };
-
-
   return (
     <div className={cn("p-4 leading-relaxed text-lg space-y-4", isRtl && "text-right")} dir={isRtl ? "rtl" : "ltr"}>
         {transcript.map((line, lineIndex) => {

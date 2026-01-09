@@ -131,10 +131,11 @@ function ReadingPracticePageContent() {
     const { firestore, user } = useFirebase();
 
     const playerRef = useRef<ReactPlayer>(null);
-    const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
-    const [volume, setVolume] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [volume, setVolume] = useState(0);
+    const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
+    const playbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 
     useEffect(() => {
@@ -145,27 +146,35 @@ function ReadingPracticePageContent() {
             if (timerRef.current) {
                 clearInterval(timerRef.current);
             }
+            if (playbackTimeoutRef.current) {
+                clearTimeout(playbackTimeoutRef.current);
+            }
         };
     }, []);
 
     const handleReady = () => {
-      setIsPlayerReady(true);
+        setIsPlayerReady(true);
+        // Start playing muted to allow seeking without user interaction issues
+        setIsPlaying(true);
     }
     
     const handlePlaySegment = useCallback((offset: number, duration: number, segmentId: string) => {
         if (!playerRef.current || !isPlayerReady) return;
 
-        // If the same segment is clicked, toggle play/pause
-        if (activeSegmentId === segmentId) {
-            setIsPlaying(prev => !prev);
-        } else {
-            // If a new segment is clicked, start playing it
-            playerRef.current.seekTo(offset / 1000, 'seconds');
-            setVolume(1);
-            setIsPlaying(true);
-            setActiveSegmentId(segmentId);
+        if (playbackTimeoutRef.current) {
+            clearTimeout(playbackTimeoutRef.current);
         }
-    }, [activeSegmentId, isPlayerReady]);
+
+        playerRef.current.seekTo(offset / 1000, 'seconds');
+        setVolume(1);
+        setActiveSegmentId(segmentId);
+        
+        playbackTimeoutRef.current = setTimeout(() => {
+            setVolume(0);
+            setActiveSegmentId(null);
+        }, duration);
+
+    }, [isPlayerReady]);
 
 
     const startRecording = async () => {
@@ -312,12 +321,13 @@ function ReadingPracticePageContent() {
                 <ReactPlayer
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={isPlayerReady && isPlaying}
+                    playing={isPlaying}
                     volume={volume}
                     onReady={handleReady}
                     controls={false}
                     width="0"
                     height="0"
+                    loop={true}
                 />
             </div>
 
@@ -379,7 +389,7 @@ function ReadingPracticePageContent() {
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
                            activeSegmentId={activeSegmentId}
-                           isPlaying={isPlaying}
+                           isPlaying={!!activeSegmentId}
                         />
                     </Card>
                 </>
@@ -443,7 +453,3 @@ export default function ReadingPage() {
       </>
   );
 }
-
-
-    
-    
