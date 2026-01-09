@@ -4,7 +4,7 @@
  * @fileOverview A flow for processing YouTube videos to extract transcripts and metadata.
  * It uses the youtube-caption-extractor library for transcripts and details.
  *
- * - processVideo - A function that takes a YouTube video ID and returns its title, description, transcript, and stats.
+ * - processVideo - A function that takes a YouTube video ID and returns its title, description, and transcript.
  * - ProcessVideoInput - The input type for the processVideo function.
  * - ProcessVideoOutput - The return type for the processVideo function.
  */
@@ -27,19 +27,10 @@ const TranscriptItemSchema = z.object({
 });
 export type TranscriptItem = z.infer<typeof TranscriptItemSchema>;
 
-const VideoStatsSchema = z.object({
-    views: z.number().optional(),
-    likes: z.number().optional(),
-    commentCount: z.number().optional(),
-}).optional();
-export type VideoStats = z.infer<typeof VideoStatsSchema>;
-
-
 const ProcessVideoOutputSchema = z.object({
   title: z.string().describe('The title of the video.'),
   description: z.string().optional().nullable().describe('The description of the video.'),
   transcript: z.array(TranscriptItemSchema).describe('The transcript of the video with timestamps.'),
-  stats: VideoStatsSchema.nullable(),
 });
 export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
 
@@ -77,7 +68,6 @@ const processVideoFlow = ai.defineFlow(
             title: details.title,
             description: details.description,
             transcript: formattedTranscript,
-            stats: null, // The new library doesn't provide stats like views/likes.
         };
 
     } catch (e: any) {

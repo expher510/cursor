@@ -1,106 +1,278 @@
+'use client';
 
-Use API keys to access APIs
-
-bookmark_border
-This page describes how to use API keys to access Google Cloud APIs and services that accept API keys.
-
-Not all Google Cloud APIs accept API keys to authorize usage. Review the documentation for the service or API that you want to use to determine whether it accepts API keys.
-
-For information about creating and managing API keys, including restricting API keys, see Manage API keys.
-
-For information about using API keys with Google Maps Platform, see the Google Maps Platform documentation. For more information about the API Keys API, see the API Keys API documentation.
-Before you begin
-Select the tab for how you plan to use the samples on this page:
-
-C#
-C++
-Go
-Node.js
-Python
-REST
-To use the Node.js samples on this page in a local development environment, install and initialize the gcloud CLI, and then set up Application Default Credentials with your user credentials.
-
-Install the Google Cloud CLI.
-
-If you're using an external identity provider (IdP), you must first sign in to the gcloud CLI with your federated identity.
-
-If you're using a local shell, then create local authentication credentials for your user account:
+import { useFirebase } from '@/firebase';
+import { collection, doc, query, addDoc, deleteDoc, getDoc, setDoc, orderBy, limit, getDocs } from 'firebase/firestore';
+import { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect } from 'react';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useMemoFirebase } from '@/firebase/provider';
+import { processVideo, type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
+import { translateWord } from '@/ai/flows/translate-word-flow';
+import { useSearchParams } from 'next/navigation';
+import { type QuizData, MOCK_QUIZ_QUESTIONS } from '@/lib/quiz-data';
+import { useToast } from '@/hooks/use-toast';
 
 
+type VocabularyItem = {
+  id: string;
+  word: string;
+  translation: string;
+  videoId: string;
+  userId: string;
+};
 
-gcloud auth application-default login
-You don't need to do this if you're using Cloud Shell.
-
-If an authentication error is returned, and you are using an external identity provider (IdP), confirm that you have signed in to the gcloud CLI with your federated identity.
-
-For more information, see Set up ADC for a local development environment in the Google Cloud authentication documentation.
-
-Using an API key with REST
-To include an API key with a REST API call, use the x-goog-api-key HTTP header, as shown in the following example:
-
-
-curl -X POST \
-    -H "X-goog-api-key: API_KEY" \
-    -H "Content-Type: application/json; charset=utf-8" \
-    -d @request.json \
-    "https://translation.googleapis.com/language/translate/v2"
-If you can't use the HTTP header, you can use the key query parameter. However, this method includes your API key in the URL, exposing your key to theft through URL scans.
-
-The following example shows how to use the key query parameter with a Cloud Natural Language API request for documents.analyzeEntities. Replace API_KEY with the key string of your API key.
+type VideoData = ProcessVideoOutput & { videoId?: string };
 
 
-POST https://language.googleapis.com/v1/documents:analyzeEntities?key=API_KEY
-Using an API key with client libraries
-This example uses the Cloud Natural Language API, which accepts API keys, to demonstrate how you would provide an API key to the library.
+type WatchPageContextType = {
+  vocabulary: VocabularyItem[];
+  savedWordsSet: Set<string>;
+  addVocabularyItem: (word: string) => void;
+  removeVocabularyItem: (id: string) => void;
+  videoData: VideoData | null;
+  quizData: QuizData | null;
+  isLoading: boolean;
+  error: string | null;
+};
 
-C#
-C++
-Go
-Node.js
-Python
-Ruby
-To run this sample, you must install the Natural Language client library.
+const WatchPageContext = createContext<WatchPageContextType | undefined>(undefined);
+
+export function WatchPageProvider({ children }: { children: ReactNode }) {
+  const { firestore, user } = useFirebase();
+  const searchParams = useSearchParams();
+  const urlVideoId = searchParams.get('v');
+  const { toast } = useToast();
+
+  const [videoData, setVideoData] = useState<VideoData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  const [activeVideoId, setActiveVideoId] = useState<string | null>(urlVideoId);
+
+  // Effect to fetch the last video ID if none is in the URL
+  useEffect(() => {
+    if (urlVideoId) {
+      setActiveVideoId(urlVideoId);
+      return;
+    }
+
+    if (user && firestore) {
+      const fetchLastVideo = async () => {
+        setIsLoading(true);
+        try {
+          const videosQuery = query(
+            collection(firestore, `users/${user.uid}/videos`),
+            orderBy("timestamp", "desc"),
+            limit(1)
+          );
+          const querySnapshot = await getDocs(videosQuery);
+          if (!querySnapshot.empty) {
+            const lastVideo = querySnapshot.docs[0];
+            if (lastVideo.id !== '_placeholder') {
+                setActiveVideoId(lastVideo.id);
+            } else {
+                setError("No videos found in your history.");
+                setIsLoading(false);
+            }
+          } else {
+             setError("No videos found in your history.");
+             setIsLoading(false);
+          }
+        } catch (e: any) {
+          console.error("Error fetching last video:", e);
+          setError("Could not load your video history.");
+          setIsLoading(false);
+        }
+      };
+      fetchLastVideo();
+    } else if (!user) {
+        setIsLoading(false);
+    }
+  }, [urlVideoId, user, firestore]);
+
+  // Effect to fetch OR process video data based on activeVideoId
+  useEffect(() => {
+    if (!activeVideoId) {
+       if (!error) { 
+         setIsLoading(false);
+       }
+      return;
+    }
+
+    if (!user || !firestore) {
+      setError("Authentication or database service is not available.");
+      setIsLoading(false);
+      return;
+    }
+
+    if (videoData?.videoId === activeVideoId) {
+        setIsLoading(false);
+        return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setVideoData(null);
+
+    async function fetchAndProcessVideoData() {
+      try {
+        const videoDocRef = doc(firestore, `users/${user!.uid}/videos`, activeVideoId);
+        const transcriptDocRef = doc(firestore, `users/${user!.uid}/videos/${activeVideoId}/transcripts`, activeVideoId);
+        const quizDocRef = doc(firestore, `users/${user.uid}/videos/${activeVideoId}/quizzes`, 'comprehensive-test');
+        
+        const videoDocSnap = await getDoc(videoDocRef);
+        const transcriptDocSnap = await getDoc(transcriptDocRef);
+
+        if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
+           toast({ variant: 'subtle', title: "Loading Existing Lesson"});
+          const combinedData: VideoData = {
+            title: videoDocSnap.data().title,
+            description: videoDocSnap.data().description,
+            transcript: transcriptDocSnap.data().content,
+            videoId: activeVideoId
+          };
+          setVideoData(combinedData);
+        } else {
+          toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
+          const result = await processVideo({ videoId: activeVideoId });
+
+          await setDoc(videoDocRef, {
+              id: activeVideoId,
+              title: result.title,
+              description: result.description,
+              userId: user.uid,
+              timestamp: Date.now(),
+          }, { merge: true });
+
+          await setDoc(transcriptDocRef, {
+              id: activeVideoId,
+              videoId: activeVideoId,
+              content: result.transcript,
+          }, { merge: true });
+
+          await setDoc(quizDocRef, {
+            id: 'comprehensive-test',
+            videoId: activeVideoId,
+            userId: user.uid,
+            questions: MOCK_QUIZ_QUESTIONS,
+          }, { merge: true });
+
+          setVideoData({ ...result, videoId: activeVideoId });
+        }
+      } catch (e: any) {
+        console.error("Error fetching or processing video data:", e);
+        setError(e.message || "An error occurred while loading video data.");
+        toast({ variant: "destructive", title: "Processing Failed", description: e.message || "Could not process the video. Please try another one." });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    fetchAndProcessVideoData();
+
+  }, [activeVideoId, user, firestore, toast]);
 
 
+  const vocabQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return query(collection(firestore, `users/${user.uid}/vocabularies`));
+  }, [user, firestore]);
+
+  const { data: allVocabulary, setData: setAllVocabulary } = useCollection<VocabularyItem>(vocabQuery);
+  
+  // Fetch Quiz Data
+  const quizQuery = useMemoFirebase(() => {
+    if (!user || !firestore || !activeVideoId) return null;
+    return query(collection(firestore, `users/${user.uid}/videos/${activeVideoId}/quizzes`));
+  }, [user, firestore, activeVideoId]);
+
+  const { data: quizzes } = useCollection<QuizData>(quizQuery);
+  const quizData = useMemo(() => (quizzes && quizzes.length > 0 ? quizzes[0] : null), [quizzes]);
 
 
+  const videoVocabulary = useMemo(() => {
+    if (!allVocabulary || !activeVideoId) return [];
+    return allVocabulary.filter(item => item.videoId === activeVideoId);
+  }, [allVocabulary, activeVideoId]);
 
-const {
-  v1: {LanguageServiceClient},
-} = require('@google-cloud/language');
 
-/**
- * Authenticates with an API key for Google Language service.
- *
- * @param {string} apiKey An API Key to use
- */
-async function authenticateWithAPIKey(apiKey) {
-  const language = new LanguageServiceClient({apiKey});
+  const savedWordsSet = useMemo(() => {
+    return new Set(videoVocabulary?.map(item => item.word) ?? []);
+  }, [videoVocabulary]);
 
-  // Alternatively:
-  // const {GoogleAuth} = require('google-auth-library');
-  // const auth = new GoogleAuth({apiKey});
-  // const language = new LanguageServiceClient({auth});
 
-  const text = 'Hello, world!';
+  const addVocabularyItem = useCallback(async (word: string) => {
+    if (!user || !firestore || !activeVideoId) return;
 
-  const [response] = await language.analyzeSentiment({
-    document: {
-      content: text,
-      type: 'PLAIN_TEXT',
-    },
-  });
+    const cleanedWord = word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,"");
+    if (!cleanedWord || savedWordsSet.has(cleanedWord)) return;
+    
+    const tempId = `temp_${Date.now()}`;
+    const optimisticItem: VocabularyItem = {
+      id: tempId,
+      word: cleanedWord,
+      translation: 'Translating...',
+      userId: user.uid,
+      videoId: activeVideoId,
+    };
 
-  console.log(`Text: ${text}`);
-  console.log(
-    `Sentiment: ${response.documentSentiment.score}, ${response.documentSentiment.magnitude}`,
+    // Optimistic UI update
+    setAllVocabulary(prev => [optimisticItem, ...(prev || [])]);
+
+    try {
+        const { translation } = await translateWord({ word: cleanedWord, sourceLang: 'en', targetLang: 'ar' });
+
+        const vocabCollectionRef = collection(firestore, `users/${user.uid}/vocabularies`);
+        const docRef = await addDoc(vocabCollectionRef, {
+            word: cleanedWord,
+            translation: translation || 'No translation found',
+            userId: user.uid,
+            videoId: activeVideoId,
+        });
+
+        // Replace temporary item with real one from Firestore
+        setAllVocabulary(prev => prev?.map(item => item.id === tempId ? { ...item, id: docRef.id, translation: translation || 'No translation found' } : item));
+
+    } catch (e: any) {
+        console.error("Failed to translate or save word", e);
+        // Revert optimistic update on failure
+        setAllVocabulary(prev => prev?.filter(item => item.id !== tempId) || null);
+    }
+
+  }, [user, firestore, activeVideoId, savedWordsSet, setAllVocabulary]);
+
+  const removeVocabularyItem = useCallback(async (id: string) => {
+      if (!firestore || !user) return;
+      if (id.startsWith('temp_')) {
+          setAllVocabulary(prev => prev?.filter(item => item.id !== id) || null);
+          return;
+      }
+      const docRef = doc(firestore, `users/${user.uid}/vocabularies`, id);
+      await deleteDoc(docRef);
+  }, [firestore, user, setAllVocabulary]);
+
+
+  const value = {
+    vocabulary: videoVocabulary,
+    savedWordsSet,
+    addVocabularyItem,
+    removeVocabularyItem,
+    videoData,
+    quizData,
+    isLoading,
+    error,
+  };
+
+  return (
+    <WatchPageContext.Provider value={value}>
+      {children}
+    </WatchPageContext.Provider>
   );
-  console.log('Successfully authenticated using the API key');
 }
 
-authenticateWithAPIKey();
-When you use API keys in your applications, ensure that they are kept secure during both storage and transmission. Publicly exposing your API keys can lead to unexpected charges on your account. For more information, see Best practices for managing API keys.
-
-What's next
-See an overview of authentication methods.
-Learn more about the API Keys API.
+export function useWatchPage() {
+  const context = useContext(WatchPageContext);
+  if (context === undefined) {
+    throw new Error('useWatchPage must be used within a WatchPageProvider');
+  }
+  return context;
+}

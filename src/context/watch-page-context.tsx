@@ -128,7 +128,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           const combinedData: VideoData = {
             title: videoDocSnap.data().title,
             description: videoDocSnap.data().description,
-            stats: videoDocSnap.data().stats,
             transcript: transcriptDocSnap.data().content,
             videoId: activeVideoId
           };
@@ -141,7 +140,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               id: activeVideoId,
               title: result.title,
               description: result.description,
-              stats: result.stats,
               userId: user.uid,
               timestamp: Date.now(),
           }, { merge: true });
