@@ -134,6 +134,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           setVideoData(combinedData);
         } else {
           const result = await processVideo({ videoId: activeVideoId });
+          
+          const transcriptText = result.transcript.map(t => t.text).join(' ');
 
           // After getting transcript, immediately generate the quiz
            const vocabForQuiz = Array.from(new Set(
@@ -144,7 +146,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             )).slice(0, 15); // Take first 15 unique words for quiz generation
           
           const quizQuestions = await generateQuiz({
-              transcript: result.transcript.map(t => t.text).join(' '),
+              transcript: transcriptText,
               vocabulary: vocabForQuiz.map(word => ({word, translation: ''})) // dummy translation for input
           });
 
@@ -292,5 +294,3 @@ export function useWatchPage() {
   }
   return context;
 }
-
-    
