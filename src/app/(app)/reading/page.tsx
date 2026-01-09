@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, Wind, Leaf, X } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, X } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -133,9 +133,8 @@ function ReadingPracticePageContent() {
 
     const playerRef = useRef<ReactPlayer>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
-    const [volume, setVolume] = useState(0); // Start muted
+    const [isAudioPlaying, setIsAudioPlaying] = useState(false);
     const [playbackRate, setPlaybackRate] = useState(1);
-    const [isAudioGloballyPlaying, setIsAudioGloballyPlaying] = useState(false);
     const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
 
 
@@ -153,19 +152,19 @@ function ReadingPracticePageContent() {
     const handlePlaySegment = useCallback((offset: number, segmentId: string) => {
         if (!playerRef.current || !isPlayerReady) return;
 
-        if (isAudioGloballyPlaying && activeSegmentId === segmentId) {
-            // If the clicked segment is already playing, pause it
-            setVolume(0);
-            setIsAudioGloballyPlaying(false);
+        const isCurrentlyPlayingThisSegment = isAudioPlaying && activeSegmentId === segmentId;
+
+        if (isCurrentlyPlayingThisSegment) {
+            // If the clicked segment is already playing, pause it.
+            setIsAudioPlaying(false);
             setActiveSegmentId(null);
         } else {
-            // If another segment is playing, or nothing is playing, play the new one
-            playerRef.current?.seekTo(offset / 1000, 'seconds');
-            setVolume(1);
-            setIsAudioGloballyPlaying(true);
+            // If it's paused or a different segment is playing, play the new one.
+            playerRef.current.seekTo(offset / 1000, 'seconds');
+            setIsAudioPlaying(true);
             setActiveSegmentId(segmentId);
         }
-    }, [isPlayerReady, isAudioGloballyPlaying, activeSegmentId]);
+    }, [isPlayerReady, isAudioPlaying, activeSegmentId]);
     
     const handleToggleSpeed = () => {
         setPlaybackRate(prev => {
@@ -326,8 +325,8 @@ function ReadingPracticePageContent() {
                 <ReactPlayer
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={true} 
-                    volume={volume}
+                    playing={isAudioPlaying} 
+                    volume={isAudioPlaying ? 1 : 0}
                     onReady={() => setIsPlayerReady(true)}
                     playbackRate={playbackRate}
                     controls={false}
@@ -393,7 +392,7 @@ function ReadingPracticePageContent() {
                            transcript={formattedTranscript} 
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
-                           isGloballyPlaying={isAudioGloballyPlaying}
+                           isGloballyPlaying={isAudioPlaying}
                            activeSegmentId={activeSegmentId}
                         />
                     </Card>
@@ -471,6 +470,8 @@ export default function ReadingPage() {
   );
 }
 
+
+    
 
     
 
