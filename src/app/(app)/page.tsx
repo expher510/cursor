@@ -1,6 +1,6 @@
 
 'use client';
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
 import { VideoHistory } from "@/components/video-history";
 import { Button } from "@/components/ui/button";
@@ -59,6 +59,7 @@ function MainContent() {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [sourceType, setSourceType] = useState<SourceType>('youtube');
+  const cardsContainerRef = useRef<HTMLDivElement>(null);
 
 
   const handleUrlChange = (newUrl: string) => {
@@ -79,6 +80,11 @@ function MainContent() {
     router.push(`/${activity}?v=${videoIdToUse}`);
   };
 
+  const handleCardsClick = () => {
+    setSourceType('cards');
+    cardsContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
 
   return (
     <>
@@ -88,14 +94,14 @@ function MainContent() {
 
       <ActivityButtons videoId={activeVideoId} isProcessing={isProcessing} onActivitySelect={(activity) => handlePracticeNavigation(activity)} />
 
-      <div className="w-full max-w-4xl pt-10">
+      <div className="w-full max-w-4xl pt-10" ref={cardsContainerRef}>
         <div className="flex justify-center mb-4">
             <div className="flex items-center gap-2 rounded-full bg-muted p-1">
                 <Button variant={sourceType === 'youtube' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'youtube' && 'bg-background shadow-sm')} onClick={() => setSourceType('youtube')}>
                     <History className="mr-2" />
                     History
                 </Button>
-                <Button variant={sourceType === 'cards' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'cards' && 'bg-background shadow-sm')} onClick={() => setSourceType('cards')}>
+                <Button variant={sourceType === 'cards' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'cards' && 'bg-background shadow-sm')} onClick={handleCardsClick}>
                     <Copy className="mr-2" />
                     Cards
                 </Button>
