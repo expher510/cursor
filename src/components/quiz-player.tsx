@@ -25,36 +25,6 @@ const shuffleArray = (array: any[]) => {
 };
 
 
-function QuizResultsFeedback({ score, totalQuestions }: { score: number, totalQuestions: number }) {
-    const feedback = {
-        nailed: "You have a great grasp of the basic concepts presented in the video!",
-        improve: "Try to pay closer attention to the specific details and terminology used."
-    };
-
-    return (
-        <Card className="w-full mt-6 bg-muted/50">
-            <CardHeader>
-                <CardTitle className="text-xl">Feedback Summary</CardTitle>
-                <CardDescription>A quick look at your performance.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                 <div className="text-center">
-                    <p className="text-sm font-medium text-muted-foreground">YOUR SCORE</p>
-                    <p className="text-5xl font-bold">{score}<span className="text-2xl text-muted-foreground">/{totalQuestions}</span></p>
-                </div>
-                <div className="p-4 bg-green-100/50 rounded-lg">
-                    <h4 className="font-semibold text-green-800">You Nailed It!</h4>
-                    <p className="text-sm text-green-700">{feedback.nailed}</p>
-                </div>
-                <div className="p-4 bg-amber-100/50 rounded-lg">
-                    <h4 className="font-semibold text-amber-800">Areas to Improve</h4>
-                    <p className="text-sm text-amber-700">{feedback.improve}</p>
-                </div>
-            </CardContent>
-        </Card>
-    );
-}
-
 function useQuiz(questions: QuizQuestion[]) {
     const [shuffledQuestions, setShuffledQuestions] = useState(() => shuffleArray(questions));
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -78,7 +48,7 @@ function useQuiz(questions: QuizQuestion[]) {
 
     const prevQuestion = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
+            setCurrentQuestionIndex(prev => prev + 1);
         }
     };
 
@@ -193,7 +163,6 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
                             );
                         })}
                     </div>
-                    <QuizResultsFeedback score={score} totalQuestions={totalQuestions} />
                     <div className="flex justify-center gap-4 pt-4">
                         <Button onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4"/> Try Again</Button>
                         <Button variant="outline" onClick={() => router.push('/')}>Go to Homepage</Button>
@@ -238,7 +207,7 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
                     {currentQuestionIndex < totalQuestions - 1 ? (
                         <Button onClick={nextQuestion} disabled={userAnswers[currentQuestionIndex] === null}>Next <ChevronRight className="ml-2 h-4 w-4"/></Button>
                     ) : (
-                        <Button onClick={finishQuiz} disabled={userAnswers[currentQuestionIndex] === null}>Finish</Button>
+                        <Button onClick={finishQuiz} disabled={userAnswers[currentQuestion_index] === null}>Finish</Button>
                     )}
                 </div>
             </CardContent>
