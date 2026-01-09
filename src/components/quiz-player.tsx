@@ -1,26 +1,23 @@
 'use client';
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, AlertTriangle, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
-import { useFirebase } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import { generateQuiz, type QuizOutput } from '@/ai/flows/quiz-flow';
+import { RefreshCw, CheckCircle, XCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
+import { MOCK_QUIZ_DATA, type QuizData } from '@/lib/quiz-data';
 
 
-// Quiz State Management
-function useQuiz(questions: QuizOutput['questions']) {
+function useQuiz(questions: QuizData['questions']) {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [userAnswers, setUserAnswers] = useState<string[]>(Array(questions.length).fill(''));
     const [isFinished, setIsFinished] = useState(false);
 
     const currentQuestion = questions[currentQuestionIndex];
-    const progress = (currentQuestionIndex / questions.length) * 100;
+    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
 
     const selectAnswer = (answer: string) => {
         const newAnswers = [...userAnswers];
@@ -36,13 +33,19 @@ function useQuiz(questions: QuizOutput['questions']) {
 
     const prevQuestion = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev + 1);
+            setCurrentQuestionIndex(prev => prev - 1);
         }
     };
 
     const finishQuiz = () => {
         setIsFinished(true);
     };
+    
+    const resetQuiz = () => {
+        setCurrentQuestionIndex(0);
+        setUserAnswers(Array(questions.length).fill(''));
+        setIsFinished(false);
+    }
 
     const score = useMemo(() => {
         return userAnswers.reduce((correctCount, answer, index) => {
@@ -61,12 +64,13 @@ function useQuiz(questions: QuizOutput['questions']) {
         nextQuestion,
         prevQuestion,
         finishQuiz,
+        resetQuiz,
         totalQuestions: questions.length,
     };
 }
 
 
-function QuizView({ quiz, onRetry }: { quiz: QuizOutput, onRetry: () => void }) {
+function QuizView({ quiz, onRetry }: { quiz: QuizData, onRetry: () => void }) {
     const { 
         currentQuestionIndex,
         currentQuestion,
@@ -110,7 +114,7 @@ function QuizView({ quiz, onRetry }: { quiz: QuizOutput, onRetry: () => void }) 
                         })}
                     </div>
                     <div className="flex justify-center gap-4">
-                        <Button onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4"/> Try Again with New Questions</Button>
+                        <Button onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4"/> Try Again</Button>
                         <Button variant="outline" onClick={() => router.push('/')}>Go to Homepage</Button>
                     </div>
                 </CardContent>
@@ -156,87 +160,18 @@ function QuizView({ quiz, onRetry }: { quiz: QuizOutput, onRetry: () => void }) 
 }
 
 export function QuizPlayer({ videoId }: { videoId: string | null }) {
-    const { firestore, user } = useFirebase();
+    const { resetQuiz, ...quizState } = useQuiz(MOCK_QUIZ_DATA.questions);
 
-    const [quiz, setQuiz] = useState<QuizOutput | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
-    const getQuiz = async () => {
-        if (!user || !firestore || !videoId) {
-            setError("Missing user, database connection, or video ID.");
-            setIsLoading(false);
-            return;
-        }
-
-        setIsLoading(true);
-        setError(null);
-        setQuiz(null);
-
-        try {
-            const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${videoId}/transcripts`, videoId);
-            const transcriptSnap = await getDoc(transcriptDocRef);
-
-            if (!transcriptSnap.exists()) {
-                throw new Error("Transcript not found for this video. Please process it from the homepage first.");
-            }
-
-            const transcriptText = transcriptSnap.data().content.map((t: any) => t.text).join(' ');
-            const generatedQuiz = await generateQuiz({ transcript: transcriptText });
-
-            if (!generatedQuiz || !generatedQuiz.questions || generatedQuiz.questions.length === 0) {
-                 throw new Error("The AI failed to generate a quiz. The content might be too short or unsuitable.");
-            }
-
-            setQuiz(generatedQuiz);
-        } catch (e: any) {
-            console.error("Error generating quiz:", e);
-            setError(e.message || "An unexpected error occurred while creating your quiz.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        getQuiz();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user, firestore, videoId]);
-
-    if (isLoading) {
+    if (!videoId) {
         return (
             <Card className="w-full max-w-md text-center mx-auto">
                  <CardHeader>
-                    <CardTitle>Generating Your Quiz</CardTitle>
-                    <CardDescription>Our AI is crafting questions based on the video...</CardDescription>
+                    <CardTitle>No Video Selected</CardTitle>
+                    <CardDescription>Please select a video to take the quiz.</CardDescription>
                 </CardHeader>
-                <CardContent className="flex justify-center items-center h-24">
-                     <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                </CardContent>
             </Card>
         );
     }
-    
-     if (error) {
-        return (
-            <Card className="w-full max-w-xl border-destructive bg-destructive/10 mx-auto">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-destructive"><AlertTriangle/> Quiz Generation Failed</CardTitle>
-                    <CardDescription className="text-destructive/80">{error}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <p>We couldn't create the quiz. This can happen if the video transcript is very short or in a format the AI can't process.</p>
-                     <Button onClick={getQuiz} variant="secondary" className="mt-4">
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Try Again
-                    </Button>
-                </CardContent>
-            </Card>
-        )
-    }
 
-    if (quiz) {
-        return <QuizView quiz={quiz} onRetry={getQuiz} />;
-    }
-
-    return null; // Should not be reached
+    return <QuizView quiz={MOCK_QUIZ_DATA} onRetry={resetQuiz} />;
 }

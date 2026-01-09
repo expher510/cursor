@@ -119,7 +119,7 @@ export function VideoWorkspace() {
             <div className="mt-4 w-full flex flex-col items-center gap-6">
                 <Button onClick={() => setIsQuizVisible(prev => !prev)} size="lg">
                     <Edit className="mr-2 h-5 w-5" />
-                    {isQuizVisible ? 'Close Quiz' : 'AI Generated Quiz'}
+                    {isQuizVisible ? 'Close Quiz' : 'Take a Quiz'}
                 </Button>
 
                 {isQuizVisible && (
