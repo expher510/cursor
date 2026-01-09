@@ -19,12 +19,10 @@ export function TranscriptView({ transcript }: TranscriptViewProps) {
   const fullText = transcript.map(line => line.text).join(' ');
 
   const handleWordClick = (word: string, originalText: string, key: string) => {
-    const isTranslated = !!translations[key];
     const isSaved = savedWordsSet.has(word);
     
-    if (isSaved && !isTranslated) {
-      // If it's a saved word, prioritize showing its translation from vocab list
-      // This part can be enhanced if vocab list translations are available here
+    if (!isSaved) {
+        addVocabularyItem(word);
     }
 
     toggleTranslation(word, originalText, key);
