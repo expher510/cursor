@@ -1,6 +1,6 @@
 'use client';
 import { AppHeader } from "@/components/app-header";
-import { useWatchPage } from "@/context/watch-page-context";
+import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, Mic, RefreshCw } from "lucide-react";
@@ -223,7 +223,7 @@ function SpeakingTestRecorder({ videoId, onTestComplete }: { videoId: string, on
     );
 }
 
-function ReadingPracticePage() {
+function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
     const [testState, setTestState] = useState<'idle' | 'testing' | 'finished'>('idle');
     const [lastAttemptId, setLastAttemptId] = useState<string | null>(null);
@@ -337,7 +337,9 @@ export default function ReadingPage() {
       <>
         <AppHeader showBackButton={true} />
         <main className="container mx-auto flex-1 p-4 md:p-6 pt-24">
-            <ReadingPracticePage />
+            <WatchPageProvider>
+                <ReadingPracticePageContent />
+            </WatchPageProvider>
         </main>
       </>
   );
