@@ -65,29 +65,43 @@ function WritingWorkspace() {
 
         editor.focus();
         const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) return;
+        if (!selection) return;
 
-        const range = selection.getRangeAt(0);
-        range.deleteContents();
+        // Move cursor to the end
+        const range = document.createRange();
+        range.selectNodeContents(editor);
+        range.collapse(false); // false collapses to the end
+        selection.removeAllRanges();
+        selection.addRange(range);
+        
+        // Add a leading space if editor is not empty and doesn't end with a space
+        if (editor.innerText.length > 0 && !/\s$/.test(editor.innerText)) {
+             const space = document.createTextNode(' ');
+             range.insertNode(space);
+             range.collapse(false);
+        }
 
         if (isStyled) {
             const span = document.createElement('span');
             span.className = 'text-primary';
             span.textContent = text;
             
-            const space = document.createTextNode(' ');
+            const trailingSpace = document.createTextNode(' ');
 
-            range.insertNode(space);
             range.insertNode(span);
+            range.insertNode(trailingSpace);
             
             // Move cursor after the inserted styled text
-            range.setStartAfter(span);
+            range.setStartAfter(trailingSpace);
+            range.collapse(true);
+
 
         } else {
             const textNode = document.createTextNode(text);
             range.insertNode(textNode);
             // Move cursor after the inserted text
             range.setStartAfter(textNode);
+            range.collapse(true);
         }
         
         selection.removeAllRanges();
@@ -95,15 +109,7 @@ function WritingWorkspace() {
     }
 
     const handleWordClick = (word: string) => {
-        const editor = editorRef.current;
-        if (editor) {
-             // Add a space before the new word if there's existing content that doesn't end with a space
-            const currentText = editor.innerText;
-            if (currentText && !/\s$/.test(currentText) && currentText.length > 0) {
-               insertTextAtCursor(' ', false);
-            }
-            insertTextAtCursor(word, true);
-        }
+        insertTextAtCursor(word, true);
         setAvailableWords(prev => prev.filter(w => w !== word));
     };
     
