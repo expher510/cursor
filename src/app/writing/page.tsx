@@ -20,6 +20,7 @@ function WritingWorkspace() {
     const [availableWords, setAvailableWords] = useState<string[]>([]);
     const [isStarted, setIsStarted] = useState(false);
     const [isGettingFeedback, setIsGettingFeedback] = useState(false);
+    const [isConfirmed, setIsConfirmed] = useState(false);
     
     const editorRef = useRef<HTMLDivElement>(null);
 
@@ -53,6 +54,7 @@ function WritingWorkspace() {
             editorRef.current.innerHTML = '';
         }
         setIsStarted(true);
+        setIsConfirmed(false);
     };
 
     const insertTextAtCursor = (text: string, isStyled: boolean) => {
@@ -110,6 +112,7 @@ function WritingWorkspace() {
         setIsStarted(false);
         setAvailableWords([]);
         setExerciseWords([]);
+        setIsConfirmed(false);
     }
 
     const getFeedback = async () => {
@@ -117,6 +120,7 @@ function WritingWorkspace() {
         // Placeholder for AI feedback flow
         await new Promise(resolve => setTimeout(resolve, 1500));
         setIsGettingFeedback(false);
+        setIsConfirmed(true);
     };
 
     if (isContextLoading) {
@@ -174,17 +178,21 @@ function WritingWorkspace() {
                 data-placeholder="Start writing or click a word bubble..."
              />
             
-            <div className="flex justify-between">
+            <div className="flex justify-between items-center min-h-[40px]">
                 <Button variant="outline" onClick={resetExercise}>Reset</Button>
-                <div>
-                  <Button onClick={getFeedback} disabled={isGettingFeedback || availableWords.length > 0}>
-                      {isGettingFeedback ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      ) : (
-                          <Sparkles className="mr-2 h-4 w-4" />
-                      )}
-                      Get Feedback
-                  </Button>
+                <div className="text-right">
+                    {isConfirmed ? (
+                        <p className="text-sm text-muted-foreground">Feedback will be sent to your email.</p>
+                    ) : (
+                        <Button onClick={getFeedback} disabled={isGettingFeedback || availableWords.length > 0}>
+                            {isGettingFeedback ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Sparkles className="mr-2 h-4 w-4" />
+                            )}
+                            Confirm
+                        </Button>
+                    )}
                 </div>
             </div>
         </div>
@@ -209,4 +217,5 @@ export default function WritingPage() {
     </>
   );
 }
+
 
