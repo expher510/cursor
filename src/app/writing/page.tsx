@@ -4,7 +4,7 @@
 import { AppHeader } from "@/components/app-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo, useRef }from "react";
+import { useState, useMemo, useRef, useEffect }from "react";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Loader2, Sparkles } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
@@ -25,6 +25,24 @@ function WritingWorkspace() {
     const [isConfirmed, setIsConfirmed] = useState(false);
     
     const editorRef = useRef<HTMLDivElement>(null);
+    const lastSelectionRef = useRef<Range | null>(null);
+
+
+    useEffect(() => {
+        const editor = editorRef.current;
+        if (!editor) return;
+
+        const handleBlur = () => {
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+                lastSelectionRef.current = selection.getRangeAt(0).cloneRange();
+            }
+        };
+
+        editor.addEventListener('blur', handleBlur);
+        return () => editor.removeEventListener('blur', handleBlur);
+    }, [isStarted]);
+
 
     const transcriptText = useMemo(() => {
         if (!videoData?.transcript) return [];
@@ -59,52 +77,66 @@ function WritingWorkspace() {
         setIsConfirmed(false);
     };
 
-    const insertTextAtCursor = (text: string, isStyled: boolean) => {
+    const insertTextAtCursor = (text: string) => {
         const editor = editorRef.current;
         if (!editor) return;
-
+        
         editor.focus();
+        
         const selection = window.getSelection();
-        if (!selection || selection.rangeCount === 0) return;
+        if (!selection) return;
 
-        let range = selection.getRangeAt(0);
-        range.deleteContents(); // Clear any selected text
+        let range: Range;
 
-        const nodeBefore = range.startContainer.nodeType === Node.TEXT_NODE
-            ? range.startContainer.textContent?.substring(0, range.startOffset)
-            : editor.innerText;
-        
-        const leadingSpace = !/\s$/.test(nodeBefore || '') && (nodeBefore || '').length > 0 ? ' ' : '';
-        const trailingSpace = ' ';
-        
-        if (isStyled) {
-            const span = document.createElement('span');
-            span.className = 'text-primary';
-            span.textContent = text;
-            
-            const leading = document.createTextNode(leadingSpace);
-            const trailing = document.createTextNode(trailingSpace);
-
-            range.insertNode(trailing);
-            range.insertNode(span);
-            range.insertNode(leading);
-            
-            range.setStartAfter(trailing);
-            range.collapse(true);
+        // Use last saved selection if available and editor is focused, otherwise create a new one
+        if (lastSelectionRef.current && document.activeElement === editor) {
+             range = lastSelectionRef.current;
+             selection.removeAllRanges();
+             selection.addRange(range);
         } else {
-            const textNode = document.createTextNode(leadingSpace + text + trailingSpace);
-            range.insertNode(textNode);
-            range.setStartAfter(textNode);
-            range.collapse(true);
+             range = document.createRange();
+             range.selectNodeContents(editor);
+             range.collapse(false); // Go to the end
+             selection.removeAllRanges();
+             selection.addRange(range);
         }
+        
+        range.deleteContents();
+
+        // Smart spacing
+        const precedingText = range.startContainer.textContent?.substring(0, range.startOffset) ?? '';
+        const needsLeadingSpace = precedingText.length > 0 && !/\s$/.test(precedingText);
+        
+        // Create styled word
+        const span = document.createElement('span');
+        span.className = 'text-primary font-semibold';
+        span.textContent = text;
+        
+        // Create text nodes for spacing
+        const leadingSpace = document.createTextNode(needsLeadingSpace ? ' ' : '');
+        const trailingSpace = document.createTextNode(' ');
+
+        // Insert nodes
+        range.insertNode(trailingSpace);
+        range.insertNode(span);
+        if (needsLeadingSpace) {
+            range.insertNode(leadingSpace);
+        }
+        
+        // Move cursor to after the inserted word and space
+        range.setStartAfter(trailingSpace);
+        range.collapse(true);
         
         selection.removeAllRanges();
         selection.addRange(range);
-    }
+
+        // Save the new cursor position
+        lastSelectionRef.current = range.cloneRange();
+    };
 
 
     const handleWordClick = (word: string) => {
-        insertTextAtCursor(word, true);
+        insertTextAtCursor(word);
         setAvailableWords(prev => prev.filter(w => w !== word));
     };
     
@@ -116,6 +148,7 @@ function WritingWorkspace() {
         setAvailableWords([]);
         setExerciseWords([]);
         setIsConfirmed(false);
+        lastSelectionRef.current = null;
     }
 
     const getFeedback = async () => {
