@@ -96,15 +96,6 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                                 >
                                     {isCurrentlyTranslating ? '...' : displayedText}
                                 </Button>
-                                <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute -top-6 right-1/2 translate-x-1/2 h-6 w-6 z-10 opacity-0 group-hover/word:opacity-100 transition-opacity"
-                                        onClick={(e) => speakWord(e, cleanedWord)}
-                                    >
-                                        <Volume2 className="h-4 w-4" />
-                                        <span className="sr-only">Speak</span>
-                                    </Button>
                                 </span>
                             );
                         })}
