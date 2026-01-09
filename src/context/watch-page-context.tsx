@@ -155,9 +155,15 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
   const { data: allVocabulary, setData: setAllVocabulary } = useCollection<VocabularyItem>(vocabQuery);
 
+  const videoVocabulary = useMemo(() => {
+    if (!allVocabulary || !activeVideoId) return [];
+    return allVocabulary.filter(item => item.videoId === activeVideoId);
+  }, [allVocabulary, activeVideoId]);
+
+
   const savedWordsSet = useMemo(() => {
-    return new Set(allVocabulary?.map(item => item.word) ?? []);
-  }, [allVocabulary]);
+    return new Set(videoVocabulary?.map(item => item.word) ?? []);
+  }, [videoVocabulary]);
 
 
   const addVocabularyItem = useCallback(async (word: string) => {
@@ -212,7 +218,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
 
   const value = {
-    vocabulary: allVocabulary ?? [],
+    vocabulary: videoVocabulary,
     savedWordsSet,
     addVocabularyItem,
     removeVocabularyItem,

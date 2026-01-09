@@ -77,17 +77,23 @@ export function VocabularyList({ layout = 'scroll' }: VocabularyListProps) {
     </div>
   );
 
-  return (
-    <div className="flex h-full rounded-lg border bg-card text-card-foreground shadow-sm flex-1 p-4">
-      {isLoading ? (
+  if (isLoading) {
+    return (
+      <div className="flex h-full rounded-lg border bg-card text-card-foreground shadow-sm flex-1 p-4">
         <div className="flex flex-wrap gap-2">
           <Skeleton className="h-10 w-24 rounded-full" />
           <Skeleton className="h-10 w-32 rounded-full" />
           <Skeleton className="h-10 w-28 rounded-full" />
         </div>
-      ) : !vocabulary || vocabulary.length === 0 ? (
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full rounded-lg border bg-card text-card-foreground shadow-sm flex-1 p-4">
+      {!vocabulary || vocabulary.length === 0 ? (
         <div className="flex w-full h-full min-h-[60px] items-center justify-center rounded-md text-center">
-          <p className="text-sm text-muted-foreground">Words you save will appear here.</p>
+          <p className="text-sm text-muted-foreground">Words you save for this video will appear here.</p>
         </div>
       ) : (
         <TooltipProvider>
