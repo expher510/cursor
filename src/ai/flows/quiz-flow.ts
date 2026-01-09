@@ -19,7 +19,7 @@ const quizGenerationPrompt = ai.definePrompt({
     name: 'quizGenerationPrompt',
     input: { schema: QuizInputSchema },
     output: { schema: QuizOutputSchema },
-    model: 'gemini-2.5-flash-lite',
+    model: 'gemini-pro',
     prompt: `
         You are an AI assistant designed to create educational content.
         Your task is to generate a multiple-choice quiz based on the provided video transcript.
