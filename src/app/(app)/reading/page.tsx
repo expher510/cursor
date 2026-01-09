@@ -94,9 +94,9 @@ function SpeakingTestFeedback({ attemptId, onRetry }: { attemptId: string; onRet
     );
 }
 
-function SpeakingTestRecorder({ videoId, onTestComplete }: { videoId: string, onTestComplete: (attemptId: string) => void }) {
+function SpeakingTestRecorder({ videoId, onTestComplete, onStart }: { videoId: string, onTestComplete: (attemptId: string) => void, onStart: () => void }) {
     const [isRecording, setIsRecording] = useState(false);
-    const [isPreparing, setIsPreparing] = useState(false);
+    const [isPreparing, setIsPreparing] = useState(true);
     const [duration, setDuration] = useState(30);
     const [timeLeft, setTimeLeft] = useState(30);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -104,31 +104,7 @@ function SpeakingTestRecorder({ videoId, onTestComplete }: { videoId: string, on
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const { toast } = useToast();
     const { firestore, user } = useFirebase();
-
-    useEffect(() => {
-        if (isRecording && timeLeft > 0) {
-            timerRef.current = setTimeout(() => {
-                setTimeLeft(prev => prev - 1);
-            }, 1000);
-        } else if (isRecording && timeLeft === 0) {
-            stopRecording();
-        }
-        return () => {
-            if (timerRef.current) clearTimeout(timerRef.current);
-        };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isRecording, timeLeft]);
-
-    const blobToBase64 = (blob: Blob): Promise<string> => {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(blob);
-            reader.onloadend = () => {
-                resolve(reader.result as string);
-            };
-            reader.onerror = error => reject(error);
-        });
-    }
+    const startAttempted = useRef(false);
 
     const startRecording = async () => {
         setIsPreparing(true);
@@ -174,10 +150,50 @@ function SpeakingTestRecorder({ videoId, onTestComplete }: { videoId: string, on
                 title: 'Microphone Access Denied',
                 description: 'Please allow microphone access in your browser settings to start the test.',
             });
+            onTestComplete(''); // Abort test
         } finally {
             setIsPreparing(false);
         }
     };
+    
+    useEffect(() => {
+        onStart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+    
+    useEffect(() => {
+        if (onStart && !startAttempted.current) {
+            startAttempted.current = true;
+            startRecording();
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [onStart]);
+
+
+    useEffect(() => {
+        if (isRecording && timeLeft > 0) {
+            timerRef.current = setTimeout(() => {
+                setTimeLeft(prev => prev - 1);
+            }, 1000);
+        } else if (isRecording && timeLeft === 0) {
+            stopRecording();
+        }
+        return () => {
+            if (timerRef.current) clearTimeout(timerRef.current);
+        };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isRecording, timeLeft]);
+
+    const blobToBase64 = (blob: Blob): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => {
+                resolve(reader.result as string);
+            };
+            reader.onerror = error => reject(error);
+        });
+    }
 
     const stopRecording = () => {
         if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
@@ -191,34 +207,28 @@ function SpeakingTestRecorder({ videoId, onTestComplete }: { videoId: string, on
 
     return (
         <div className="w-full max-w-4xl mx-auto text-center">
-            {!isRecording && !isPreparing && (
-                <Button size="lg" className="rounded-full" onClick={startRecording}>
-                    <Mic className="mr-2 h-5 w-5" />
-                    Read Out Loud
-                </Button>
-            )}
-            
-            {(isRecording || isPreparing) && (
-                 <Card className="p-6">
-                    <div className="flex flex-col items-center gap-4">
-                        {isPreparing ? (
+            <Card className="p-6">
+                <div className="flex flex-col items-center gap-4">
+                    {isPreparing ? (
+                        <div className="flex items-center gap-3">
+                            <Loader2 className="animate-spin mr-2" />
                             <p>Getting microphone ready...</p>
-                        ) : (
-                           <>
-                             <div className="flex items-center gap-3">
-                                 <div className="relative h-2 w-2">
-                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
-                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive"></span>
-                                 </div>
-                                 <p className="font-semibold text-destructive">Recording...</p>
+                        </div>
+                    ) : (
+                       <>
+                         <div className="flex items-center gap-3">
+                             <div className="relative h-2 w-2">
+                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-destructive opacity-75"></span>
+                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-destructive"></span>
                              </div>
-                             <p className="text-4xl font-bold">{timeLeft}s</p>
-                             <Progress value={progress} className="w-full" />
-                           </>
-                        )}
-                    </div>
-                </Card>
-            )}
+                             <p className="font-semibold text-destructive">Recording...</p>
+                         </div>
+                         <p className="text-4xl font-bold">{timeLeft}s</p>
+                         <Progress value={progress} className="w-full" />
+                       </>
+                    )}
+                </div>
+            </Card>
         </div>
     );
 }
@@ -229,15 +239,19 @@ function ReadingPracticePageContent() {
     const [lastAttemptId, setLastAttemptId] = useState<string | null>(null);
 
     const handleTestComplete = (attemptId: string) => {
-        setLastAttemptId(attemptId);
-        setTestState('finished');
+        if (attemptId) {
+            setLastAttemptId(attemptId);
+            setTestState('finished');
+        } else {
+            // If attemptId is empty, it means mic access was denied or failed. Reset to idle.
+            resetTest();
+        }
     };
     
     const resetTest = () => {
         setTestState('idle');
         setLastAttemptId(null);
     }
-
 
     if (isLoading) {
         return (
@@ -313,7 +327,11 @@ function ReadingPracticePageContent() {
 
             {testState === 'testing' && (
                  <div className="my-6">
-                    <SpeakingTestRecorder videoId={videoData.videoId} onTestComplete={handleTestComplete} />
+                    <SpeakingTestRecorder 
+                        videoId={videoData.videoId} 
+                        onTestComplete={handleTestComplete} 
+                        onStart={() => {}}
+                    />
                  </div>
             )}
 
