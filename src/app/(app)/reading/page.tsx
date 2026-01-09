@@ -419,6 +419,7 @@ function ReadingPracticePageContent() {
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
                            isGloballyPlaying={isAudioPlaying}
+                           activeSegmentId={activeSegmentId}
                         />
                     </Card>
                 </>
@@ -495,3 +496,4 @@ export default function ReadingPage() {
   );
 }
 
+    
