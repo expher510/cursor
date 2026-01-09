@@ -135,7 +135,7 @@ function ReadingPracticePageContent() {
     const [volume, setVolume] = useState(0); // Start muted
     const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
     const [playbackRate, setPlaybackRate] = useState(1);
-    const [isPlaying, setIsPlaying] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(true); // Video plays constantly in background
 
 
     useEffect(() => {
@@ -151,11 +151,17 @@ function ReadingPracticePageContent() {
     
     const handlePlaySegment = useCallback((offset: number, duration: number, segmentId: string) => {
         if (!playerRef.current || !isPlayerReady) return;
+        
+        // This ensures any currently playing segment is silenced before the next one starts.
+        setVolume(0); 
 
-        playerRef.current.seekTo(offset / 1000, 'seconds');
-        setIsPlaying(true);
-        setVolume(1);
-        setActiveSegmentId(segmentId);
+        // A tiny delay can help ensure the state update is processed before seeking and playing.
+        setTimeout(() => {
+            playerRef.current?.seekTo(offset / 1000, 'seconds');
+            setVolume(1);
+            setActiveSegmentId(segmentId);
+        }, 50);
+
     }, [isPlayerReady]);
     
      const handleTogglePlayPause = () => {
@@ -313,10 +319,7 @@ function ReadingPracticePageContent() {
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                     playing={isPlaying} 
                     volume={volume}
-                    onReady={() => {setIsPlayerReady(true); setIsPlaying(true)}}
-                    onPlay={() => setIsPlaying(true)}
-                    onPause={() => setIsPlaying(false)}
-                    onEnded={() => setIsPlaying(false)}
+                    onReady={() => setIsPlayerReady(true)}
                     playbackRate={playbackRate}
                     controls={false}
                     width="0"
@@ -475,3 +478,5 @@ export default function ReadingPage() {
       </>
   );
 }
+
+    
