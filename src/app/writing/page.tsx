@@ -35,12 +35,15 @@ function WritingWorkspace() {
         const handleBlur = () => {
             const selection = window.getSelection();
             if (selection && selection.rangeCount > 0) {
-                lastSelectionRef.current = selection.getRangeAt(0).cloneRange();
+                const range = selection.getRangeAt(0);
+                if (editor.contains(range.commonAncestorContainer)) {
+                    lastSelectionRef.current = range.cloneRange();
+                }
             }
         };
 
-        editor.addEventListener('blur', handleBlur);
-        return () => editor.removeEventListener('blur', handleBlur);
+        editor.addEventListener('blur', handleBlur, true);
+        return () => editor.removeEventListener('blur', handleBlur, true);
     }, [isStarted]);
 
 
@@ -85,16 +88,19 @@ function WritingWorkspace() {
         if (!selection) return;
 
         let range;
-        if (lastSelectionRef.current) {
+        if (lastSelectionRef.current && selection.rangeCount > 0) {
             range = lastSelectionRef.current;
+            selection.removeAllRanges();
+            selection.addRange(range);
+        } else if (selection.rangeCount > 0) {
+            range = selection.getRangeAt(0);
         } else {
             range = document.createRange();
             range.selectNodeContents(editor);
             range.collapse(false); // to the end
+            selection.addRange(range);
         }
-
-        selection.removeAllRanges();
-        selection.addRange(range);
+        
         range.deleteContents();
         
         const span = document.createElement('span');
@@ -108,7 +114,6 @@ function WritingWorkspace() {
         range.insertNode(span);
         range.insertNode(leadingSpace);
         
-        // Move cursor after the trailing space
         range.setStartAfter(trailingSpace);
         range.collapse(true);
 
@@ -192,8 +197,9 @@ function WritingWorkspace() {
                 contentEditable={true}
                 className={cn(
                     'min-h-[120px] w-full rounded-md border border-input bg-background px-3 py-2 text-xl ring-offset-background text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
-                    'leading-relaxed break-words'
+                    'leading-relaxed'
                 )}
+                style={{ overflowWrap: 'break-word', wordWrap: 'break-word' }}
                 data-placeholder="Start writing or click a word bubble..."
              />
             
