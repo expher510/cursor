@@ -141,12 +141,9 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
     if (isFinished) {
         return (
             <Card className="w-full max-w-3xl mx-auto">
-                <CardHeader className="text-center">
-                    <CardTitle>Quiz Results</CardTitle>
-                    <CardDescription>You scored {score} out of {totalQuestions}!</CardDescription>
-                    <p className="text-sm text-muted-foreground pt-2">
-                        سنرسل لك تقييمًا مفصلاً لأدائك عبر بريدك الإلكتروني.
-                    </p>
+                <CardHeader>
+                    <CardTitle>Quiz Review</CardTitle>
+                    <CardDescription>Check your answers below.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="space-y-4">
@@ -168,8 +165,15 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
                         })}
                     </div>
                 </CardContent>
-                <CardFooter className="flex-col gap-4 pt-4">
-                    <div className="flex justify-center gap-4">
+                <CardFooter className="flex-col gap-4 pt-6 border-t text-center">
+                     <div className="space-y-2">
+                        <h3 className="text-xl font-bold">Quiz Results</h3>
+                        <p className="text-lg">You scored {score} out of {totalQuestions}!</p>
+                        <p className="text-sm text-muted-foreground pt-2">
+                            A detailed performance evaluation will be sent to your email.
+                        </p>
+                    </div>
+                    <div className="flex justify-center gap-4 pt-4">
                         <Button onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4"/> Try Again</Button>
                         <Button variant="outline" onClick={() => router.push('/')}>Go to Homepage</Button>
                     </div>
