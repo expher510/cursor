@@ -1,14 +1,19 @@
 'use client';
-import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useState, useMemo, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { RefreshCw, CheckCircle, XCircle } from 'lucide-react';
+import { RefreshCw, CheckCircle, XCircle, Send, Check } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
 import { type QuizData, type QuizQuestion } from '@/lib/quiz-data';
+import { Textarea } from './ui/textarea';
+import { useFirebase } from '@/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+import { useWatchPage } from '@/context/watch-page-context';
+import { useToast } from '@/hooks/use-toast';
 
 // Fisher-Yates shuffle algorithm
 const shuffleArray = (array: any[]) => {
@@ -20,6 +25,65 @@ const shuffleArray = (array: any[]) => {
     return newArray;
 };
 
+function QuizFeedback({ quizId }: { quizId: string }) {
+    const { firestore, user } = useFirebase();
+    const { videoData } = useWatchPage();
+    const { toast } = useToast();
+    const [feedback, setFeedback] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isSubmitted, setIsSubmitted] = useState(false);
+
+    const handleSubmit = async () => {
+        if (!firestore || !user || !videoData?.videoId || !feedback.trim()) return;
+
+        setIsSubmitting(true);
+        try {
+            const quizDocRef = doc(firestore, `users/${user.uid}/videos/${videoData.videoId}/quizzes`, quizId);
+            await updateDoc(quizDocRef, {
+                feedback: feedback
+            });
+            setIsSubmitted(true);
+            toast({ title: "Feedback submitted!", description: "Thank you for your feedback." });
+        } catch (error) {
+            console.error("Failed to submit feedback:", error);
+            toast({ variant: "destructive", title: "Submission Failed", description: "Could not save your feedback. Please try again." });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    if (isSubmitted) {
+        return (
+             <div className="flex items-center justify-center gap-2 p-4 bg-green-100/50 rounded-lg text-green-800">
+                <CheckCircle className="h-5 w-5" />
+                <p className="font-semibold">Thank you, your feedback has been received!</p>
+             </div>
+        );
+    }
+
+    return (
+        <Card className="w-full mt-6 bg-muted/50">
+            <CardHeader>
+                <CardTitle className="text-xl">Share Your Feedback</CardTitle>
+                <CardDescription>Let us know what you thought of this quiz.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Textarea
+                    placeholder="This quiz was helpful because..."
+                    value={feedback}
+                    onChange={(e) => setFeedback(e.target.value)}
+                    rows={4}
+                />
+            </CardContent>
+            <CardFooter>
+                 <Button onClick={handleSubmit} disabled={isSubmitting || !feedback.trim()}>
+                    {isSubmitting ? <RefreshCw className="mr-2 h-4 w-4 animate-spin"/> : <Send className="mr-2 h-4 w-4"/>}
+                    Submit Feedback
+                </Button>
+            </CardFooter>
+        </Card>
+    );
+}
 
 function useQuiz(questions: QuizQuestion[]) {
     const [shuffledQuestions, setShuffledQuestions] = useState(() => shuffleArray(questions));
@@ -83,7 +147,7 @@ function useQuiz(questions: QuizQuestion[]) {
 }
 
 
-function QuizView({ quiz, onRetry }: { quiz: QuizData, onRetry: () => void }) {
+function QuizView({ quiz, quizId, onRetry }: { quiz: QuizData, quizId: string, onRetry: () => void }) {
     const { 
         currentQuestionIndex,
         currentQuestion,
@@ -131,6 +195,7 @@ function QuizView({ quiz, onRetry }: { quiz: QuizData, onRetry: () => void }) {
                         <Button onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4"/> Try Again</Button>
                         <Button variant="outline" onClick={() => router.push('/')}>Go to Homepage</Button>
                     </div>
+                    <QuizFeedback quizId={quizId} />
                 </CardContent>
             </Card>
         );
@@ -179,7 +244,7 @@ function QuizView({ quiz, onRetry }: { quiz: QuizData, onRetry: () => void }) {
     );
 }
 
-export function QuizPlayer({ quiz }: { quiz: QuizData }) {
+export function QuizPlayer({ quiz, quizId }: { quiz: QuizData, quizId: string }) {
     // We need a key to force re-mounting of the component on retry
     const [quizKey, setQuizKey] = useState(0);
 
@@ -187,5 +252,5 @@ export function QuizPlayer({ quiz }: { quiz: QuizData }) {
         setQuizKey(prev => prev + 1);
     }
 
-    return <QuizView key={quizKey} quiz={quiz} onRetry={handleRetry} />;
+    return <QuizView key={quizKey} quiz={quiz} quizId={quizId} onRetry={handleRetry} />;
 }

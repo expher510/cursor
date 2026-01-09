@@ -6,11 +6,13 @@ export type QuizQuestion = {
 };
 
 export type QuizData = {
-  id: string;
-  videoId: string;
-  userId: string;
+  id?: string; // Made optional as it's the doc id
+  videoId?: string; // Made optional as it's part of the path
+  userId?: string; // Made optional as it's part of the path
   questions: QuizQuestion[];
+  feedback?: string; // Added optional feedback field
 };
+
 
 export const MOCK_QUIZ_QUESTIONS: QuizQuestion[] = [
     {
