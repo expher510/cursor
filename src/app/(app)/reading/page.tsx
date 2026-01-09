@@ -135,7 +135,6 @@ function ReadingPracticePageContent() {
     const [isPlaying, setIsPlaying] = useState(false);
     const [volume, setVolume] = useState(0);
     const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
-    const playbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
 
     useEffect(() => {
@@ -145,9 +144,6 @@ function ReadingPracticePageContent() {
             }
             if (timerRef.current) {
                 clearInterval(timerRef.current);
-            }
-            if (playbackTimeoutRef.current) {
-                clearTimeout(playbackTimeoutRef.current);
             }
         };
     }, []);
@@ -161,18 +157,10 @@ function ReadingPracticePageContent() {
     const handlePlaySegment = useCallback((offset: number, duration: number, segmentId: string) => {
         if (!playerRef.current || !isPlayerReady) return;
 
-        if (playbackTimeoutRef.current) {
-            clearTimeout(playbackTimeoutRef.current);
-        }
-
         playerRef.current.seekTo(offset / 1000, 'seconds');
         setVolume(1);
         setActiveSegmentId(segmentId);
-        
-        playbackTimeoutRef.current = setTimeout(() => {
-            setVolume(0);
-            setActiveSegmentId(null);
-        }, duration);
+        setIsPlaying(true);
 
     }, [isPlayerReady]);
 
@@ -389,7 +377,7 @@ function ReadingPracticePageContent() {
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
                            activeSegmentId={activeSegmentId}
-                           isPlaying={!!activeSegmentId}
+                           isPlaying={isPlaying}
                         />
                     </Card>
                 </>
