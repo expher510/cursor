@@ -16,8 +16,10 @@ import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { MOCK_QUIZ_QUESTIONS } from "@/lib/quiz-data";
+import { FlashcardGrid } from "@/components/flashcard-grid";
 
 type ActivityType = 'watch' | 'reading' | 'writing';
+type SourceType = 'youtube' | 'cards';
 
 function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivitySelect: (activity: ActivityType) => void, isProcessing: boolean, videoId: string | null }) {
   const isEnabled = !!videoId;
@@ -62,6 +64,8 @@ function MainContent() {
   const router = useRouter();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [sourceType, setSourceType] = useState<SourceType>('youtube');
+
 
   const handleUrlChange = (newUrl: string) => {
     const videoId = extractYouTubeVideoId(newUrl);
@@ -91,11 +95,30 @@ function MainContent() {
       <ActivityButtons videoId={activeVideoId} isProcessing={isProcessing} onActivitySelect={(activity) => handlePracticeNavigation(activity)} />
 
       <div className="w-full max-w-4xl pt-10">
-        <VideoHistory 
-            activeVideoId={activeVideoId}
-            onVideoSelect={setActiveVideoId}
-            onVideoAction={(videoId, activity) => handlePracticeNavigation(activity, videoId)}
-        />
+        <div className="flex justify-center mb-4">
+            <div className="flex items-center gap-2 rounded-full bg-muted p-1">
+                <Button variant={sourceType === 'youtube' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'youtube' && 'bg-background shadow-sm')} onClick={() => setSourceType('youtube')}>
+                    <Youtube className="mr-2" />
+                    YouTube
+                </Button>
+                <Button variant={sourceType === 'cards' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'cards' && 'bg-background shadow-sm')} onClick={() => setSourceType('cards')}>
+                    <Copy className="mr-2" />
+                    Cards
+                </Button>
+            </div>
+        </div>
+
+        {sourceType === 'youtube' ? (
+             <VideoHistory 
+                activeVideoId={activeVideoId}
+                onVideoSelect={setActiveVideoId}
+                onVideoAction={(videoId, activity) => handlePracticeNavigation(activity, videoId)}
+            />
+        ) : (
+             <div className="mt-8">
+                <FlashcardGrid />
+            </div>
+        )}
       </div>
     </>
   );
