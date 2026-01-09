@@ -33,7 +33,7 @@ const quizGenerationPrompt = ai.definePrompt(
     name: 'quizGenerationPrompt',
     input: { schema: QuizInputSchema },
     output: { schema: z.any() }, // The prompt's direct output is raw, unvalidated JSON
-    model: googleAI.model('gemini-pro'),
+    model: googleAI.model('gemini-1.0-pro'),
     config: {
       temperature: 0.5,
     },
