@@ -5,13 +5,19 @@ export type QuizQuestion = {
   correctAnswer: string;
 };
 
+export type UserAnswer = {
+  questionText: string;
+  userAnswer: string | null;
+  correctAnswer: string;
+};
+
 export type QuizData = {
   id?: string;
   videoId?: string;
   userId?: string;
   questions: QuizQuestion[];
   score?: number;
-  userAnswers?: (string | null)[];
+  userAnswers?: UserAnswer[];
   feedback?: string; 
 };
 

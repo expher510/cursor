@@ -8,7 +8,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-import { type QuizData, type QuizQuestion } from '@/lib/quiz-data';
+import { type QuizData, type QuizQuestion, type UserAnswer } from '@/lib/quiz-data';
 import { useFirebase } from '@/firebase';
 import { doc, updateDoc } from 'firebase/firestore';
 import { useWatchPage } from '@/context/watch-page-context';
@@ -145,10 +145,17 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
         if (isFinished && firestore && user && videoData?.videoId) {
             const saveResults = async () => {
                 const quizDocRef = doc(firestore, `users/${user.uid}/videos/${videoData.videoId}/quizzes`, quizId);
+                
+                const detailedUserAnswers: UserAnswer[] = shuffledQuestions.map((question, index) => ({
+                    questionText: question.questionText,
+                    userAnswer: userAnswers[index],
+                    correctAnswer: question.correctAnswer,
+                }));
+
                 try {
                     await updateDoc(quizDocRef, {
                         score: score,
-                        userAnswers: userAnswers,
+                        userAnswers: detailedUserAnswers,
                     });
                      toast({ title: "Results Saved", description: "Your quiz results have been saved." });
                 } catch (error) {
@@ -158,7 +165,7 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
             };
             saveResults();
         }
-    }, [isFinished, firestore, user, videoData?.videoId, quizId, score, userAnswers, toast]);
+    }, [isFinished, firestore, user, videoData?.videoId, quizId, score, userAnswers, shuffledQuestions, toast]);
     
     if (isFinished) {
         return (
