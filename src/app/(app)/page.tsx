@@ -8,14 +8,10 @@ import { Headphones, BookOpen, Edit, Loader2, Youtube, Book, Copy, History } fro
 import { useRouter } from "next/navigation";
 import { extractYouTubeVideoId } from "@/lib/utils";
 import { useFirebase } from "@/firebase";
-import { doc, setDoc, getDoc } from "firebase/firestore";
 import { AppHeader } from "@/components/app-header";
-import { processVideo } from "@/ai/flows/process-video-flow";
 import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
-import { MOCK_QUIZ_QUESTIONS } from "@/lib/quiz-data";
 import { FlashcardGrid } from "@/components/flashcard-grid";
 
 type ActivityType = 'watch' | 'reading' | 'writing';

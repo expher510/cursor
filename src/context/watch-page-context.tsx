@@ -135,21 +135,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         } else {
           const result = await processVideo({ videoId: activeVideoId });
           
-          const transcriptText = result.transcript.map(t => t.text).join(' ');
-
-          // After getting transcript, immediately generate the quiz
-           const vocabForQuiz = Array.from(new Set(
-                result.transcript
-                .flatMap(item => item.text.split(' '))
-                .map(word => word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,""))
-                .filter(Boolean)
-            )).slice(0, 15); // Take first 15 unique words for quiz generation
-          
-          const quizQuestions = await generateQuiz({
-              transcript: transcriptText,
-              vocabulary: vocabForQuiz.map(word => ({word, translation: ''})) // dummy translation for input
-          });
-
           await setDoc(videoDocRef, {
               id: activeVideoId,
               title: result.title,
@@ -163,6 +148,19 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               videoId: activeVideoId,
               content: result.transcript,
           }, { merge: true });
+
+          const transcriptText = result.transcript.map(t => t.text).join(' ');
+          const vocabForQuiz = Array.from(new Set(
+                result.transcript
+                .flatMap(item => item.text.split(' '))
+                .map(word => word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,""))
+                .filter(Boolean)
+            )).slice(0, 15);
+          
+          const quizQuestions = await generateQuiz({
+              transcript: transcriptText,
+              vocabulary: vocabForQuiz.map(word => ({word, translation: ''}))
+          });
           
           const quizDocRef = doc(firestore, `users/${user.uid}/videos/${activeVideoId}/quizzes`, 'comprehensive-test');
           await setDoc(quizDocRef, {
