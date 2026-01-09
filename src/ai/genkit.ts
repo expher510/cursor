@@ -4,5 +4,5 @@ import 'dotenv/config';
 
 
 export const ai = genkit({
-  plugins: [googleAI()],
+  plugins: [googleAI({project: process.env.GOOGLE_PROJECT_ID})],
 });
