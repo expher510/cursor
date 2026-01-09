@@ -16,6 +16,7 @@ import { useFirebase } from "@/firebase";
 import { doc, getDoc, addDoc, collection } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import ReactPlayer from "react-player/youtube";
+import { cn } from "@/lib/utils";
 
 
 function SpeakingTestFeedback({ attemptId, onRetry }: { attemptId: string; onRetry: () => void }) {
@@ -150,10 +151,10 @@ function ReadingPracticePageContent() {
     
     const handlePlaySegment = useCallback((offset: number, segmentId: string) => {
         if (!playerRef.current || !isPlayerReady) return;
-
+    
         if (isAudioGloballyPlaying) {
-             setVolume(0);
-             setIsAudioGloballyPlaying(false);
+            setVolume(0);
+            setIsAudioGloballyPlaying(false);
         } else {
             playerRef.current?.seekTo(offset / 1000, 'seconds');
             setVolume(1);
@@ -310,7 +311,7 @@ function ReadingPracticePageContent() {
                 <ReactPlayer
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={isAudioGloballyPlaying} 
+                    playing={true} 
                     volume={volume}
                     onReady={() => setIsPlayerReady(true)}
                     playbackRate={playbackRate}
@@ -390,10 +391,10 @@ function ReadingPracticePageContent() {
                         <Button
                             size="icon"
                             variant={playbackRate === 1 ? "secondary" : "default"}
-                            className="h-14 w-14 rounded-full shadow-lg"
+                            className={cn("h-14 w-14 rounded-full shadow-lg", playbackRate !== 1 && "bg-green-500 hover:bg-green-600 text-white")}
                             onClick={handleToggleSpeed}
                         >
-                            <Turtle className="h-7 w-7" />
+                            <Turtle className="h-8 w-8" />
                         </Button>
                         
                         <Button
@@ -453,3 +454,5 @@ export default function ReadingPage() {
       </>
   );
 }
+
+    
