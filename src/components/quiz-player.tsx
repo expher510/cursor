@@ -48,7 +48,7 @@ function useQuiz(questions: QuizQuestion[]) {
 
     const prevQuestion = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev + 1);
+            setCurrentQuestionIndex(prev => prev - 1);
         }
     };
 
@@ -163,11 +163,13 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
                             );
                         })}
                     </div>
-                    <div className="flex justify-center gap-4 pt-4">
+                </CardContent>
+                <CardFooter className="flex-col gap-4 pt-4">
+                    <div className="flex justify-center gap-4">
                         <Button onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4"/> Try Again</Button>
                         <Button variant="outline" onClick={() => router.push('/')}>Go to Homepage</Button>
                     </div>
-                </CardContent>
+                </CardFooter>
             </Card>
         );
     }
@@ -207,7 +209,7 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
                     {currentQuestionIndex < totalQuestions - 1 ? (
                         <Button onClick={nextQuestion} disabled={userAnswers[currentQuestionIndex] === null}>Next <ChevronRight className="ml-2 h-4 w-4"/></Button>
                     ) : (
-                        <Button onClick={finishQuiz} disabled={userAnswers[currentQuestion_index] === null}>Finish</Button>
+                        <Button onClick={finishQuiz} disabled={userAnswers[currentQuestionIndex] === null}>Finish</Button>
                     )}
                 </div>
             </CardContent>
