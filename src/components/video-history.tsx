@@ -150,7 +150,6 @@ export function VideoHistory({ activeVideoId, onVideoSelect, onVideoAction }: Vi
 
     return (
         <div className="w-full">
-             <h3 className="text-xl font-bold font-headline mb-4 text-center">Or Select From Your History</h3>
              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {displayHistory.map((item) => (
                     <HistoryCard 
