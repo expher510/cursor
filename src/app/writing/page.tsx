@@ -12,9 +12,11 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
+import { useFirebase } from "@/firebase";
 
 function WritingWorkspace() {
     const { videoData, vocabulary, isLoading: isContextLoading } = useWatchPage();
+    const { user } = useFirebase();
     const [wordCount, setWordCount] = useState(10);
     const [exerciseWords, setExerciseWords] = useState<string[]>([]);
     const [availableWords, setAvailableWords] = useState<string[]>([]);
@@ -182,7 +184,10 @@ function WritingWorkspace() {
                 <Button variant="outline" onClick={resetExercise}>Reset</Button>
                 <div className="text-right">
                     {isConfirmed ? (
-                        <p className="text-sm text-muted-foreground">Feedback will be sent to your email.</p>
+                        <div className="text-sm text-muted-foreground">
+                            <p>A detailed performance evaluation will be sent to:</p>
+                            <p className="text-base font-semibold text-primary">{user?.email}</p>
+                        </div>
                     ) : (
                         <Button onClick={getFeedback} disabled={isGettingFeedback || availableWords.length > 0}>
                             {isGettingFeedback ? (
@@ -217,5 +222,6 @@ export default function WritingPage() {
     </>
   );
 }
+
 
 
