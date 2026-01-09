@@ -41,9 +41,9 @@ export async function ensureUserDocument(firestore: Firestore, user: User, auth:
 
             // 2. Create placeholder video history
             const placeholderVideos = [
-                { id: 'RGy4oJ9A-9M', title: 'Learn Arabic in 30 Minutes', timestamp: Date.now() - 1000 },
-                { id: 'IeH48i42Oug', title: 'Learn French in 30 Minutes', timestamp: Date.now() - 2000 },
-                { id: '_hG4c6-sD8', title: 'Learn Spanish for Beginners', timestamp: Date.now() - 3000 },
+                { id: 'xVOtjsqcElg', title: 'Nothing is Free', timestamp: Date.now() - 1000 },
+                { id: 'nH87D5wN2fM', title: 'Adolf Hitler\'s Story', timestamp: Date.now() - 2000 },
+                { id: 'xVOtjsqcElg', title: 'Nothing is Free', timestamp: Date.now() - 3000 },
             ];
 
             placeholderVideos.forEach(video => {
