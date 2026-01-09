@@ -62,7 +62,6 @@ function MainContent() {
   const router = useRouter();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
-  const [sourceType, setSourceType] = useState<'youtube' | 'books'>('youtube');
 
   const handleUrlChange = (newUrl: string) => {
     const videoId = extractYouTubeVideoId(newUrl);
@@ -92,32 +91,11 @@ function MainContent() {
       <ActivityButtons videoId={activeVideoId} isProcessing={isProcessing} onActivitySelect={(activity) => handlePracticeNavigation(activity)} />
       
       <div className="w-full max-w-4xl pt-10">
-        <div className="flex justify-center items-center gap-4 mb-6">
-            <Button
-                variant={sourceType === 'youtube' ? 'secondary' : 'ghost'}
-                onClick={() => setSourceType('youtube')}
-                className={cn("gap-2", sourceType === 'youtube' && "text-primary")}
-            >
-                <Youtube />
-                YouTube
-            </Button>
-             <Button
-                variant={sourceType === 'books' ? 'secondary' : 'ghost'}
-                onClick={() => setSourceType('books')}
-                className={cn("gap-2", sourceType === 'books' && "text-primary")}
-            >
-                <Book />
-                Books
-            </Button>
-        </div>
-        
-        {sourceType === 'youtube' && (
-            <VideoHistory 
-                activeVideoId={activeVideoId}
-                onVideoSelect={setActiveVideoId}
-                onVideoAction={(videoId, activity) => handlePracticeNavigation(activity, videoId)}
-            />
-        )}
+        <VideoHistory 
+            activeVideoId={activeVideoId}
+            onVideoSelect={setActiveVideoId}
+            onVideoAction={(videoId, activity) => handlePracticeNavigation(activity, videoId)}
+        />
       </div>
     </>
   );
