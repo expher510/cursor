@@ -166,9 +166,11 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
                     </div>
                 </CardContent>
                 <CardFooter className="flex-col gap-4 pt-6 border-t text-center">
-                     <div className="space-y-2">
-                        <h3 className="text-xl font-bold">Quiz Results</h3>
-                        <p className="text-lg">You scored {score} out of {totalQuestions}!</p>
+                    <div className="space-y-2">
+                        <div className="mx-auto h-24 w-24 rounded-full bg-primary/10 border-4 border-primary flex items-center justify-center">
+                            <span className="text-4xl font-bold text-primary">{score}</span>
+                        </div>
+                        <h3 className="text-xl font-bold">You scored {score} out of {totalQuestions}!</h3>
                         <p className="text-sm text-muted-foreground pt-2">
                             A detailed performance evaluation will be sent to your email.
                         </p>
