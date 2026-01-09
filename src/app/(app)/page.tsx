@@ -27,7 +27,7 @@ function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivi
   return (
     <div className="w-full max-w-4xl pt-10 text-left">
        <h2 className="text-2xl font-bold font-headline mb-6 text-center">Choose Your Practice</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => onActivitySelect('watch')}>
             {isProcessing && <Loader2 className="mr-2 animate-spin" />}
@@ -47,12 +47,6 @@ function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivi
             Start Writing
         </Button>
 
-        <Button size="lg" asChild>
-            <Link href="/flashcards">
-                <Copy className="mr-2" />
-                My Cards
-            </Link>
-        </Button>
       </div>
     </div>
   );
