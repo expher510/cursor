@@ -10,7 +10,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 
 type VocabularyListProps = {
   layout?: 'grid' | 'scroll';
@@ -22,6 +22,18 @@ export function VocabularyList({ layout = 'scroll' }: VocabularyListProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
+
+  // Effect to auto-scroll when a new word is added
+  useEffect(() => {
+    if (layout === 'scroll' && scrollRef.current) {
+        // Scroll to the end when vocabulary list grows
+        scrollRef.current.scrollTo({
+            left: scrollRef.current.scrollWidth,
+            behavior: 'smooth'
+        });
+    }
+  }, [vocabulary.length, layout]);
+
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (layout !== 'scroll' || !scrollRef.current) return;
