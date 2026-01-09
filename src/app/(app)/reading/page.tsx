@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, X } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, X, Wind, Leaf } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -136,6 +136,7 @@ function ReadingPracticePageContent() {
     const [isAudioPlaying, setIsAudioPlaying] = useState(false);
     const [playbackRate, setPlaybackRate] = useState(1);
     const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
+    const [volume, setVolume] = useState(1);
 
 
     useEffect(() => {
@@ -326,7 +327,7 @@ function ReadingPracticePageContent() {
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                     playing={isAudioPlaying} 
-                    volume={isAudioPlaying ? 1 : 0}
+                    volume={volume}
                     onReady={() => setIsPlayerReady(true)}
                     playbackRate={playbackRate}
                     controls={false}
@@ -469,10 +470,3 @@ export default function ReadingPage() {
       </>
   );
 }
-
-
-    
-
-    
-
-    
