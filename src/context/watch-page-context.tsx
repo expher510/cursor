@@ -9,8 +9,9 @@ import { useMemoFirebase } from '@/firebase/provider';
 import { processVideo, type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 import { translateWord } from '@/ai/flows/translate-word-flow';
 import { useSearchParams } from 'next/navigation';
-import { type QuizData, MOCK_QUIZ_QUESTIONS } from '@/lib/quiz-data';
+import { type QuizData } from '@/lib/quiz-data';
 import { useToast } from '@/hooks/use-toast';
+import { generateQuiz } from '@/ai/flows/generate-quiz-flow';
 
 
 type VocabularyItem = {
@@ -118,7 +119,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
       try {
         const videoDocRef = doc(firestore, `users/${user!.uid}/videos`, activeVideoId);
         const transcriptDocRef = doc(firestore, `users/${user!.uid}/videos/${activeVideoId}/transcripts`, activeVideoId);
-        const quizDocRef = doc(firestore, `users/${user.uid}/videos/${activeVideoId}/quizzes`, 'comprehensive-test');
         
         const videoDocSnap = await getDoc(videoDocRef);
         const transcriptDocSnap = await getDoc(transcriptDocRef);
@@ -136,6 +136,18 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
           const result = await processVideo({ videoId: activeVideoId });
 
+          // After getting transcript, immediately generate the quiz
+           const vocabForQuiz = result.transcript
+            .flatMap(item => item.text.split(' '))
+            .map(word => word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,""))
+            .filter((word, index, self) => word && self.indexOf(word) === index)
+            .slice(0, 10); // Take first 10 unique words for quiz generation
+          
+          const quizQuestions = await generateQuiz({
+              transcript: result.transcript.map(t => t.text).join(' '),
+              vocabulary: vocabForQuiz.map(word => ({word, translation: ''})) // dummy translation
+          });
+
           await setDoc(videoDocRef, {
               id: activeVideoId,
               title: result.title,
@@ -149,12 +161,13 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               videoId: activeVideoId,
               content: result.transcript,
           }, { merge: true });
-
+          
+          const quizDocRef = doc(firestore, `users/${user.uid}/videos/${activeVideoId}/quizzes`, 'comprehensive-test');
           await setDoc(quizDocRef, {
             id: 'comprehensive-test',
             videoId: activeVideoId,
             userId: user.uid,
-            questions: MOCK_QUIZ_QUESTIONS,
+            questions: quizQuestions.questions,
           }, { merge: true });
 
           setVideoData({ ...result, videoId: activeVideoId });
