@@ -37,10 +37,10 @@ const quizGenerationPrompt = ai.definePrompt({
     `,
     config: {
         safetySettings: [
-          {
-            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-            threshold: 'BLOCK_ONLY_HIGH',
-          },
+            {
+                category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+                threshold: 'BLOCK_ONLY_HIGH',
+            },
         ],
     },
 });
@@ -55,17 +55,23 @@ const generateQuizFlow = ai.defineFlow(
   async (input) => {
     
     try {
-        const { output } = await quizGenerationPrompt(input);
+        const response = await quizGenerationPrompt(input);
+        const output = response.output;
         
         if (!output) {
-            throw new Error("The AI model did not return any output.");
+            const finishReason = response.candidates[0]?.finishReason;
+            if (finishReason === 'SAFETY') {
+                 throw new Error("The AI blocked quiz generation due to safety policies. The video content may be too sensitive.");
+            }
+             throw new Error("The AI model did not return a valid output. The content might be too short.");
         }
 
         return output;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error calling Gemini API for quiz generation:", error);
-      throw new Error("Failed to generate quiz from Gemini API.");
+      // Re-throw the original error if it's specific, or the generic one.
+      throw new Error(error.message || "Failed to generate quiz from Gemini API.");
     }
   }
 );
