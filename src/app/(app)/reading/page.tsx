@@ -130,7 +130,6 @@ function ReadingPracticePageContent() {
     const { firestore, user } = useFirebase();
 
     useEffect(() => {
-        // Cleanup function to stop recording and streams if the component unmounts
         return () => {
             if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
                 mediaRecorderRef.current.stop();
@@ -142,7 +141,9 @@ function ReadingPracticePageContent() {
     }, []);
 
     const startRecording = async () => {
-        if (testState !== 'idle') return;
+        if (testState !== 'idle' && testState !== 'recorded') return;
+        
+        resetTest();
 
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -220,15 +221,6 @@ function ReadingPracticePageContent() {
             setTestState('recorded');
         }
     };
-
-    const handleTestComplete = (attemptId: string) => {
-        if (attemptId) {
-            setLastAttemptId(attemptId);
-            setTestState('finished');
-        } else {
-            resetTest();
-        }
-    };
     
     const resetTest = () => {
         stopRecording();
@@ -238,6 +230,10 @@ function ReadingPracticePageContent() {
         setElapsedTime(0);
         audioChunksRef.current = [];
     }
+
+    const handleRetryFromFeedback = () => {
+        resetTest();
+    };
 
     if (isLoading) {
         return (
@@ -298,32 +294,10 @@ function ReadingPracticePageContent() {
                 </div>
             )}
 
-            {testState === 'idle' && (
-                <>
-                    <div className="my-6 flex justify-center">
-                       <Button size="lg" className="rounded-full" onClick={startRecording}>
-                            <Mic className="mr-2 h-5 w-5" />
-                            Read Out Loud
-                       </Button>
-                    </div>
-                    <VocabularyList layout="scroll" />
-                </>
-            )}
-
             {testState === 'recording' && (
-                <>
-                    <div className="my-6">
-                        <RecordingIndicator elapsedTime={elapsedTime} />
-                    </div>
-                    <Button
-                        size="icon"
-                        variant="destructive"
-                        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50 animate-pulse"
-                        onClick={stopRecording}
-                    >
-                        <X className="h-8 w-8" />
-                    </Button>
-                </>
+                <div className="my-6">
+                    <RecordingIndicator elapsedTime={elapsedTime} />
+                </div>
             )}
 
              {testState === 'recorded' && recordedAudio && (
@@ -342,25 +316,57 @@ function ReadingPracticePageContent() {
 
 
             {testState === 'finished' && lastAttemptId && (
-                <SpeakingTestFeedback attemptId={lastAttemptId} onRetry={resetTest} />
+                <SpeakingTestFeedback attemptId={lastAttemptId} onRetry={handleRetryFromFeedback} />
             )}
 
             
             {testState !== 'finished' && (
-                <Card>
-                    <TranscriptView transcript={formattedTranscript} videoId={videoData.videoId} />
-                </Card>
+                <>
+                    <VocabularyList layout="scroll" />
+                    <Card>
+                        <TranscriptView transcript={formattedTranscript} videoId={videoData.videoId} />
+                    </Card>
+                </>
             )}
 
+            {/* Floating Action Buttons */}
+            {testState === 'idle' && (
+                <Button
+                    size="icon"
+                    className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50"
+                    onClick={startRecording}
+                >
+                    <Mic className="h-8 w-8" />
+                </Button>
+            )}
+
+            {testState === 'recording' && (
+                <Button
+                    size="icon"
+                    variant="destructive"
+                    className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50 animate-pulse"
+                    onClick={stopRecording}
+                >
+                    <X className="h-8 w-8" />
+                </Button>
+            )}
+            
             {testState === 'recorded' && (
-                 <div className="w-full flex justify-center items-center gap-4 mt-8 py-4 border-t">
-                    <Button variant="outline" onClick={resetTest}>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Record Again
+                <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 items-center">
+                    <Button
+                        size="icon"
+                        variant="secondary"
+                        className="h-14 w-14 rounded-full shadow-lg"
+                        onClick={startRecording}
+                    >
+                        <RefreshCw className="h-7 w-7" />
                     </Button>
-                    <Button onClick={handleConfirmUpload} size="lg">
-                        <UploadCloud className="mr-2 h-5 w-5" />
-                        Confirm & Upload
+                     <Button
+                        size="icon"
+                        className="h-16 w-16 rounded-full shadow-lg"
+                        onClick={handleConfirmUpload}
+                    >
+                        <UploadCloud className="h-8 w-8" />
                     </Button>
                 </div>
             )}
@@ -373,7 +379,7 @@ export default function ReadingPage() {
   return (
       <>
         <AppHeader showBackButton={true} />
-        <main className="container mx-auto flex-1 p-4 md:p-6 pt-24">
+        <main className="container mx-auto flex-1 p-4 md:p-6 pt-24 pb-24">
             <WatchPageProvider>
                 <ReadingPracticePageContent />
             </WatchPageProvider>
