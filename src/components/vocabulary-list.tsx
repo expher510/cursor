@@ -26,11 +26,10 @@ export function VocabularyList({ layout = 'scroll' }: VocabularyListProps) {
   // Effect to auto-scroll when a new word is added
   useEffect(() => {
     if (layout === 'scroll' && scrollRef.current) {
-        if (scrollRef.current) {
-            scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
-        }
+      const element = scrollRef.current;
+      element.scrollLeft = element.scrollWidth;
     }
-  }, [vocabulary.length, layout]);
+  }, [vocabulary, layout]);
 
 
   const handleMouseDown = (e: React.MouseEvent) => {
