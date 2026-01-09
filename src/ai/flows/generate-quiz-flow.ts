@@ -63,12 +63,13 @@ async function createVocabularyQuestions(vocabulary: z.infer<typeof VocabularyIt
     const questions = [];
     if (vocabulary.length < 4) {
         console.warn("Not enough vocabulary words to generate diverse vocabulary questions. Need at least 4 for good distractors.");
-        // We can still proceed if there's at least one word.
     }
 
     const vocabWithTranslations = (await Promise.all(
         vocabulary.map(async (item) => {
-            // Re-fetch translation to ensure it's correct and available.
+            if (item.translation) {
+                return item;
+            }
             const { translation } = await translateWord({ word: item.word, sourceLang: 'en', targetLang: 'ar' });
             if (translation) {
                 return { word: item.word, translation };
@@ -82,11 +83,8 @@ async function createVocabularyQuestions(vocabulary: z.infer<typeof VocabularyIt
 
     for (const item of vocabWithTranslations) {
         const correctAnswer = item.translation;
-
-        // Find distractors (translations of other words from the list)
         let distractorPool = vocabWithTranslations.filter(v => v.word !== item.word);
         
-        // If the pool is too small, we can't get unique distractors.
         if (distractorPool.length < 3) {
            distractorPool = [...distractorPool, ...vocabWithTranslations.filter(v => v.word !== item.word)];
         }
@@ -94,12 +92,10 @@ async function createVocabularyQuestions(vocabulary: z.infer<typeof VocabularyIt
         const shuffledDistractors = shuffleArray(distractorPool);
         const distractorOptions = shuffledDistractors.slice(0, 3).map(d => d.translation);
 
-        if (distractorOptions.length < 3) continue; // Skip if we still couldn't get enough distractors
+        if (distractorOptions.length < 3) continue;
 
-        // Combine and shuffle options
         const options = shuffleArray([correctAnswer, ...distractorOptions]);
 
-        // Create the question object
         questions.push({
             questionText: `What is the Arabic translation of the word "${item.word}"?`,
             options: options,
@@ -112,47 +108,75 @@ async function createVocabularyQuestions(vocabulary: z.infer<typeof VocabularyIt
 // Function to create fill-in-the-blank questions from the transcript
 function createFillInTheBlankQuestions(transcript: string, count: number) {
     const questions = [];
-    // Only use sentences that are between 5 and 30 words long for conciseness.
+    const usedWords = new Set<string>(); // Track words we've already used as blanks
+
+    // Filter sentences: 5-30 words, and has at least one suitable content word.
     const sentences = transcript.split(/[.?!]/).filter(s => {
-        const wordCount = s.trim().split(/\s+/).length;
-        return wordCount > 5 && wordCount < 30;
+        const words = s.trim().split(/\s+/);
+        return words.length >= 5 && words.length <= 30 &&
+               words.some(w => /^[a-zA-Z]{4,}$/.test(w));
     });
 
-    const allWords = Array.from(new Set(transcript.toLowerCase().match(/\b([a-zA-Z]{4,})\b/g) || []));
-
-    if (sentences.length === 0 || allWords.length < 4) {
-        console.warn("Not enough suitable sentences or unique words in transcript to generate fill-in-the-blank questions.");
+    // Extract all unique, lowercased content words (4+ letters) from the entire transcript.
+    const allWords = Array.from(new Set(
+        transcript.toLowerCase().match(/\b[a-zA-Z]{4,}\b/g) || []
+    ));
+    
+    if (sentences.length === 0 || allWords.length < 10) {
+        console.warn("Insufficient content for fill-in-the-blank questions.");
         return [];
     }
     
-    const shuffledSentences = shuffleArray(sentences).slice(0, count);
-
+    const shuffledSentences = shuffleArray([...sentences]);
+    
     for (const sentence of shuffledSentences) {
+        if (questions.length >= count) break;
+        
         const wordsInSentence = sentence.trim().split(/\s+/);
-        // Find a word to remove that is suitably long
-        const candidateWords = wordsInSentence.filter(w => w.length > 3);
+        
+        // Find candidate words in the sentence that are 5+ letters and haven't been used yet.
+        const candidateWords = wordsInSentence
+            .filter(w => /^[a-zA-Z]{5,}$/.test(w)) 
+            .filter(w => !usedWords.has(w.toLowerCase()));
+        
         if (candidateWords.length === 0) continue;
         
-        const wordToRemove = shuffleArray(candidateWords)[0];
-        const correctAnswer = wordToRemove.replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g, "");
+        const wordToRemove = candidateWords[0]; // Pick the first valid candidate
+        const correctAnswer = wordToRemove.toLowerCase();
         
-        if (!correctAnswer) continue;
-
-        const questionText = sentence.replace(wordToRemove, '_______');
-
-        // Get distractors from the general word bank
-        const distractors = shuffleArray(allWords.filter(w => w.toLowerCase() !== correctAnswer.toLowerCase())).slice(0, 3);
-        if (distractors.length < 3) continue;
-
+        usedWords.add(correctAnswer);
+        
+        // Create question with a blank, using a case-insensitive regex with word boundaries.
+        const questionText = sentence
+            .replace(new RegExp(`\\b${wordToRemove}\\b`, 'i'), '_______')
+            .trim();
+        
+        // Get distractors that are contextually similar (similar length).
+        const targetLength = correctAnswer.length;
+        const distractors = shuffleArray(
+            allWords.filter(w => 
+                w !== correctAnswer &&
+                Math.abs(w.length - targetLength) <= 2 &&
+                !usedWords.has(w)
+            )
+        ).slice(0, 3);
+        
+        if (distractors.length < 3) {
+            // If we can't find enough similar-length distractors, fall back to any random word.
+            const fallbackDistractors = shuffleArray(allWords.filter(w => w !== correctAnswer)).slice(0, 3);
+            if (fallbackDistractors.length < 3) continue; // Still not enough, skip.
+            distractors.push(...fallbackDistractors.slice(0, 3 - distractors.length));
+        };
+        
         const options = shuffleArray([correctAnswer, ...distractors]);
-
+        
         questions.push({
             questionText,
             options,
             correctAnswer,
         });
     }
-
+    
     return questions;
 }
 
@@ -166,13 +190,11 @@ const generateQuizFlow = ai.defineFlow(
   },
   async ({ transcript, vocabulary }) => {
     
-    // Generate both types of questions in parallel
     const [vocabQuestions, fillInBlankQuestions] = await Promise.all([
         createVocabularyQuestions(vocabulary),
-        createFillInTheBlankQuestions(transcript, 7) // Generate 7 fill-in-the-blank questions
+        createFillInTheBlankQuestions(transcript, 7)
     ]);
 
-    // Combine and shuffle all questions
     const allQuestions = shuffleArray([...vocabQuestions, ...fillInBlankQuestions]);
     
     return { questions: allQuestions };
