@@ -132,7 +132,6 @@ function ReadingPracticePageContent() {
 
     const playerRef = useRef<ReactPlayer>(null);
     const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
-    const segmentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [volume, setVolume] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -145,9 +144,6 @@ function ReadingPracticePageContent() {
             }
             if (timerRef.current) {
                 clearInterval(timerRef.current);
-            }
-            if (segmentTimeoutRef.current) {
-                clearTimeout(segmentTimeoutRef.current);
             }
         };
     }, []);
@@ -165,6 +161,7 @@ function ReadingPracticePageContent() {
                 // If a new segment is clicked, start playing it from its offset
                 playerRef.current.seekTo(offset / 1000, 'seconds');
                 setActiveSegmentId(segmentId);
+                setVolume(1);
                 setIsPlaying(true);
             }
         }
@@ -316,7 +313,7 @@ function ReadingPracticePageContent() {
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                     playing={isPlayerReady && isPlaying}
-                    volume={1}
+                    volume={volume}
                     onReady={handleReady}
                     controls={false}
                     width="0"
@@ -447,3 +444,5 @@ export default function ReadingPage() {
   );
 }
 
+
+    
