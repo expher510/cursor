@@ -14,10 +14,11 @@ type TranscriptViewProps = {
   videoId: string;
   onPlaySegment?: (offset: number, duration: number, segmentId: string) => void;
   activeSegmentId?: string | null;
+  isPlaying?: boolean;
 };
 
 
-export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegmentId }: TranscriptViewProps) {
+export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegmentId, isPlaying }: TranscriptViewProps) {
   const { addVocabularyItem, savedWordsSet } = useWatchPage();
   const { translations, toggleTranslation, isTranslating } = useTranslationStore();
 
@@ -49,7 +50,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
     <div className={cn("p-4 leading-relaxed text-lg space-y-4", isRtl && "text-right")} dir={isRtl ? "rtl" : "ltr"}>
         {transcript.map((line, lineIndex) => {
             const segmentId = `${videoId}-${lineIndex}`;
-            const isPlaying = activeSegmentId === segmentId;
+            const isActive = activeSegmentId === segmentId;
 
             return (
                 <div key={line.offset} className="flex items-start gap-3">
@@ -60,7 +61,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                             className="h-7 w-7 mt-1 text-muted-foreground hover:text-primary"
                             onClick={() => onPlaySegment(line.offset, line.duration, segmentId)}
                         >
-                            {isPlaying ? <PauseCircle className="h-5 w-5 text-primary" /> : <PlayCircle className="h-5 w-5" />}
+                            {isActive && isPlaying ? <PauseCircle className="h-5 w-5 text-primary" /> : <PlayCircle className="h-5 w-5" />}
                         </Button>
                     )}
                     <p className="flex-1">

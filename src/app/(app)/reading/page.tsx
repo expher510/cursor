@@ -135,6 +135,7 @@ function ReadingPracticePageContent() {
     const segmentTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [volume, setVolume] = useState(0);
+    const [isPlaying, setIsPlaying] = useState(false);
 
 
     useEffect(() => {
@@ -157,25 +158,15 @@ function ReadingPracticePageContent() {
     
     const handlePlaySegment = useCallback((offset: number, duration: number, segmentId: string) => {
         if (playerRef.current) {
-            if (segmentTimeoutRef.current) {
-                clearTimeout(segmentTimeoutRef.current);
-            }
-
+            // If the same segment is clicked again, toggle play/pause
             if (activeSegmentId === segmentId) {
-                setActiveSegmentId(null);
-                setVolume(0);
-                return;
+                setIsPlaying(prev => !prev);
+            } else {
+                // If a new segment is clicked, start playing it from its offset
+                playerRef.current.seekTo(offset / 1000, 'seconds');
+                setActiveSegmentId(segmentId);
+                setIsPlaying(true);
             }
-
-            const startTimeInSeconds = offset / 1000;
-            playerRef.current.seekTo(startTimeInSeconds, 'seconds');
-            setVolume(1);
-            setActiveSegmentId(segmentId);
-
-            segmentTimeoutRef.current = setTimeout(() => {
-                setVolume(0);
-                setActiveSegmentId(null);
-            }, duration);
         }
     }, [activeSegmentId]);
 
@@ -324,8 +315,8 @@ function ReadingPracticePageContent() {
                 <ReactPlayer
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={isPlayerReady}
-                    volume={volume}
+                    playing={isPlayerReady && isPlaying}
+                    volume={1}
                     onReady={handleReady}
                     controls={false}
                     width="0"
@@ -391,6 +382,7 @@ function ReadingPracticePageContent() {
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
                            activeSegmentId={activeSegmentId}
+                           isPlaying={isPlaying}
                         />
                     </Card>
                 </>
@@ -455,4 +447,3 @@ export default function ReadingPage() {
   );
 }
 
-    
