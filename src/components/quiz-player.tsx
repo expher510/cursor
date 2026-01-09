@@ -49,7 +49,7 @@ function useQuiz(questions: QuizQuestion[]) {
 
     const prevQuestion = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev + 1);
+            setCurrentQuestionIndex(prev => prev - 1);
         }
     };
 
@@ -128,7 +128,7 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
                         score: score,
                         userAnswers: detailedUserAnswers,
                     });
-                     toast({ title: "Results Saved", description: "Your quiz results have been saved." });
+                     toast({ title: "Results Saved", description: "Your quiz results have been saved automatically." });
                 } catch (error) {
                     console.error("Failed to save quiz results:", error);
                     toast({ variant: "destructive", title: "Save Failed", description: "Could not save your quiz results." });
@@ -172,7 +172,7 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
                             <span className="text-3xl font-bold text-primary">{score} / {totalQuestions}</span>
                         </div>
                         <p className="text-sm text-muted-foreground pt-2">
-                            A detailed performance evaluation will be sent to your email.
+                            A detailed performance evaluation will be sent to: {user?.email}
                         </p>
                     </div>
                     <div className="flex justify-center gap-4 pt-4">
