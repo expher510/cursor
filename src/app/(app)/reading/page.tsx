@@ -1,10 +1,9 @@
-
 'use client';
 import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, X, UploadCloud, PlayCircle, PauseCircle, Play, Pause, Wind } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, X, UploadCloud, Play, Pause, Wind } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,6 @@ import { Progress } from "@/components/ui/progress";
 import { useFirebase } from "@/firebase";
 import { doc, getDoc, addDoc, collection } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
 import ReactPlayer from "react-player/youtube";
 import {
   DropdownMenu,
@@ -158,20 +156,21 @@ function ReadingPracticePageContent() {
             }
         };
     }, []);
-
-    const handleReady = () => {
-        setIsPlayerReady(true);
-    }
     
     const handlePlaySegment = useCallback((offset: number, duration: number, segmentId: string) => {
         if (!playerRef.current || !isPlayerReady) return;
     
-        playerRef.current.seekTo(offset / 1000, 'seconds');
-        setVolume(1);
-        setIsPlaying(true);
-        setActiveSegmentId(segmentId);
-
-    }, [isPlayerReady]);
+        // If this segment is already active and playing, pause it.
+        if (isPlaying && activeSegmentId === segmentId) {
+            setIsPlaying(false);
+        } else {
+            // Otherwise, play the new segment.
+            playerRef.current.seekTo(offset / 1000, 'seconds');
+            setVolume(1);
+            setIsPlaying(true);
+            setActiveSegmentId(segmentId);
+        }
+    }, [isPlayerReady, isPlaying, activeSegmentId]);
 
 
     const startRecording = async () => {
@@ -320,7 +319,8 @@ function ReadingPracticePageContent() {
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                     playing={isPlaying}
                     volume={volume}
-                    onReady={handleReady}
+                    onReady={() => setIsPlayerReady(true)}
+                    onEnded={() => setIsPlaying(false)}
                     playbackRate={playbackRate}
                     controls={false}
                     width="0"
@@ -419,6 +419,7 @@ function ReadingPracticePageContent() {
                             variant="secondary"
                             className="h-14 w-14 rounded-full shadow-lg"
                             onClick={() => setIsPlaying(prev => !prev)}
+                            disabled={!activeSegmentId}
                         >
                             {isPlaying ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
                         </Button>
@@ -479,5 +480,3 @@ export default function ReadingPage() {
       </>
   );
 }
-
-    

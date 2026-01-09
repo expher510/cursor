@@ -7,7 +7,7 @@ import { useWatchPage } from "@/context/watch-page-context";
 import { cn } from "@/lib/utils";
 import { useTranslationStore } from "@/hooks/use-translation-store";
 import { useMemo } from "react";
-import { PlayCircle, PauseCircle } from "lucide-react";
+import { Play, Pause } from "lucide-react";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
@@ -50,7 +50,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                             className="h-7 w-7 mt-1 text-muted-foreground hover:text-primary"
                             onClick={() => onPlaySegment(line.offset, line.duration, segmentId)}
                         >
-                            {isActive && isPlaying ? <PauseCircle className="h-5 w-5 text-primary" /> : <PlayCircle className="h-5 w-5" />}
+                            {isActive && isPlaying ? <Pause className="h-5 w-5 text-primary" /> : <Play className="h-5 w-5" />}
                         </Button>
                     )}
                     <p className="flex-1">
