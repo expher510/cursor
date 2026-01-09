@@ -18,5 +18,4 @@ export type QuizData = {
   questions: QuizQuestion[];
   score?: number;
   userAnswers?: UserAnswer[];
-  feedback?: string; 
 };

@@ -117,7 +117,7 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
             const saveResults = async () => {
                 const quizDocRef = doc(firestore, `users/${user.uid}/videos/${videoData.videoId}/quizzes`, quizId);
                 
-                const detailedUserAnswers: Omit<UserAnswer, 'id'>[] = shuffledQuestions.map((question, index) => ({
+                const detailedUserAnswers: UserAnswer[] = shuffledQuestions.map((question, index) => ({
                     questionText: question.questionText,
                     userAnswer: userAnswers[index],
                     correctAnswer: question.correctAnswer,
