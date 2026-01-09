@@ -134,8 +134,7 @@ function ReadingPracticePageContent() {
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const [volume, setVolume] = useState(0); // Start muted
     const [playbackRate, setPlaybackRate] = useState(1);
-    const [isPlaying, setIsPlaying] = useState(true); // Video plays constantly in background
-    const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
+    const [isPlaying, setIsPlaying] = useState(true);
     const [isAudioGloballyPlaying, setIsAudioGloballyPlaying] = useState(false);
 
 
@@ -150,7 +149,7 @@ function ReadingPracticePageContent() {
         };
     }, []);
     
-    const handlePlaySegment = useCallback((offset: number, segmentId: string) => {
+    const handlePlaySegment = useCallback((offset: number) => {
         if (!playerRef.current || !isPlayerReady) return;
 
         if (isAudioGloballyPlaying) {
@@ -161,10 +160,9 @@ function ReadingPracticePageContent() {
             setVolume(1);
             setIsAudioGloballyPlaying(true);
         }
-
     }, [isPlayerReady, isAudioGloballyPlaying]);
     
-     const handleTogglePlayPause = () => {
+    const handleTogglePlayPause = () => {
         setVolume(prev => prev > 0 ? 0 : 1);
     };
     
@@ -403,15 +401,6 @@ function ReadingPracticePageContent() {
                             <Turtle className="h-7 w-7" />
                         </Button>
                         
-                        <Button
-                            size="icon"
-                            variant="secondary"
-                            className="h-14 w-14 rounded-full shadow-lg"
-                            onClick={handleTogglePlayPause}
-                        >
-                            {volume > 0 ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
-                        </Button>
-
                         <Button
                             size="icon"
                             className="h-16 w-16 rounded-full shadow-lg"
