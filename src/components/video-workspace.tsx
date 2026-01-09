@@ -5,12 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { AlertTriangle, Edit, Eye, EyeOff } from "lucide-react";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
-import Link from "next/link";
 import ReactPlayer from 'react-player/youtube';
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { CaptionView } from "./caption-view";
 import { VocabularyList } from "./vocabulary-list";
 import { Logo } from "./logo";
+import { QuizPlayer } from "./quiz-player";
 
 
 function LoadingState() {
@@ -39,9 +39,6 @@ function ErrorState({ message }: { message: string }) {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">{message}</p>
-          <Button asChild variant="secondary" className="mt-4">
-            <Link href="/">Go to Homepage</Link>
-          </Button>
         </CardContent>
       </Card>
     </div>
@@ -52,6 +49,7 @@ export function VideoWorkspace() {
   const { videoData, isLoading, error } = useWatchPage();
   const [currentTime, setCurrentTime] = useState(0);
   const [showTranscript, setShowTranscript] = useState(true);
+  const [isQuizVisible, setIsQuizVisible] = useState(false);
 
   if (isLoading) {
     return <LoadingState />;
@@ -105,7 +103,7 @@ export function VideoWorkspace() {
                     className="absolute top-2 right-2 z-10 text-muted-foreground hover:text-foreground"
                     onClick={() => setShowTranscript(!showTranscript)}
                 >
-                    {showTranscript ? <Eye className="h-5 w-5" /> : <EyeOff className="h-5 w-5" />}
+                    {showTranscript ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                     <span className="sr-only">{showTranscript ? "Hide transcript" : "Show transcript"}</span>
                 </Button>
                 
@@ -118,13 +116,17 @@ export function VideoWorkspace() {
                  <VocabularyList layout="scroll" />
             </div>
         
-            <div className="mt-4">
-                <Button asChild size="lg">
-                <Link href={`/quiz?v=${videoData.videoId}`}>
+            <div className="mt-4 w-full flex flex-col items-center gap-6">
+                <Button onClick={() => setIsQuizVisible(prev => !prev)} size="lg">
                     <Edit className="mr-2 h-5 w-5" />
-                    AI Generated Quiz
-                </Link>
+                    {isQuizVisible ? 'Close Quiz' : 'AI Generated Quiz'}
                 </Button>
+
+                {isQuizVisible && (
+                    <div className="w-full">
+                        <QuizPlayer videoId={videoData.videoId} />
+                    </div>
+                )}
             </div>
         </div>
     </div>

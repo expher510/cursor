@@ -1,7 +1,5 @@
 'use client';
-import { Suspense, useEffect, useState, useMemo } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { AppHeader } from "@/components/app-header";
+import { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertTriangle, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
@@ -12,6 +10,7 @@ import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 
 // Quiz State Management
@@ -37,7 +36,7 @@ function useQuiz(questions: QuizOutput['questions']) {
 
     const prevQuestion = () => {
         if (currentQuestionIndex > 0) {
-            setCurrentQuestionIndex(prev => prev - 1);
+            setCurrentQuestionIndex(prev => prev + 1);
         }
     };
 
@@ -86,7 +85,7 @@ function QuizView({ quiz, onRetry }: { quiz: QuizOutput, onRetry: () => void }) 
     
     if (isFinished) {
         return (
-            <Card className="w-full max-w-3xl">
+            <Card className="w-full max-w-3xl mx-auto">
                 <CardHeader className="text-center">
                     <CardTitle>Quiz Results</CardTitle>
                     <CardDescription>You scored {score} out of {totalQuestions}!</CardDescription>
@@ -120,7 +119,7 @@ function QuizView({ quiz, onRetry }: { quiz: QuizOutput, onRetry: () => void }) 
     }
 
     return (
-        <Card className="w-full max-w-3xl">
+        <Card className="w-full max-w-3xl mx-auto">
             <CardHeader>
                 <Progress value={progress} className="w-full mb-4" />
                 <CardTitle>Question {currentQuestionIndex + 1}/{totalQuestions}</CardTitle>
@@ -156,9 +155,7 @@ function QuizView({ quiz, onRetry }: { quiz: QuizOutput, onRetry: () => void }) 
     );
 }
 
-function QuizGenerator() {
-    const searchParams = useSearchParams();
-    const videoId = searchParams.get('v');
+export function QuizPlayer({ videoId }: { videoId: string | null }) {
     const { firestore, user } = useFirebase();
 
     const [quiz, setQuiz] = useState<QuizOutput | null>(null);
@@ -207,7 +204,7 @@ function QuizGenerator() {
 
     if (isLoading) {
         return (
-            <Card className="w-full max-w-md text-center">
+            <Card className="w-full max-w-md text-center mx-auto">
                  <CardHeader>
                     <CardTitle>Generating Your Quiz</CardTitle>
                     <CardDescription>Our AI is crafting questions based on the video...</CardDescription>
@@ -221,7 +218,7 @@ function QuizGenerator() {
     
      if (error) {
         return (
-            <Card className="w-full max-w-xl border-destructive bg-destructive/10">
+            <Card className="w-full max-w-xl border-destructive bg-destructive/10 mx-auto">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-destructive"><AlertTriangle/> Quiz Generation Failed</CardTitle>
                     <CardDescription className="text-destructive/80">{error}</CardDescription>
@@ -242,18 +239,4 @@ function QuizGenerator() {
     }
 
     return null; // Should not be reached
-}
-
-
-export default function QuizPage() {
-  return (
-    <>
-      <AppHeader showBackButton={true} />
-      <main className="container mx-auto pt-24 flex flex-col items-center gap-8 px-4 pb-10">
-        <Suspense fallback={<Loader2 className="h-8 w-8 animate-spin text-primary" />}>
-            <QuizGenerator />
-        </Suspense>
-      </main>
-    </>
-  );
 }
