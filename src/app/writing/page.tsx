@@ -47,7 +47,6 @@ function WritingWorkspace() {
     const transcriptText = useMemo(() => {
         if (!videoData?.transcript) return [];
         const fullText = videoData.transcript.map(t => t.text).join(' ');
-        // Get unique words from transcript, ensuring only alphabetical words are matched
         return Array.from(new Set(fullText.toLowerCase().match(/\b([a-zA-Z]+)\b/g) || []));
     }, [videoData]);
     
@@ -80,32 +79,28 @@ function WritingWorkspace() {
     const insertTextAtCursor = (text: string) => {
         const editor = editorRef.current;
         if (!editor) return;
-        
+
         editor.focus();
-        
         const selection = window.getSelection();
         if (!selection) return;
 
-        let range: Range;
-
-        if (lastSelectionRef.current && document.activeElement === editor) {
-             range = lastSelectionRef.current;
-             selection.removeAllRanges();
-             selection.addRange(range);
+        let range;
+        if (lastSelectionRef.current) {
+            range = lastSelectionRef.current;
         } else {
-             range = document.createRange();
-             range.selectNodeContents(editor);
-             range.collapse(false); // Go to the end
-             selection.removeAllRanges();
-             selection.addRange(range);
+            range = document.createRange();
+            range.selectNodeContents(editor);
+            range.collapse(false); // to the end
         }
-        
-        range.deleteContents();
 
+        selection.removeAllRanges();
+        selection.addRange(range);
+        range.deleteContents();
+        
         const span = document.createElement('span');
         span.className = 'text-primary font-semibold';
         span.textContent = text;
-        
+
         const leadingSpace = document.createTextNode(' ');
         const trailingSpace = document.createTextNode(' ');
 
@@ -113,13 +108,13 @@ function WritingWorkspace() {
         range.insertNode(span);
         range.insertNode(leadingSpace);
         
+        // Move cursor after the trailing space
         range.setStartAfter(trailingSpace);
         range.collapse(true);
-        
+
         selection.removeAllRanges();
         selection.addRange(range);
-        
-        lastSelectionRef.current = range.cloneRange();
+        lastSelectionRef.current = range;
     };
 
 
