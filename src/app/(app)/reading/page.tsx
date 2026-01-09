@@ -153,19 +153,19 @@ function ReadingPracticePageContent() {
     }
     
     const handlePlaySegment = useCallback((offset: number, duration: number, segmentId: string) => {
-        if (playerRef.current) {
-            // If the same segment is clicked again, toggle play/pause
-            if (activeSegmentId === segmentId) {
-                setIsPlaying(prev => !prev);
-            } else {
-                // If a new segment is clicked, start playing it from its offset
-                playerRef.current.seekTo(offset / 1000, 'seconds');
-                setActiveSegmentId(segmentId);
-                setVolume(1);
-                setIsPlaying(true);
-            }
+        if (!playerRef.current || !isPlayerReady) return;
+
+        // If the same segment is clicked, toggle play/pause
+        if (activeSegmentId === segmentId) {
+            setIsPlaying(prev => !prev);
+        } else {
+            // If a new segment is clicked, start playing it
+            playerRef.current.seekTo(offset / 1000, 'seconds');
+            setVolume(1);
+            setIsPlaying(true);
+            setActiveSegmentId(segmentId);
         }
-    }, [activeSegmentId]);
+    }, [activeSegmentId, isPlayerReady]);
 
 
     const startRecording = async () => {
@@ -445,4 +445,5 @@ export default function ReadingPage() {
 }
 
 
+    
     
