@@ -2,9 +2,7 @@
 'use server';
 /**
  * @fileOverview A flow for generating a multiple-choice quiz from a video transcript.
- * This file demonstrates a separation of concerns:
- * 1. The AI's job is to generate a raw, structured JSON object.
- * 2. The application's job is to parse and validate that JSON into a strict, type-safe object.
+ * This file now uses the @google/generative-ai SDK directly for robust interaction.
  *
  * - generateQuiz - A function that takes a video transcript and returns a validated set of quiz questions.
  */
@@ -13,6 +11,7 @@ import { ai } from '@/ai/genkit';
 import { QuizInputSchema, QuizOutputSchema, type QuizInput, type QuizOutput } from '@/ai/schemas/quiz-schema';
 import 'dotenv/config';
 import { z } from 'zod';
+import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from '@google/generative-ai';
 
 // This is a wrapper function that we will call from our components.
 export async function generateQuiz(input: QuizInput): Promise<QuizOutput> {
@@ -20,8 +19,6 @@ export async function generateQuiz(input: QuizInput): Promise<QuizOutput> {
   const rawQuizData = await generateQuizFlow(input);
 
   // 2. Parse and validate the raw data against our strict application schema.
-  // This ensures the data is safe and in the expected format before being used.
-  // This is the "application-side" logic.
   const validationResult = QuizOutputSchema.safeParse(rawQuizData);
 
   if (!validationResult.success) {
@@ -32,60 +29,22 @@ export async function generateQuiz(input: QuizInput): Promise<QuizOutput> {
   return validationResult.data;
 }
 
-// Intermediate schema for what we ask the AI to generate.
-// This can be slightly looser than our final application schema.
-const GeminiQuizOutputSchema = z.object({
-  questions: z.array(z.object({
-    questionText: z.string(),
-    options: z.array(z.string()),
-    correctAnswer: z.string(),
-  })),
-});
+const quizPrompt = `
+    You are an AI assistant designed to create educational content.
+    Your task is to generate a multiple-choice quiz based on the provided video transcript.
 
+    Please adhere to the following instructions:
+    1.  Generate exactly 5 multiple-choice questions.
+    2.  Each question must have exactly 4 possible answers.
+    3.  Only one answer per question can be correct.
+    4.  The questions should test comprehension of the main topics in the transcript, not just simple word recall.
+    5.  The entire output must be a valid JSON object. Do not include any extra text, explanations, or markdown.
 
-const quizGenerationPrompt = ai.definePrompt({
-    name: 'quizGenerationPrompt',
-    input: { schema: QuizInputSchema },
-    // We tell the AI to generate JSON that loosely matches this shape.
-    output: { format: 'json', schema: GeminiQuizOutputSchema },
-    model: 'gemini-pro',
-    prompt: `
-        You are an AI assistant designed to create educational content.
-        Your task is to generate a multiple-choice quiz based on the provided video transcript.
-
-        Please adhere to the following instructions:
-        1.  Generate exactly 5 multiple-choice questions.
-        2.  Each question must have exactly 4 possible answers.
-        3.  Only one answer per question can be correct.
-        4.  The questions should test comprehension of the main topics in the transcript, not just simple word recall.
-        5.  The entire output must be a valid JSON object. Do not include any extra text, explanations, or markdown.
-
-        Here is the transcript:
-        ---
-        {{{transcript}}}
-        ---
-    `,
-    config: {
-        safetySettings: [
-            {
-                category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-                threshold: 'BLOCK_ONLY_HIGH',
-            },
-             {
-                category: 'HARM_CATEGORY_HATE_SPEECH',
-                threshold: 'BLOCK_ONLY_HIGH',
-            },
-            {
-                category: 'HARM_CATEGORY_HARASSMENT',
-                threshold: 'BLOCK_ONLY_HIGH',
-            },
-            {
-                category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-                threshold: 'BLOCK_ONLY_HIGH',
-            },
-        ],
-    },
-});
+    Here is the transcript:
+    ---
+    {{{transcript}}}
+    ---
+`;
 
 
 const generateQuizFlow = ai.defineFlow(
@@ -95,24 +54,53 @@ const generateQuizFlow = ai.defineFlow(
     // The flow's output is the raw, unvalidated object from the AI.
     outputSchema: z.any(),
   },
-  async (input) => {
+  async ({ transcript }) => {
     
+    // Initialize the GoogleGenerativeAI client directly
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        throw new Error("GEMINI_API_KEY environment variable not set.");
+    }
+    const genAI = new GoogleGenerativeAI(apiKey);
+
+    const safetySettings = [
+        {
+            category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        },
+        {
+            category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        },
+        {
+            category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        },
+        {
+            category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+            threshold: HarmBlockThreshold.BLOCK_ONLY_HIGH,
+        },
+    ];
+
     try {
-        // This is the direct call to the AI model via the prompt.
-        // It uses the "GoogleGenAI" library under the hood.
-        const response = await quizGenerationPrompt(input);
-        const output = response.output;
+        const model = genAI.getGenerativeModel({ model: "gemini-pro", safetySettings });
         
-        if (!output) {
-            const finishReason = response.candidates[0]?.finishReason;
-            if (finishReason === 'SAFETY') {
+        const fullPrompt = quizPrompt.replace('{{{transcript}}}', transcript);
+        
+        const result = await model.generateContent(fullPrompt);
+        const response = result.response;
+        const text = response.text();
+        
+        if (!text) {
+             const finishReason = response.promptFeedback?.blockReason;
+             if (finishReason === 'SAFETY') {
                  throw new Error("The AI blocked quiz generation due to safety policies. The video content may be too sensitive.");
-            }
+             }
              throw new Error("The AI model did not return a valid output. The content might be too short.");
         }
 
         // Return the raw, unvalidated JSON object.
-        return output;
+        return JSON.parse(text);
 
     } catch (error: any) {
       console.error("Error calling Gemini API for quiz generation:", error);
@@ -121,4 +109,3 @@ const generateQuizFlow = ai.defineFlow(
     }
   }
 );
-
