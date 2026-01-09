@@ -1,3 +1,4 @@
+
 'use client';
 import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
@@ -15,7 +16,6 @@ import { useFirebase } from "@/firebase";
 import { doc, getDoc, addDoc, collection } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import ReactPlayer from "react-player/youtube";
-import { cn } from "@/lib/utils";
 
 
 function SpeakingTestFeedback({ attemptId, onRetry }: { attemptId: string; onRetry: () => void }) {
@@ -135,6 +135,7 @@ function ReadingPracticePageContent() {
     const [volume, setVolume] = useState(0); // Start muted
     const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
     const [playbackRate, setPlaybackRate] = useState(1);
+    const [isPlaying, setIsPlaying] = useState(false);
 
 
     useEffect(() => {
@@ -152,13 +153,14 @@ function ReadingPracticePageContent() {
         if (!playerRef.current || !isPlayerReady) return;
 
         playerRef.current.seekTo(offset / 1000, 'seconds');
+        setIsPlaying(true);
         setVolume(1);
         setActiveSegmentId(segmentId);
     }, [isPlayerReady]);
     
-    const handleToggleMute = () => {
-      setVolume(prev => prev > 0 ? 0 : 1);
-    }
+     const handleTogglePlayPause = () => {
+        setVolume(prev => prev > 0 ? 0 : 1);
+    };
     
     const handleToggleSpeed = () => {
         setPlaybackRate(prev => prev === 1 ? 0.75 : 1);
@@ -309,9 +311,12 @@ function ReadingPracticePageContent() {
                 <ReactPlayer
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={true} 
+                    playing={isPlaying} 
                     volume={volume}
-                    onReady={() => setIsPlayerReady(true)}
+                    onReady={() => {setIsPlayerReady(true); setIsPlaying(true)}}
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    onEnded={() => setIsPlaying(false)}
                     playbackRate={playbackRate}
                     controls={false}
                     width="0"
@@ -385,7 +390,7 @@ function ReadingPracticePageContent() {
 
             {/* Floating Action Buttons */}
              <div className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-3">
-                {testState === 'idle' && (
+                {testState === 'idle' && isPlayerReady && (
                     <>
                         <Button
                             size="icon"
@@ -400,7 +405,7 @@ function ReadingPracticePageContent() {
                             size="icon"
                             variant="secondary"
                             className="h-14 w-14 rounded-full shadow-lg"
-                            onClick={handleToggleMute}
+                            onClick={handleTogglePlayPause}
                         >
                             {volume > 0 ? <Pause className="h-7 w-7" /> : <Play className="h-7 w-7" />}
                         </Button>
@@ -428,13 +433,21 @@ function ReadingPracticePageContent() {
                 
                 {testState === 'recorded' && (
                     <>
-                        <Button
+                         <Button
                             size="icon"
                             variant="secondary"
                             className="h-14 w-14 rounded-full shadow-lg"
-                            onClick={startRecording}
+                            onClick={resetTest}
                         >
                             <RefreshCw className="h-7 w-7" />
+                        </Button>
+                         <Button
+                            size="icon"
+                            variant="destructive"
+                            className="h-14 w-14 rounded-full shadow-lg"
+                            onClick={resetTest}
+                        >
+                            <X className="h-7 w-7" />
                         </Button>
                          <Button
                             size="icon"
