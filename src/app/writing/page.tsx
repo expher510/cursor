@@ -26,8 +26,8 @@ function WritingWorkspace() {
     const transcriptText = useMemo(() => {
         if (!videoData?.transcript) return [];
         const fullText = videoData.transcript.map(t => t.text).join(' ');
-        // Get unique words from transcript
-        return Array.from(new Set(fullText.toLowerCase().match(/\b(\w+)\b/g) || []));
+        // Get unique words from transcript, ensuring only alphabetical words are matched
+        return Array.from(new Set(fullText.toLowerCase().match(/\b([a-zA-Z]+)\b/g) || []));
     }, [videoData]);
     
     const startExercise = () => {
@@ -209,3 +209,4 @@ export default function WritingPage() {
     </>
   );
 }
+
