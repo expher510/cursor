@@ -72,9 +72,16 @@ export function CaptionView({ transcript, currentTime }: CaptionViewProps) {
         </span>
     );
   };
+  
+  const isRtl = activeLine?.text && /[\u0600-\u06FF]/.test(activeLine.text);
 
   return (
-    <div className="w-full bg-muted rounded-lg p-4 min-h-[80px] flex items-center justify-center text-center border">
+    <div className={cn(
+        "w-full bg-muted rounded-lg p-4 min-h-[80px] flex items-center justify-center border",
+        isRtl ? "text-right" : "text-center"
+     )}
+     dir={isRtl ? "rtl" : "ltr"}
+    >
       {transcript.length > 0 ? (
         <p className="text-xl font-semibold text-foreground leading-relaxed">
           {renderContent()}

@@ -6,6 +6,7 @@ import { Button } from "./ui/button";
 import { useWatchPage } from "@/context/watch-page-context";
 import { cn } from "@/lib/utils";
 import { useTranslationStore } from "@/hooks/use-translation-store";
+import { useMemo } from "react";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
@@ -16,7 +17,8 @@ export function TranscriptView({ transcript }: TranscriptViewProps) {
   const { addVocabularyItem, savedWordsSet } = useWatchPage();
   const { translations, toggleTranslation, isTranslating } = useTranslationStore();
 
-  const fullText = transcript.map(line => line.text).join(' ');
+  const fullText = useMemo(() => transcript.map(line => line.text).join(' '), [transcript]);
+  const isRtl = useMemo(() => /[\u0600-\u06FF]/.test(fullText), [fullText]);
 
   const handleWordClick = (word: string, originalText: string, key: string) => {
     const isSaved = savedWordsSet.has(word);
@@ -30,7 +32,7 @@ export function TranscriptView({ transcript }: TranscriptViewProps) {
 
 
   return (
-    <div className="p-4 leading-relaxed text-lg">
+    <div className={cn("p-4 leading-relaxed text-lg", isRtl && "text-right")} dir={isRtl ? "rtl" : "ltr"}>
       {fullText.split(/(\s+)/).map((word, wordIndex) => {
         const originalText = word;
         const key = `${wordIndex}`;
