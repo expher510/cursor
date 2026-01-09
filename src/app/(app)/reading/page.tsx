@@ -1,9 +1,10 @@
+
 'use client';
 import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, X, Wind } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, X, Volume2, VolumeX, Leaf, Wind } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -151,20 +152,17 @@ function ReadingPracticePageContent() {
         };
     }, []);
     
-    const handlePlaySegment = useCallback((offset: number, segmentId: string) => {
+    const handlePlaySegment = useCallback((offset: number) => {
         if (!playerRef.current || !isPlayerReady) return;
 
         if (isAudioPlaying) {
-             // If clicking the currently playing segment, stop it.
             setVolume(0);
             setIsAudioPlaying(false);
         } else {
-            // If nothing is playing, start playing the clicked segment.
             playerRef.current.seekTo(offset / 1000, 'seconds');
             setVolume(1);
             setIsAudioPlaying(true);
         }
-
     }, [isPlayerReady, isAudioPlaying]);
     
     
@@ -184,8 +182,7 @@ function ReadingPracticePageContent() {
 
     const handleVideoEnd = () => {
         if (playerRef.current && duration > 0) {
-          // Loop the video silently to keep it "alive" by seeking to 1 second before the end
-          const seekToTime = duration > 1 ? duration - 1 : 0;
+          const seekToTime = duration > 3 ? duration - 3 : 0;
           playerRef.current.seekTo(seekToTime, 'seconds');
         }
     };
@@ -422,7 +419,6 @@ function ReadingPracticePageContent() {
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
                            isGloballyPlaying={isAudioPlaying}
-                           activeSegmentId={activeSegmentId}
                         />
                     </Card>
                 </>
@@ -498,3 +494,4 @@ export default function ReadingPage() {
       </>
   );
 }
+
