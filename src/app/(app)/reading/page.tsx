@@ -51,10 +51,10 @@ function ReadingPracticePageContent() {
         }
     }, [isShadowing, recorderState.status]);
 
-    const activeSegmentId = useMemo(() => {
+    const activeSegmentIndex = useMemo(() => {
         const transcript = videoData?.transcript;
         if (!transcript || transcript.length === 0 || !isPlaying) {
-            return null;
+            return -1;
         }
 
         let activeIndex = -1;
@@ -79,8 +79,8 @@ function ReadingPracticePageContent() {
             }
         }
 
-        return activeIndex !== -1 ? `${videoData?.videoId}-${activeIndex}` : null;
-    }, [videoData?.transcript, videoData?.videoId, currentTime, isPlaying]);
+        return activeIndex;
+    }, [videoData?.transcript, currentTime, isPlaying]);
 
     const handleToggleShadowing = () => {
       setIsShadowing(prev => {
@@ -198,7 +198,7 @@ function ReadingPracticePageContent() {
                        transcript={formattedTranscript} 
                        videoId={videoData.videoId}
                        onPlaySegment={handlePlaySegment}
-                       activeSegmentId={activeSegmentId}
+                       activeSegmentIndex={activeSegmentIndex}
                     />
                 </Card>
             </>

@@ -12,13 +12,13 @@ import { Volume2, VolumeX } from "lucide-react";
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
   videoId: string;
-  onPlaySegment?: ((offset: number) => void) | null;
+  onPlaySegment?: ((offset: number, duration: number) => void) | null;
   isGloballyPlaying?: boolean;
-  activeSegmentId?: string | null;
+  activeSegmentIndex?: number;
 };
 
 
-export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyPlaying, activeSegmentId }: TranscriptViewProps) {
+export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyPlaying, activeSegmentIndex = -1 }: TranscriptViewProps) {
   const { addVocabularyItem, savedWordsSet } = useWatchPage();
   const { translations, toggleTranslation, isTranslating } = useTranslationStore();
 
@@ -38,8 +38,8 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyP
   return (
     <div className={cn("p-4 leading-relaxed text-lg space-y-2", isRtl && "text-right")} dir={isRtl ? "rtl" : "ltr"}>
         {transcript.map((line, lineIndex) => {
-            const segmentId = `${videoId}-${lineIndex}`;
-            const isActive = segmentId === activeSegmentId;
+            const isActive = lineIndex === activeSegmentIndex;
+            const isNext = lineIndex === activeSegmentIndex + 1;
             
             return (
                 <div 
@@ -47,9 +47,10 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyP
                   className={cn(
                     "flex items-start gap-3 rounded-md transition-colors relative",
                     onPlaySegment && "cursor-pointer",
-                    isActive ? "bg-primary/10" : "hover:bg-muted/50"
+                    isActive ? "bg-primary/10" : "hover:bg-muted/50",
+                    isNext && "bg-muted/70"
                   )}
-                  onClick={() => onPlaySegment && onPlaySegment(line.offset)}
+                  onClick={() => onPlaySegment && onPlaySegment(line.offset, line.duration)}
                 >
                     <div className={cn(
                         "absolute left-0 top-0 bottom-0 w-1 bg-transparent rounded-l-md transition-all",
@@ -98,5 +99,3 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyP
     </div>
   );
 }
-
-    
