@@ -145,7 +145,7 @@ function ReadOutLoudController() {
                         </CardHeader>
                         <CardContent className="space-y-4 text-sm">
                            <div>
-                                <h4 className="font-semibold">What you said:</h4>
+                                <h4 className="font-semibold">Transcribed from your audio:</h4>
                                 <p className="text-muted-foreground italic">"{feedbackResult.transcribedText}"</p>
                            </div>
                            <hr />
