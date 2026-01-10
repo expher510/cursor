@@ -36,18 +36,15 @@ function ReadingPracticePageContent() {
     const activeSegmentId = useMemo(() => {
         if (!videoData?.transcript) return null;
         
-        // it's based on audio playback time
-        let activeIndex = -1;
-        for (let i = 0; i < videoData.transcript.length; i++) {
-            if (videoData.transcript[i].offset <= currentTime) {
-                activeIndex = i;
-            } else {
-                break;
-            }
-        }
-        
-        if (activeIndex !== -1) {
-            return `${videoData.videoId}-${activeIndex}`;
+        // Find the last segment whose offset is less than or equal to the current time.
+        const activeSegment = videoData.transcript
+            .slice()
+            .reverse()
+            .find(segment => segment.offset <= currentTime);
+
+        if (activeSegment) {
+             const activeIndex = videoData.transcript.indexOf(activeSegment);
+             return `${videoData.videoId}-${activeIndex}`;
         }
 
         return null;
@@ -123,15 +120,17 @@ function ReadingPracticePageContent() {
             </>
 
             {/* Floating Audio Player Button */}
-            <Button 
-                onClick={handlePlayPause} 
-                size="lg"
-                className="fixed bottom-8 right-8 z-50 h-16 w-16 rounded-full shadow-lg"
-                disabled={!videoData.audioUrl}
-            >
-                {isPlaying ? <VolumeX className="h-8 w-8" /> : <Volume2 className="h-8 w-8" />}
-                <span className="sr-only">{isPlaying ? 'Pause Audio' : 'Play Audio'}</span>
-            </Button>
+            {videoData.audioUrl && (
+                <Button 
+                    onClick={handlePlayPause} 
+                    size="lg"
+                    className="fixed bottom-8 right-8 z-50 h-16 w-16 rounded-full shadow-lg"
+                    disabled={!videoData.audioUrl}
+                >
+                    {isPlaying ? <VolumeX className="h-8 w-8" /> : <Volume2 className="h-8 w-8" />}
+                    <span className="sr-only">{isPlaying ? 'Pause Audio' : 'Play Audio'}</span>
+                </Button>
+            )}
 
 
             {/* Hidden Audio Player */}
