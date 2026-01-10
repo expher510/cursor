@@ -266,14 +266,14 @@ function ReadingPracticePageContent() {
                         ref={playerRef}
                         url={videoData.audioUrl}
                         playing={isPlaying}
+                        loop={isShadowing}
                         onProgress={(state) => {
-                          setCurrentTime(state.playedSeconds * 1000);
-                          if (segmentToLoop && state.playedSeconds >= segmentToLoop.start + segmentToLoop.duration) {
-                            playerRef.current?.seekTo(segmentToLoop.start, 'seconds');
+                          if (!isShadowing) {
+                            setCurrentTime(state.playedSeconds * 1000);
                           }
                         }}
                         onEnded={() => {
-                           if (!segmentToLoop) {
+                           if (!isShadowing) {
                                 setIsPlaying(false);
                            }
                         }}
@@ -309,15 +309,12 @@ function ReadingPracticePageContent() {
                      <Button
                         onClick={handleRecordClick}
                         size="lg"
-                        disabled={recorderState.status === 'stopped' || !segmentToLoop}
+                        disabled={!segmentToLoop}
                         className={cn(
                             "h-20 w-20 rounded-full shadow-lg",
-                            {
-                                'bg-muted-foreground': !segmentToLoop,
-                                'bg-red-600 hover:bg-red-700 animate-pulse': recorderState.status === 'recording',
-                                'bg-primary': recorderState.status !== 'recording' && recorderState.status !== 'stopped' && segmentToLoop,
-                                'bg-muted-foreground': recorderState.status === 'stopped',
-                            }
+                            recorderState.status === 'recording' && 'bg-red-600 hover:bg-red-700 animate-pulse',
+                            recorderState.status === 'stopped' && 'bg-muted-foreground',
+                            !segmentToLoop && 'bg-muted-foreground cursor-not-allowed'
                         )}
                     >
                         <Mic className="h-10 w-10" />
