@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { extractAudio } from '@/ai/flows/extract-audio-flow';
 import { extractYouTubeVideoId } from '@/lib/utils';
 import { generateQuizFromTranscript } from '@/ai/flows/generate-quiz-from-transcript-flow';
+import { useUserProfile } from '@/hooks/use-user-profile';
 
 
 type VocabularyItem = {
@@ -42,6 +43,7 @@ const WatchPageContext = createContext<WatchPageContextType | undefined>(undefin
 
 export function WatchPageProvider({ children }: { children: ReactNode }) {
   const { firestore, user } = useFirebase();
+  const { userProfile } = useUserProfile();
   const searchParams = useSearchParams();
   const urlVideoId = searchParams.get('v');
   const shouldGenerate = searchParams.get('shouldGenerate') !== 'false'; // Default to true
@@ -103,8 +105,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (!user || !firestore) {
-      setError("Authentication or database service is not available.");
+    if (!user || !firestore || !userProfile) {
+      setError("Authentication, database, or user profile service is not available.");
       setIsLoading(false);
       return;
     }
@@ -167,7 +169,11 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           }, { merge: true });
           
           const fullTranscript = result.transcript.map(t => t.text).join(' ');
-          const quizQuestions = await generateQuizFromTranscript({transcript: fullTranscript});
+          const quizQuestions = await generateQuizFromTranscript({
+              transcript: fullTranscript,
+              targetLanguage: userProfile.targetLanguage,
+              proficiencyLevel: userProfile.proficiencyLevel
+          });
 
           const quizDocRef = doc(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`, 'comprehensive-test');
           await setDoc(quizDocRef, {
@@ -196,7 +202,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     
     fetchAndProcessVideoData();
 
-  }, [activeVideoId, user, firestore, toast, shouldGenerate]);
+  }, [activeVideoId, user, firestore, toast, shouldGenerate, userProfile]);
 
 
   const vocabQuery = useMemoFirebase(() => {
