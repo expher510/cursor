@@ -37,6 +37,8 @@ type WatchPageContextType = {
   quizData: QuizData | null;
   isLoading: boolean;
   error: string | null;
+  handleQuizGeneration: () => void;
+  isGeneratingQuiz: boolean;
 };
 
 const WatchPageContext = createContext<WatchPageContextType | undefined>(undefined);
@@ -52,6 +54,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   
   const [activeVideoId, setActiveVideoId] = useState<string | null>(urlVideoId);
 
@@ -167,23 +170,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               videoId: cleanVideoId,
               content: result.transcript,
           }, { merge: true });
-          
-          const fullTranscript = result.transcript.map(t => t.text).join(' ');
-          const quizQuestions = await generateQuizFromTranscript({
-              transcript: fullTranscript,
-              targetLanguage: userProfile.targetLanguage,
-              proficiencyLevel: userProfile.proficiencyLevel
-          });
-
-          const quizDocRef = doc(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`, 'comprehensive-test');
-          await setDoc(quizDocRef, {
-            id: 'comprehensive-test',
-            videoId: cleanVideoId,
-            userId: user.uid,
-            questions: quizQuestions.questions,
-            userAnswers: [],
-            score: 0
-          }, { merge: true });
 
           setVideoData({ ...result, videoId: cleanVideoId, audioUrl: audioUrl });
         } else {
@@ -220,8 +206,53 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     return query(collection(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`));
   }, [user, firestore, activeVideoId]);
 
-  const { data: quizzes } = useCollection<QuizData>(quizQuery);
+  const { data: quizzes, setData: setQuizzes } = useCollection<QuizData>(quizQuery);
   const quizData = useMemo(() => (quizzes && quizzes.length > 0 ? quizzes[0] : null), [quizzes]);
+
+  const handleQuizGeneration = useCallback(async () => {
+    if (!videoData || !userProfile || !firestore || !user) {
+        toast({ variant: "destructive", title: "Cannot Generate Quiz", description: "Missing necessary data to create a quiz."});
+        return;
+    }
+    
+    if (quizData) { // Quiz already exists, no need to generate
+        return;
+    }
+    
+    setIsGeneratingQuiz(true);
+
+    try {
+        const fullTranscript = videoData.transcript.map(t => t.text).join(' ');
+        const quizResult = await generateQuizFromTranscript({
+            transcript: fullTranscript,
+            targetLanguage: userProfile.targetLanguage,
+            proficiencyLevel: userProfile.proficiencyLevel
+        });
+
+        const newQuizData: QuizData = {
+          id: 'comprehensive-test',
+          videoId: videoData.videoId,
+          userId: user.uid,
+          questions: quizResult.questions,
+          userAnswers: [],
+          score: 0
+        };
+
+        const quizDocRef = doc(firestore, `users/${user.uid}/videos/${videoData.videoId}/quizzes`, 'comprehensive-test');
+        await setDoc(quizDocRef, newQuizData, { merge: true });
+        
+        // Optimistically update local state
+        setQuizzes([newQuizData]);
+
+        toast({ title: "Quiz Generated!", description: "Your quiz is ready." });
+
+    } catch (e: any) {
+        console.error("Failed to generate quiz on demand:", e);
+        toast({ variant: "destructive", title: "Quiz Generation Failed", description: e.message || "An error occurred."});
+    } finally {
+        setIsGeneratingQuiz(false);
+    }
+  }, [videoData, userProfile, firestore, user, toast, quizData, setQuizzes]);
 
 
   const videoVocabulary = useMemo(() => {
@@ -298,6 +329,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     quizData,
     isLoading,
     error,
+    handleQuizGeneration,
+    isGeneratingQuiz,
   };
 
   return (
