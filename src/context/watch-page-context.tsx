@@ -24,7 +24,7 @@ type VocabularyItem = {
   userId: string;
 };
 
-type VideoData = Omit<ProcessVideoOutput, 'availableLangs'> & { videoId?: string, audioUrl?: string };
+type VideoData = ProcessVideoOutput & { videoId?: string; audioUrl?: string; title?: string, description?: string };
 
 
 type WatchPageContextType = {
@@ -135,10 +135,11 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
         if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
            toast({ variant: 'subtle', title: "Loading Existing Lesson"});
+          const videoDocData = videoDocSnap.data();
           const combinedData: VideoData = {
-            title: videoDocSnap.data().title,
-            description: videoDocSnap.data().description,
-            audioUrl: videoDocSnap.data().audioUrl,
+            title: videoDocData.title, // Title may not exist, that's OK
+            description: videoDocData.description,
+            audioUrl: videoDocData.audioUrl,
             transcript: transcriptDocSnap.data().content,
             videoId: cleanVideoId
           };
@@ -150,8 +151,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           
           await setDoc(videoDocRef, {
               id: cleanVideoId,
-              title: result.title,
-              description: result.description,
+              title: `Video: ${cleanVideoId}`, // Generic title
               userId: user.uid,
               timestamp: Date.now(),
               audioUrl: audioUrl,
@@ -186,7 +186,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             score: 0
           }, { merge: true });
 
-          setVideoData({ ...result, videoId: cleanVideoId, audioUrl: audioUrl });
+          setVideoData({ ...result, videoId: cleanVideoId, audioUrl: audioUrl, title: `Video: ${cleanVideoId}` });
         }
       } catch (e: any) {
         console.error("Error fetching or processing video data:", e);
