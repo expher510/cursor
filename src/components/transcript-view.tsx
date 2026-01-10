@@ -12,13 +12,12 @@ import { Volume2, VolumeX } from "lucide-react";
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
   videoId: string;
-  onPlaySegment?: ((offset: number, duration: number) => void) | null;
-  isGloballyPlaying?: boolean;
+  onPlaySegment?: ((offset: number, duration: number, text: string) => void) | null;
   activeSegmentIndex?: number;
 };
 
 
-export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyPlaying, activeSegmentIndex = -1 }: TranscriptViewProps) {
+export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegmentIndex = -1 }: TranscriptViewProps) {
   const { addVocabularyItem, savedWordsSet } = useWatchPage();
   const { translations, toggleTranslation, isTranslating } = useTranslationStore();
 
@@ -50,7 +49,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyP
                     isActive ? "bg-primary/10" : "hover:bg-muted/50",
                     isNext && "bg-muted/70"
                   )}
-                  onClick={() => onPlaySegment && onPlaySegment(line.offset, line.duration)}
+                  onClick={() => onPlaySegment && onPlaySegment(line.offset, line.duration, line.text)}
                 >
                     <div className={cn(
                         "absolute left-0 top-0 bottom-0 w-1 bg-transparent rounded-l-md transition-all",

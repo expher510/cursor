@@ -60,33 +60,32 @@ function ReadingPracticePageContent() {
 
     const activeSegmentIndex = useMemo(() => {
         const transcript = videoData?.transcript;
-        if (!transcript || transcript.length === 0 || !isPlaying) {
+        if (!transcript || transcript.length === 0) {
             return -1;
         }
 
-        let activeIndex = -1;
+        // Find the currently active line based on currentTime
         for (let i = 0; i < transcript.length; i++) {
             const line = transcript[i];
             const startTime = line.offset;
             const endTime = startTime + line.duration;
             if (currentTime >= startTime && currentTime < endTime) {
-                activeIndex = i;
-                break;
+                return i;
             }
         }
         
-        if(activeIndex === -1) {
-             for (let i = 0; i < transcript.length; i++) {
-                if (transcript[i].offset <= currentTime) {
-                    activeIndex = i;
-                } else {
-                    break; 
-                }
-            }
+        // Fallback for when between lines, find the last line that has passed
+        let lastPassedIndex = -1;
+        for (let i = 0; i < transcript.length; i++) {
+           if (transcript[i].offset <= currentTime) {
+               lastPassedIndex = i;
+           } else {
+               break; 
+           }
         }
 
-        return activeIndex;
-    }, [videoData?.transcript, currentTime, isPlaying]);
+        return lastPassedIndex;
+    }, [videoData?.transcript, currentTime]);
 
     const handleToggleShadowing = () => {
       setIsShadowing(prev => {
@@ -356,5 +355,3 @@ export default function ReadingPage() {
       </>
   );
 }
-
-    
