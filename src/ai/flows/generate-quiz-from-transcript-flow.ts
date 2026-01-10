@@ -67,6 +67,7 @@ const generateQuizFlow = ai.defineFlow(
       3. The value of "questions" must be an array of question objects.
       4. Each question object must have three properties: "questionText", "options" (an array of 4 choices), and "correctAnswer".
       5. For true/false questions, the "options" array must be exactly ["True", "False"].
+      6. The language of "questionText", "options", and "correctAnswer" MUST be the same language as the provided transcript.
 
       Transcript:
       ---
