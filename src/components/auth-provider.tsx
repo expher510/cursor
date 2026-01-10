@@ -6,6 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useContext, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { ensureUserDocument } from '@/firebase/non-blocking-login';
+import { OnboardingModal } from '@/components/onboarding-modal';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const PUBLIC_PATHS = ['/login', '/signup'];
 
@@ -14,6 +16,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isEnsuringUserDoc, setIsEnsuringUserDoc] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
 
   if (context === undefined) {
@@ -26,11 +29,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const { user, isUserLoading, firestore, auth } = context;
 
-  // Effect to sync user document to Firestore on auth state change
+  // Effect to sync user document and check onboarding status
   useEffect(() => {
     if (user && firestore && auth) {
       setIsEnsuringUserDoc(true);
-      ensureUserDocument(firestore, user, auth).catch(error => {
+      ensureUserDocument(firestore, user, auth)
+        .then(async () => {
+            const userDocRef = doc(firestore, `users/${user.uid}`);
+            const userDocSnap = await getDoc(userDocRef);
+            if (userDocSnap.exists() && !userDocSnap.data().onboardingCompleted) {
+                setShowOnboarding(true);
+            }
+        })
+        .catch(error => {
         // The error is already logged and emitted by ensureUserDocument,
         // so we just need to prevent unhandled promise rejection here.
         console.error("AuthProvider: Failed to ensure user document on auth change. The error boundary should handle this.");
@@ -54,6 +65,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
   }, [user, isUserLoading, isEnsuringUserDoc, pathname, router]);
 
+  const handleOnboardingSave = async (data: { displayName: string; targetLanguage: string; proficiencyLevel: string; learningGoal?: string; }) => {
+    if (!user || !firestore) return;
+    const userDocRef = doc(firestore, `users/${user.uid}`);
+    try {
+        await setDoc(userDocRef, {
+            ...data,
+            onboardingCompleted: true,
+        }, { merge: true });
+        setShowOnboarding(false);
+    } catch (error) {
+        console.error("Failed to save onboarding data:", error);
+        // Optionally, show a toast to the user
+    }
+  };
+
   // While auth is loading, or if we are on a protected route without a user, show a loader.
   if (isUserLoading || isEnsuringUserDoc || (!user && !PUBLIC_PATHS.includes(pathname))) {
     return (
@@ -66,5 +92,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
   }
   
-  return <>{children}</>;
+  return (
+    <>
+        {showOnboarding && <OnboardingModal open={showOnboarding} onSave={handleOnboardingSave} />}
+        {!showOnboarding && children}
+    </>
+  );
 }
