@@ -37,6 +37,33 @@ export async function generateWritingFeedback(input: GenerateWritingFeedbackInpu
 }
 
 
+const feedbackPrompt = ai.definePrompt({
+    name: 'writingFeedbackPrompt',
+    model: 'gemini-1.5-flash',
+    input: { schema: GenerateWritingFeedbackInputSchema },
+    output: { schema: GenerateWritingFeedbackOutputSchema },
+    prompt: `
+        You are an expert teacher of the ${'{{targetLanguage}}'} language.
+        I am a student at the '${'{{proficiencyLevel}}'} level, and my native language is ${'{{nativeLanguage}}'}.
+
+        I was asked to write a text in ${'{{targetLanguage}}'} using the following words: [${'{{usedWords}}'}].
+
+        This is my text:
+        ---
+        ${'{{writingText}}'}
+        ---
+
+        I want your feedback and a comprehensive evaluation of this text.
+        Your entire output, including feedback and suggestions, must be in my NATIVE language (${'{{nativeLanguage}}'}).
+
+        Provide the output ONLY as a valid JSON object with three keys: "feedback", "score", and "suggestions".
+        - "feedback": Provide a comprehensive evaluation of my text, covering grammar, correct use of the provided words, and overall coherence.
+        - "score": Give a score from 0 to 100.
+        - "suggestions": Provide a list of 2-3 specific, actionable suggestions for improvement.
+    `,
+});
+
+
 // The Main Genkit Flow
 const generateWritingFeedbackFlow = ai.defineFlow(
   {
@@ -44,74 +71,13 @@ const generateWritingFeedbackFlow = ai.defineFlow(
     inputSchema: GenerateWritingFeedbackInputSchema,
     outputSchema: GenerateWritingFeedbackOutputSchema,
   },
-  async ({ writingText, usedWords, targetLanguage, nativeLanguage, proficiencyLevel }) => {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) {
-      throw new Error("OPENROUTER_API_KEY is not defined in environment variables.");
-    }
-
-    const prompt = `
-      You are an expert ${targetLanguage} language teacher evaluating a writing sample from a student whose proficiency level is '${proficiencyLevel}'.
-      The student's native language is ${nativeLanguage}.
-
-      The student was asked to write a short text in ${targetLanguage} using the following words:
-      [${usedWords.join(', ')}]
-
-      Here is the student's writing sample:
-      ---
-      ${writingText}
-      ---
-
-      Your task is to provide feedback in a structured JSON format. The feedback ITSELF must be in the student's NATIVE language (${nativeLanguage}).
-      
-      Here are the rules for your evaluation:
-      1.  **Feedback**: Write a concise, constructive paragraph of feedback in ${nativeLanguage}. Comment on grammar, vocabulary usage (did they use the words correctly?), and overall coherence. Keep the feedback encouraging.
-      2.  **Score**: Give a score from 0 to 100.
-      3.  **Suggestions**: Provide a list of 2-3 specific, actionable suggestions for improvement, also written in ${nativeLanguage}.
-
-      Provide the output as a SINGLE, VALID JSON object with the keys "feedback", "score", and "suggestions".
-      Return ONLY the JSON object. Do not include any other text, explanations, or markdown formatting like \`\`\`json.
-    `;
-    
+  async (input) => {
     try {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "google/gemma-3n-e2b-it:free",
-          messages: [
-            { "role": "user", "content": prompt }
-          ],
-        })
-      });
-
-      if (!response.ok) {
-        const errorBody = await response.text();
-        console.error("OpenRouter API Error:", errorBody);
-        throw new Error(`OpenRouter API request failed with status ${response.status}`);
-      }
-
-      const result = await response.json();
-      const content = result.choices[0]?.message?.content;
-      
-      if (!content) {
-        throw new Error("No content in AI response.");
-      }
-      
-      const jsonStart = content.indexOf('{');
-      const jsonEnd = content.lastIndexOf('}');
-
-      if (jsonStart === -1 || jsonEnd === -1) {
-          throw new Error("Valid JSON object not found in AI response.");
-      }
-      
-      const jsonString = content.substring(jsonStart, jsonEnd + 1);
-      const parsedContent = JSON.parse(jsonString);
-
-      return GenerateWritingFeedbackOutputSchema.parse(parsedContent);
+        const { output } = await feedbackPrompt(input);
+        if (!output) {
+            throw new Error("AI failed to generate writing feedback.");
+        }
+        return output;
 
     } catch (e: any) {
       console.error("Failed to generate or parse writing feedback:", e);
