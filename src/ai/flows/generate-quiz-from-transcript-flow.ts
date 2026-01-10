@@ -71,7 +71,7 @@ const generateQuizFlow = ai.defineFlow(
 
       Transcript:
       ---
-      ${transcript.substring(0, 9000)}
+      ${transcript.substring(0, 5000)}
       ---
 
       Return ONLY the JSON object. Do not include any other text, explanations, or markdown formatting like \`\`\`json.
@@ -129,3 +129,4 @@ const generateQuizFlow = ai.defineFlow(
     }
   }
 );
+
