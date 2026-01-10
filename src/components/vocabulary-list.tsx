@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from "./ui/button";
@@ -88,7 +89,7 @@ export function VocabularyList({ layout = 'scroll' }: VocabularyListProps) {
 
   if (isLoading) {
     return (
-      <div className="flex h-full rounded-lg border bg-card text-card-foreground shadow-sm flex-1 p-4">
+      <div className="flex h-full rounded-lg bg-card text-card-foreground shadow-sm flex-1 p-4">
         <div className="flex flex-wrap gap-2">
           <Skeleton className="h-10 w-24 rounded-full" />
           <Skeleton className="h-10 w-32 rounded-full" />
@@ -99,7 +100,7 @@ export function VocabularyList({ layout = 'scroll' }: VocabularyListProps) {
   }
 
   return (
-    <div className="flex h-full rounded-lg border bg-card text-card-foreground shadow-sm flex-1 p-4">
+    <div className="flex h-full rounded-lg bg-card text-card-foreground shadow-sm flex-1 p-4">
       {!vocabulary || vocabulary.length === 0 ? (
         <div className="flex w-full h-full min-h-[60px] items-center justify-center rounded-md text-center">
           <p className="text-sm text-muted-foreground">Words you save for this video will appear here.</p>
