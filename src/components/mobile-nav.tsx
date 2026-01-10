@@ -4,7 +4,7 @@
 import * as React from 'react';
 import Link, { LinkProps } from 'next/link';
 import { useRouter } from 'next/navigation';
-import { History, LogOut, PlusCircle, Copy, BookOpen, Edit, LogIn, UserCheck } from 'lucide-react';
+import { History, LogOut, PlusCircle, Copy, BookOpen, Edit, LogIn, UserCheck, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useFirebase } from '@/firebase';
 import { HistoryMenu } from './history-menu';
@@ -59,6 +59,10 @@ export function MobileNav({ setOpen }: { setOpen: (open: boolean) => void }) {
         <MobileLink href="/reading" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
           <BookOpen className="w-5 h-5" />
           <span>Reading Practice</span>
+        </MobileLink>
+        <MobileLink href="/speaking" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+          <Mic className="w-5 h-5" />
+          <span>Speaking Practice</span>
         </MobileLink>
         <MobileLink href="/writing" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
           <Edit className="w-5 h-5" />
