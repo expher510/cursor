@@ -72,6 +72,9 @@ const processVideoFlow = ai.defineFlow(
 
     } catch (e: any) {
          console.error("Failed to fetch transcript:", e.message);
+         if (e.message.includes('Transcript is disabled')) {
+             throw new Error(`This video does not have captions enabled, so a transcript cannot be created. Please try a different video.`);
+         }
          if (e.message.includes('Could not find transcript for this video')) {
              throw new Error(`No transcript available for the requested language (${lang}). Please try another video.`);
          }
