@@ -1,17 +1,17 @@
 
 'use server';
 /**
- * @fileOverview A flow for processing YouTube videos to extract transcripts
+ * @fileOverview A flow for processing YouTube videos to extract transcripts, title, and description
  * using the `youtube-caption-extractor` library.
  *
- * - processVideo - A function that takes a YouTube video ID and returns its transcript.
+ * - processVideo - A function that takes a YouTube video ID and returns its details.
  * - ProcessVideoInput - The input type for the processVideo function.
  * - ProcessVideoOutput - The return type for the processVideo function.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { getYoutubeCaption } from 'youtube-caption-extractor';
+import { getVideoDetails, type Subtitle } from 'youtube-caption-extractor';
 
 // Schema Definitions
 const ProcessVideoInputSchema = z.object({
@@ -28,6 +28,8 @@ const TranscriptItemSchema = z.object({
 export type TranscriptItem = z.infer<typeof TranscriptItemSchema>;
 
 const ProcessVideoOutputSchema = z.object({
+  title: z.string().describe('The title of the YouTube video.'),
+  description: z.string().describe('The description of the YouTube video.'),
   transcript: z.array(TranscriptItemSchema).describe('The transcript of the video with timestamps.'),
 });
 export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
@@ -48,26 +50,28 @@ const processVideoFlow = ai.defineFlow(
   },
   async ({ videoId, lang }) => {
     try {
-        const transcriptResponse = await getYoutubeCaption({ videoID: videoId, lang });
-        
-        if (!transcriptResponse || transcriptResponse.length === 0) {
-             throw new Error("No transcript found for this video. It might not have captions enabled in the requested language.");
-        }
-        
-        const formattedTranscript: TranscriptItem[] = transcriptResponse.map((item) => {
+        const videoDetails = await getVideoDetails({ videoID: videoId, lang });
+
+        const formattedTranscript: TranscriptItem[] = (videoDetails.subtitles || []).map((item: Subtitle) => {
             return {
                 text: item.text,
                 offset: parseFloat(item.start) * 1000,
                 duration: parseFloat(item.dur) * 1000,
             };
         });
+
+        if (formattedTranscript.length === 0) {
+             console.warn(`[LinguaStream] No transcript found for video ${videoId}, but returning details anyway.`);
+        }
         
         return {
+            title: videoDetails.title || `Video: ${videoId}`,
+            description: videoDetails.description || 'No description available.',
             transcript: formattedTranscript,
         };
 
     } catch (e: any) {
-         console.error("Failed to fetch transcript:", e.message);
+         console.error("Failed to fetch video details:", e.message);
          if (e.message.includes('Transcript is disabled')) {
              throw new Error(`This video does not have captions enabled, so a transcript cannot be created. Please try a different video.`);
          }

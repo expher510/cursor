@@ -24,7 +24,7 @@ type VocabularyItem = {
   userId: string;
 };
 
-type VideoData = ProcessVideoOutput & { videoId?: string; audioUrl?: string; title?: string, description?: string };
+type VideoData = ProcessVideoOutput & { videoId?: string; audioUrl?: string; };
 
 
 type WatchPageContextType = {
@@ -137,7 +137,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
            toast({ variant: 'subtle', title: "Loading Existing Lesson"});
           const videoDocData = videoDocSnap.data();
           const combinedData: VideoData = {
-            title: videoDocData.title, // Title may not exist, that's OK
+            title: videoDocData.title,
             description: videoDocData.description,
             audioUrl: videoDocData.audioUrl,
             transcript: transcriptDocSnap.data().content,
@@ -151,7 +151,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           
           await setDoc(videoDocRef, {
               id: cleanVideoId,
-              title: `Video: ${cleanVideoId}`, // Generic title
+              title: result.title,
+              description: result.description,
               userId: user.uid,
               timestamp: Date.now(),
               audioUrl: audioUrl,
@@ -163,30 +164,32 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               content: result.transcript,
           }, { merge: true });
 
-          const transcriptText = result.transcript.map(t => t.text).join(' ');
-          const vocabForQuiz = Array.from(new Set(
-                result.transcript
-                .flatMap(item => item.text.split(' '))
-                .map(word => word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,""))
-                .filter(Boolean)
-            )).slice(0, 15);
-          
-          const quizQuestions = await generateQuiz({
-              transcript: transcriptText,
-              vocabulary: vocabForQuiz.map(word => ({word, translation: ''}))
-          });
-          
-          const quizDocRef = doc(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`, 'comprehensive-test');
-          await setDoc(quizDocRef, {
-            id: 'comprehensive-test',
-            videoId: cleanVideoId,
-            userId: user.uid,
-            questions: quizQuestions.questions,
-            userAnswers: [],
-            score: 0
-          }, { merge: true });
+          if (result.transcript.length > 0) {
+            const transcriptText = result.transcript.map(t => t.text).join(' ');
+            const vocabForQuiz = Array.from(new Set(
+                  result.transcript
+                  .flatMap(item => item.text.split(' '))
+                  .map(word => word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,""))
+                  .filter(Boolean)
+              )).slice(0, 15);
+            
+            const quizQuestions = await generateQuiz({
+                transcript: transcriptText,
+                vocabulary: vocabForQuiz.map(word => ({word, translation: ''}))
+            });
+            
+            const quizDocRef = doc(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`, 'comprehensive-test');
+            await setDoc(quizDocRef, {
+              id: 'comprehensive-test',
+              videoId: cleanVideoId,
+              userId: user.uid,
+              questions: quizQuestions.questions,
+              userAnswers: [],
+              score: 0
+            }, { merge: true });
+          }
 
-          setVideoData({ ...result, videoId: cleanVideoId, audioUrl: audioUrl, title: `Video: ${cleanVideoId}` });
+          setVideoData({ ...result, videoId: cleanVideoId, audioUrl: audioUrl });
         }
       } catch (e: any) {
         console.error("Error fetching or processing video data:", e);
