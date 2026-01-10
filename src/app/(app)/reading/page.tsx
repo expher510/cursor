@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, BrainCircuit, Check, Mic, Trash2, X } from "lucide-react";
+import { AlertTriangle, BrainCircuit, Check, Mic, Play, Pause, Trash2 } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -37,11 +37,12 @@ function ReadingPracticePageContent() {
 
     const handlePlaySegment = useCallback((offset: number, duration: number) => {
         if (playerRef.current) {
-            // Don't play if recording is active
             if (recorderState.status === 'recording' || recorderState.status === 'stopped') return;
 
             if (isShadowing) {
                 setSegmentToLoop({ start: offset / 1000, duration: duration / 1000 });
+            } else {
+                setSegmentToLoop(null); // Ensure no looping in normal mode
             }
             playerRef.current.seekTo(offset / 1000, 'seconds');
             setIsPlaying(true);
@@ -50,21 +51,34 @@ function ReadingPracticePageContent() {
 
     const activeSegmentId = useMemo(() => {
         const transcript = videoData?.transcript;
-        if (!transcript || transcript.length === 0) {
+        if (!transcript || transcript.length === 0 || !isPlaying) {
             return null;
         }
 
         let activeIndex = -1;
         for (let i = 0; i < transcript.length; i++) {
-            if (transcript[i].offset <= currentTime) {
+            const line = transcript[i];
+            const startTime = line.offset;
+            const endTime = startTime + line.duration;
+            if (currentTime >= startTime && currentTime < endTime) {
                 activeIndex = i;
-            } else {
-                break; 
+                break;
+            }
+        }
+        
+        // If not found, check if it's between lines
+        if(activeIndex === -1) {
+             for (let i = 0; i < transcript.length; i++) {
+                if (transcript[i].offset <= currentTime) {
+                    activeIndex = i;
+                } else {
+                    break; 
+                }
             }
         }
 
         return activeIndex !== -1 ? `${videoData?.videoId}-${activeIndex}` : null;
-    }, [videoData?.transcript, videoData?.videoId, currentTime]);
+    }, [videoData?.transcript, videoData?.videoId, currentTime, isPlaying]);
 
     const handleToggleShadowing = () => {
       setIsShadowing(prev => {
@@ -80,8 +94,8 @@ function ReadingPracticePageContent() {
 
     const handleRecordClick = () => {
       if (recorderState.status === 'idle' || recorderState.status === 'stopped') {
-        setIsPlaying(false); // Stop audio playback
-        setSegmentToLoop(null); // Stop looping
+        setIsPlaying(false);
+        setSegmentToLoop(null);
         startRecording();
       } else if (recorderState.status === 'recording') {
         stopRecording();
@@ -107,7 +121,7 @@ function ReadingPracticePageContent() {
             console.error("Failed to save recording", e);
             toast({ variant: 'destructive', title: "Save failed", description: "There was an error saving your recording."});
         } finally {
-            cancelRecording(); // Reset recorder state
+            cancelRecording();
         }
     };
 
@@ -200,12 +214,27 @@ function ReadingPracticePageContent() {
                             playerRef.current?.seekTo(segmentToLoop.start, 'seconds');
                           }
                         }}
+                        onEnded={() => {
+                           if (!segmentToLoop) {
+                                setIsPlaying(false);
+                           }
+                        }}
                         width="0"
                         height="0"
                         controls={false}
                     />
                 </div>
             )}
+            
+            {/* Play/Pause for normal mode */}
+            {!isShadowing && videoData.audioUrl && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+                    <Button onClick={handlePlayPause} size="lg" className="rounded-full h-16 w-16 shadow-lg">
+                        {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
+                    </Button>
+                </div>
+            )}
+
 
             {/* Shadowing UI */}
             {isShadowing && (
@@ -256,7 +285,7 @@ export default function ReadingPage() {
   return (
       <>
         <AppHeader showBackButton={true} />
-        <main className="container mx-auto flex-1 p-4 md:p-6 pt-24 pb-24">
+        <main className="container mx-auto flex-1 p-4 md:p-6 pt-24 pb-32">
             <Suspense fallback={<div className="flex justify-center items-center h-full"><p>Loading...</p></div>}>
                 <PageWithProvider />
             </Suspense>
@@ -264,5 +293,3 @@ export default function ReadingPage() {
       </>
   );
 }
-
-    
