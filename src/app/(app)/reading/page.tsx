@@ -111,6 +111,12 @@ function ReadingPracticePageContent() {
             </div>
             
             <>
+                <div className="flex justify-center">
+                    <Button onClick={handlePlayPause} size="lg" disabled={!videoData.audioUrl}>
+                        {isPlaying ? <Pause className="mr-2" /> : <Play className="mr-2" />}
+                        {isPlaying ? 'Pause' : 'Play Audio'}
+                    </Button>
+                </div>
                 <VocabularyList layout="scroll" />
                 <Card>
                     <TranscriptView 
