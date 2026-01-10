@@ -34,18 +34,27 @@ function ReadingPracticePageContent() {
     }, []);
 
     const activeSegmentId = useMemo(() => {
-        if (!videoData?.transcript || videoData.transcript.length === 0) return null;
-
+        if (!videoData?.transcript || videoData.transcript.length === 0) {
+            return null;
+        }
+    
         const transcript = videoData.transcript;
-        
-        // Iterate backwards to find the last segment that has started
-        for (let i = transcript.length - 1; i >= 0; i--) {
+        let activeIndex = -1;
+    
+        for (let i = 0; i < transcript.length; i++) {
             if (transcript[i].offset <= currentTime) {
-                return `${videoData.videoId}-${i}`;
+                activeIndex = i;
+            } else {
+                // Since the transcript is sorted, we can break early
+                break;
             }
         }
-        
-        return null; // Nothing is active if before the first offset
+    
+        if (activeIndex !== -1) {
+            return `${videoData.videoId}-${activeIndex}`;
+        }
+    
+        return null;
     }, [currentTime, videoData?.transcript, videoData?.videoId]);
 
 
