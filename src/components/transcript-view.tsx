@@ -12,7 +12,7 @@ import { Volume2, VolumeX } from "lucide-react";
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
   videoId: string;
-  onPlaySegment?: (offset: number) => void;
+  onPlaySegment?: ((offset: number) => void) | null;
   isGloballyPlaying?: boolean;
   activeSegmentId?: string | null;
 };
@@ -36,27 +36,26 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyP
   };
   
   return (
-    <div className={cn("p-4 leading-relaxed text-lg space-y-4", isRtl && "text-right")} dir={isRtl ? "rtl" : "ltr"}>
+    <div className={cn("p-4 leading-relaxed text-lg space-y-2", isRtl && "text-right")} dir={isRtl ? "rtl" : "ltr"}>
         {transcript.map((line, lineIndex) => {
             const segmentId = `${videoId}-${lineIndex}`;
+            const isActive = segmentId === activeSegmentId;
             
             return (
-                <div key={line.offset} className="flex items-start gap-3">
-                    {onPlaySegment && (
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 mt-1 text-muted-foreground hover:text-primary"
-                            onClick={() => onPlaySegment(line.offset)}
-                        >
-                            {isGloballyPlaying ? (
-                                <Volume2 className="h-5 w-5 text-primary" />
-                            ) : (
-                                <VolumeX className="h-5 w-5" />
-                            )}
-                        </Button>
-                    )}
-                    <p className="flex-1">
+                <div 
+                  key={line.offset} 
+                  className={cn(
+                    "flex items-start gap-3 rounded-md transition-colors relative",
+                    onPlaySegment && "cursor-pointer hover:bg-muted/50",
+                    isActive && "bg-primary/10"
+                  )}
+                  onClick={() => onPlaySegment && onPlaySegment(line.offset)}
+                >
+                    <div className={cn(
+                        "absolute left-0 top-0 bottom-0 w-1 bg-transparent rounded-l-md transition-all",
+                        isActive && "bg-primary"
+                    )} />
+                    <p className="flex-1 py-2 pl-4 pr-2">
                         {line.text.split(/(\s+)/).map((word, wordIndex) => {
                             const originalText = word;
                             const key = `${lineIndex}-${wordIndex}`;
@@ -75,7 +74,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyP
                             const isCurrentlyTranslating = isTranslating[key];
 
                             return (
-                                <span key={key} className="inline-block relative group/word">
+                                <span key={key} className="inline-block relative group/word" onClick={(e) => e.stopPropagation()}>
                                 <Button
                                     variant="ghost"
                                     size="sm"
@@ -99,8 +98,5 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyP
     </div>
   );
 }
-
-
-    
 
     

@@ -4,19 +4,18 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, Turtle, Zap, Glasses, X, Volume2, VolumeX, Leaf, Wind } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, X, Play, Volume2 } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { useFirebase } from "@/firebase";
 import { doc, getDoc, addDoc, collection } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
-import ReactPlayer from "react-player/youtube";
-import { cn } from "@/lib/utils";
+import ReactPlayer from "react-player";
 
 
 function SpeakingTestFeedback({ attemptId, onRetry }: { attemptId: string; onRetry: () => void }) {
@@ -131,7 +130,40 @@ function ReadingPracticePageContent() {
     const { toast } = useToast();
     const { firestore, user } = useFirebase();
 
-    const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
+    // Audio Player State
+    const playerRef = useRef<ReactPlayer>(null);
+    const [isPlayerReady, setIsPlayerReady] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [duration, setDuration] = useState(0);
+
+
+    const activeSegmentId = useMemo(() => {
+        if (!videoData?.transcript) return null;
+        const currentLine = videoData.transcript.find(line =>
+            currentTime >= line.offset && currentTime < (line.offset + line.duration)
+        );
+        return currentLine ? `${videoData.videoId}-${videoData.transcript.indexOf(currentLine)}` : null;
+    }, [currentTime, videoData?.transcript, videoData?.videoId]);
+
+
+    const handlePlayPause = () => {
+        setIsPlaying(prev => !prev);
+    };
+
+    const handlePlaySegment = useCallback((offset: number) => {
+        if (playerRef.current) {
+            playerRef.current.seekTo(offset / 1000, 'seconds');
+            setIsPlaying(true);
+        }
+    }, []);
+
+    const handleAudioEnd = () => {
+        if (playerRef.current && duration > 0) {
+            const seekToTime = duration > 3 ? duration - 3 : 0;
+            playerRef.current.seekTo(seekToTime, 'seconds');
+        }
+    };
 
 
     useEffect(() => {
@@ -342,23 +374,41 @@ function ReadingPracticePageContent() {
                         <TranscriptView 
                            transcript={formattedTranscript} 
                            videoId={videoData.videoId}
-                           onPlaySegment={null}
-                           isGloballyPlaying={false}
+                           onPlaySegment={handlePlaySegment}
+                           isGloballyPlaying={isPlaying}
                            activeSegmentId={activeSegmentId}
                         />
                     </Card>
                 </>
             )}
 
+            {/* Hidden Audio Player */}
+            <div className="hidden">
+                 <ReactPlayer
+                    ref={playerRef}
+                    url={videoData.audioUrl}
+                    playing={isPlaying}
+                    onReady={() => setIsPlayerReady(true)}
+                    onProgress={(state) => setCurrentTime(state.playedSeconds * 1000)}
+                    onDuration={setDuration}
+                    onEnded={handleAudioEnd}
+                    width="0"
+                    height="0"
+                    controls={false}
+                />
+            </div>
+
+
             {/* Floating Action Buttons */}
              <div className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-3">
-                {testState === 'idle' && (
+
+                {testState === 'idle' && isPlayerReady && (
                     <Button
                         size="icon"
                         className="h-16 w-16 rounded-full shadow-lg"
-                        onClick={startRecording}
+                        onClick={handlePlayPause}
                     >
-                        <Mic className="h-8 w-8" />
+                        {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
                     </Button>
                 )}
 
