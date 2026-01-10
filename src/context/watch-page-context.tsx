@@ -24,7 +24,7 @@ type VocabularyItem = {
   userId: string;
 };
 
-type VideoData = ProcessVideoOutput & { videoId?: string, audioUrl?: string };
+type VideoData = Omit<ProcessVideoOutput, 'availableLangs'> & { videoId?: string, audioUrl?: string };
 
 
 type WatchPageContextType = {
@@ -139,7 +139,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             title: videoDocSnap.data().title,
             description: videoDocSnap.data().description,
             audioUrl: videoDocSnap.data().audioUrl,
-            availableLangs: videoDocSnap.data().availableLangs || [],
             transcript: transcriptDocSnap.data().content,
             videoId: cleanVideoId
           };
@@ -156,7 +155,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               userId: user.uid,
               timestamp: Date.now(),
               audioUrl: audioUrl,
-              availableLangs: result.availableLangs,
           }, { merge: true });
 
           await setDoc(transcriptDocRef, {
@@ -313,5 +311,3 @@ export function useWatchPage() {
   }
   return context;
 }
-
-    

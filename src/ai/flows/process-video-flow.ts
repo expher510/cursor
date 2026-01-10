@@ -2,7 +2,7 @@
 'use server';
 /**
  * @fileOverview A flow for processing YouTube videos to extract transcripts and metadata
- * using the Youtube Transcriptor RapidAPI.
+ * using the `youtube-transcript` and `ytdl-core` libraries.
  *
  * - processVideo - A function that takes a YouTube video ID and returns its title, description, and transcript.
  * - ProcessVideoInput - The input type for the processVideo function.
@@ -11,7 +11,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import 'dotenv/config';
+import { YoutubeTranscript } from 'youtube-transcript';
+import ytdl from 'ytdl-core';
 
 // Schema Definitions
 const ProcessVideoInputSchema = z.object({
@@ -31,9 +32,9 @@ const ProcessVideoOutputSchema = z.object({
   title: z.string().describe('The title of the video.'),
   description: z.string().optional().nullable().describe('The description of the video.'),
   transcript: z.array(TranscriptItemSchema).describe('The transcript of the video with timestamps.'),
-  availableLangs: z.array(z.string()).describe('A list of available language codes for the transcript.'),
 });
 export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
+
 
 // This is the public wrapper function that components will call.
 export async function processVideo(input: ProcessVideoInput): Promise<ProcessVideoOutput> {
@@ -49,53 +50,43 @@ const processVideoFlow = ai.defineFlow(
     outputSchema: ProcessVideoOutputSchema,
   },
   async ({ videoId, lang }) => {
-    
-    const apiKey = process.env.RAPIDAPI_KEY;
-    if (!apiKey) {
-      throw new Error("RAPIDAPI_KEY is not defined in environment variables.");
-    }
-    
-    const url = `https://youtube-transcriptor.p.rapidapi.com/transcript?video_id=${videoId}&lang=${lang}`;
-    const options = {
-        method: 'GET',
-        headers: {
-            'x-rapidapi-key': apiKey,
-            'x-rapidapi-host': 'youtube-transcriptor.p.rapidapi.com'
-        }
-    };
+    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
     
     try {
-        const response = await fetch(url, options);
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
-        }
+        // Fetch transcript and video info concurrently
+        const [transcriptResponse, videoInfo] = await Promise.all([
+             YoutubeTranscript.fetchTranscript(videoUrl, { lang }),
+             ytdl.getInfo(videoUrl)
+        ]);
         
-        const data = await response.json();
-        
-        if (!Array.isArray(data) || data.length === 0) {
+        if (!transcriptResponse || transcriptResponse.length === 0) {
              throw new Error("No transcript found for this video. It might not have captions enabled in the requested language.");
         }
         
-        const videoInfo = data[0];
-
-        // The API returns offset and duration as strings, convert them to numbers (milliseconds)
-        const formattedTranscript: TranscriptItem[] = (videoInfo.transcript || []).map((sub: any) => ({
-            text: sub.text,
-            offset: parseFloat(sub.offset) * 1000,
-            duration: parseFloat(sub.duration) * 1000,
-        }));
+        // The API returns offset in milliseconds, but duration is not provided by this library, so we'll have to estimate it.
+        const formattedTranscript: TranscriptItem[] = transcriptResponse.map((item, index) => {
+            const nextItem = transcriptResponse[index + 1];
+            // Estimate duration based on the start of the next item, or a default of 3 seconds if it's the last one.
+            const duration = nextItem ? nextItem.offset - item.offset : 3000;
+            return {
+                ...item,
+                offset: item.offset, // Already in milliseconds
+                duration: duration,
+            };
+        });
         
         return {
-            title: videoInfo.title,
-            description: videoInfo.description,
+            title: videoInfo.videoDetails.title,
+            description: videoInfo.videoDetails.description,
             transcript: formattedTranscript,
-            availableLangs: videoInfo.availableLangs || [],
         };
 
     } catch (e: any) {
          console.error("Failed to fetch video details or transcript:", e.message);
          // Re-throw with a more user-friendly message
+         if (e.message.includes('Could not find transcript for this video')) {
+             throw new Error(`No transcript available for the requested language (${lang}). Please try another video.`);
+         }
          throw new Error(`Could not process video. Please check the video ID and try again. Original error: ${e.message}`);
     }
   }
