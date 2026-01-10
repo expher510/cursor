@@ -13,6 +13,7 @@ import { type QuizData } from '@/lib/quiz-data';
 import { useToast } from '@/hooks/use-toast';
 import { generateQuiz } from '@/ai/flows/generate-quiz-flow';
 import { extractAudio } from '@/ai/flows/extract-audio-flow';
+import { extractYouTubeVideoId } from '@/lib/utils';
 
 
 type VocabularyItem = {
@@ -117,9 +118,17 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     setVideoData(null);
 
     async function fetchAndProcessVideoData() {
+      // Ensure we are only using the 11-character video ID
+      const cleanVideoId = extractYouTubeVideoId(activeVideoId);
+      if (!cleanVideoId) {
+          setError("The provided YouTube URL or ID is invalid.");
+          setIsLoading(false);
+          return;
+      }
+
       try {
-        const videoDocRef = doc(firestore, `users/${user!.uid}/videos`, activeVideoId);
-        const transcriptDocRef = doc(firestore, `users/${user!.uid}/videos/${activeVideoId}/transcripts`, activeVideoId);
+        const videoDocRef = doc(firestore, `users/${user!.uid}/videos`, cleanVideoId);
+        const transcriptDocRef = doc(firestore, `users/${user!.uid}/videos/${cleanVideoId}/transcripts`, cleanVideoId);
         
         const videoDocSnap = await getDoc(videoDocRef);
         const transcriptDocSnap = await getDoc(transcriptDocRef);
@@ -132,16 +141,16 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             audioUrl: videoDocSnap.data().audioUrl,
             availableLangs: videoDocSnap.data().availableLangs || [],
             transcript: transcriptDocSnap.data().content,
-            videoId: activeVideoId
+            videoId: cleanVideoId
           };
           setVideoData(combinedData);
         } else {
           toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
-          const result = await processVideo({ videoId: activeVideoId });
-          const { audioUrl } = await extractAudio({ videoId: activeVideoId });
+          const result = await processVideo({ videoId: cleanVideoId });
+          const { audioUrl } = await extractAudio({ videoId: cleanVideoId });
           
           await setDoc(videoDocRef, {
-              id: activeVideoId,
+              id: cleanVideoId,
               title: result.title,
               description: result.description,
               userId: user.uid,
@@ -151,8 +160,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           }, { merge: true });
 
           await setDoc(transcriptDocRef, {
-              id: activeVideoId,
-              videoId: activeVideoId,
+              id: cleanVideoId,
+              videoId: cleanVideoId,
               content: result.transcript,
           }, { merge: true });
 
@@ -169,17 +178,17 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               vocabulary: vocabForQuiz.map(word => ({word, translation: ''}))
           });
           
-          const quizDocRef = doc(firestore, `users/${user.uid}/videos/${activeVideoId}/quizzes`, 'comprehensive-test');
+          const quizDocRef = doc(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`, 'comprehensive-test');
           await setDoc(quizDocRef, {
             id: 'comprehensive-test',
-            videoId: activeVideoId,
+            videoId: cleanVideoId,
             userId: user.uid,
             questions: quizQuestions.questions,
             userAnswers: [],
             score: 0
           }, { merge: true });
 
-          setVideoData({ ...result, videoId: activeVideoId, audioUrl: audioUrl });
+          setVideoData({ ...result, videoId: cleanVideoId, audioUrl: audioUrl });
         }
       } catch (e: any) {
         console.error("Error fetching or processing video data:", e);
@@ -205,7 +214,9 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   // Fetch Quiz Data
   const quizQuery = useMemoFirebase(() => {
     if (!user || !firestore || !activeVideoId) return null;
-    return query(collection(firestore, `users/${user.uid}/videos/${activeVideoId}/quizzes`));
+    const cleanVideoId = extractYouTubeVideoId(activeVideoId);
+    if (!cleanVideoId) return null;
+    return query(collection(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`));
   }, [user, firestore, activeVideoId]);
 
   const { data: quizzes } = useCollection<QuizData>(quizQuery);
@@ -214,7 +225,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
   const videoVocabulary = useMemo(() => {
     if (!allVocabulary || !activeVideoId) return [];
-    return allVocabulary.filter(item => item.videoId === activeVideoId);
+    const cleanVideoId = extractYouTubeVideoId(activeVideoId);
+    return allVocabulary.filter(item => item.videoId === cleanVideoId);
   }, [allVocabulary, activeVideoId]);
 
 
@@ -225,6 +237,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
   const addVocabularyItem = useCallback(async (word: string) => {
     if (!user || !firestore || !activeVideoId) return;
+    const cleanVideoId = extractYouTubeVideoId(activeVideoId);
+    if (!cleanVideoId) return;
 
     const cleanedWord = word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,"");
     if (!cleanedWord || savedWordsSet.has(cleanedWord)) return;
@@ -235,7 +249,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
       word: cleanedWord,
       translation: 'Translating...',
       userId: user.uid,
-      videoId: activeVideoId,
+      videoId: cleanVideoId,
     };
 
     // Optimistic UI update
@@ -249,7 +263,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             word: cleanedWord,
             translation: translation || 'No translation found',
             userId: user.uid,
-            videoId: activeVideoId,
+            videoId: cleanVideoId,
         });
 
         // Replace temporary item with real one from Firestore
@@ -299,3 +313,5 @@ export function useWatchPage() {
   }
   return context;
 }
+
+    
