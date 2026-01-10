@@ -20,12 +20,23 @@ export function CaptionView({ transcript, currentTime }: CaptionViewProps) {
     if (!transcript || transcript.length === 0) {
       return null;
     }
+
+    // Find the index of the last line that has started
+    let activeIndex = -1;
+    for (let i = 0; i < transcript.length; i++) {
+        if (transcript[i].offset <= currentTime) {
+            activeIndex = i;
+        } else {
+            break; // We've passed the current time
+        }
+    }
     
-    const currentLine = transcript.find(line => 
-        currentTime >= line.offset && currentTime < (line.offset + line.duration)
-    );
+    if (activeIndex !== -1) {
+        return transcript[activeIndex];
+    }
     
-    return currentLine || null;
+    // If no line has started yet (e.g., currentTime is before the first offset), show nothing.
+    return null;
 
   }, [transcript, currentTime]);
 
