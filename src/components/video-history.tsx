@@ -87,9 +87,9 @@ function HistoryCard({ item, isActive, onSelect, onAction }: { item: HistoryItem
                 </PopoverTrigger>
                 <PopoverContent side="top" className="w-auto p-2 bg-transparent border-none shadow-none" onClick={(e) => e.stopPropagation()}>
                     <div className="flex gap-2">
-                        <Button variant="ghost" size="sm" className="bg-primary/10 text-primary-foreground hover:bg-primary/20" onClick={(e) => handleAction(e, 'watch')}><Headphones className="mr-2"/> Listen</Button>
-                        <Button variant="ghost" size="sm" className="bg-primary/10 text-primary-foreground hover:bg-primary/20" onClick={(e) => handleAction(e, 'reading')}><BookOpen className="mr-2"/> Read</Button>
-                        <Button variant="ghost" size="sm" className="bg-primary/10 text-primary-foreground hover:bg-primary/20" onClick={(e) => handleAction(e, 'writing')}><Edit className="mr-2"/> Write</Button>
+                        <Button variant="ghost" size="sm" className="bg-primary/10 text-primary hover:bg-primary/20" onClick={(e) => handleAction(e, 'watch')}><Headphones className="mr-2"/> Listen</Button>
+                        <Button variant="ghost" size="sm" className="bg-primary/10 text-primary hover:bg-primary/20" onClick={(e) => handleAction(e, 'reading')}><BookOpen className="mr-2"/> Read</Button>
+                        <Button variant="ghost" size="sm" className="bg-primary/10 text-primary hover:bg-primary/20" onClick={(e) => handleAction(e, 'writing')}><Edit className="mr-2"/> Write</Button>
                     </div>
                 </PopoverContent>
             </Popover>
