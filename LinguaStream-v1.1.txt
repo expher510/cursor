@@ -1,0 +1,55 @@
+Project: LinguaStream
+Version: 1.1
+
+This document outlines the steps to publish your project to GitHub and deploy it on Vercel.
+
+---
+### Part 1: Publishing to GitHub
+---
+
+1.  **Initialize Git:** If you haven't already, open a terminal in your project's root directory and run the command `git init`. This will create a new Git repository.
+
+2.  **Add All Files:** Stage all the files in your project for the first commit by running `git add .` in the terminal.
+
+3.  **Make Your First Commit:** Commit the staged files with a descriptive message. For this version, you can use: `git commit -m "Initial commit: LinguaStream v1.1"`.
+
+4.  **Create a GitHub Repository:**
+    *   Go to [GitHub](https://github.com) and log in.
+    *   Click the "+" icon in the top-right corner and select "New repository".
+    *   Give your repository a name (e.g., `linguastream-app`).
+    *   Choose whether to make it public or private.
+    *   **Important:** Do **not** initialize it with a README, .gitignore, or license file, as your project already has these.
+    *   Click "Create repository".
+
+5.  **Link and Push:** GitHub will show you a set of commands. Copy and run the commands under the "...or push an existing repository from the command line" section. They will look like this:
+    ```bash
+    git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git
+    git branch -M main
+    git push -u origin main
+    ```
+    Replace `YOUR_USERNAME` and `YOUR_REPOSITORY_NAME` with your actual details.
+
+---
+### Part 2: Deploying to Vercel
+---
+
+Vercel makes deploying Next.js applications incredibly simple.
+
+1.  **Sign Up/Log In to Vercel:** Go to [Vercel](https://vercel.com) and sign up for a free account, preferably using your GitHub account for seamless integration.
+
+2.  **Import Your Project:**
+    *   From your Vercel dashboard, click "Add New..." and select "Project".
+    *   Vercel will ask to connect to your Git provider. Choose GitHub and authorize it.
+    *   You will see a list of your GitHub repositories. Find your `linguastream-app` repository and click the "Import" button next to it.
+
+3.  **Configure and Deploy:**
+    *   **Framework Preset:** Vercel will automatically detect that it's a Next.js project. You shouldn't need to change anything here.
+    *   **Environment Variables:** This is the most important step. Your application needs the `RAPIDAPI_KEY` to function.
+        *   Click on the "Environment Variables" section.
+        *   Add a new variable:
+            *   **Name:** `RAPIDAPI_KEY`
+            *   **Value:** Paste your actual RapidAPI key here (the one starting with `57db...`).
+        *   Click "Add".
+    *   **Deploy:** Click the "Deploy" button.
+
+Vercel will now automatically build your project and deploy it. Once finished, you'll be given a public URL where you can access your live application. Any future pushes to your `main` branch on GitHub will automatically trigger a new deployment on Vercel.
