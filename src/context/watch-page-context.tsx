@@ -134,7 +134,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         const transcriptDocSnap = await getDoc(transcriptDocRef);
 
         if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
-          toast({ variant: 'subtle', title: "Loading Existing Lesson"});
           const videoDocData = videoDocSnap.data();
           const combinedData: VideoData = {
             title: videoDocData.title,
@@ -321,3 +320,5 @@ export function useWatchPage() {
   }
   return context;
 }
+
+    

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Skeleton } from "./ui/skeleton";
@@ -16,8 +17,8 @@ import { QuizPlayer } from "./quiz-player";
 function LoadingState() {
   return (
      <div className="space-y-8 max-w-4xl mx-auto">
-        <div className="space-y-2">
-            <Skeleton className="h-10 w-3/4" />
+        <div className="space-y-2 text-center">
+            <Skeleton className="h-10 w-3/4 mx-auto" />
             <Skeleton className="h-6 w-full" />
         </div>
         <Skeleton className="aspect-video w-full rounded-lg" />
@@ -54,7 +55,7 @@ export function VideoWorkspace() {
   const [duration, setDuration] = useState(0);
   const playerRef = useRef<ReactPlayer>(null);
 
-  if (isLoading) {
+  if (isLoading && !videoData) {
     return <LoadingState />;
   }
 
@@ -78,8 +79,9 @@ export function VideoWorkspace() {
   return (
      <div className="flex flex-col items-center w-full max-w-4xl mx-auto">
         <div className="w-full space-y-2 text-center mb-8">
-            <div className="flex justify-center">
+            <div className="flex justify-center items-center gap-4">
               <Logo />
+               {isLoading && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
             </div>
             <p className="text-base text-muted-foreground max-w-3xl mx-auto">
                 Listen to the video and follow along with the synchronized transcript. Click any word to save it.
@@ -155,3 +157,5 @@ export function VideoWorkspace() {
     </div>
   );
 }
+
+    
