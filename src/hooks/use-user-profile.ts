@@ -19,8 +19,8 @@ export type UserProfile = {
 
 export function useUserProfile() {
   const { firestore, user } = useFirebase();
-  // We add a manual trigger to allow refetching
   const [refetchTrigger, setRefetchTrigger] = useState(0);
+  const [isEditing, setIsEditing] = useState(false);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -33,5 +33,12 @@ export function useUserProfile() {
     setRefetchTrigger(prev => prev + 1);
   }, []);
 
-  return { userProfile: data, isLoading, error, refetch };
+  return { 
+      userProfile: data, 
+      isLoading, 
+      error, 
+      refetch,
+      isEditing,
+      setIsEditing
+    };
 }

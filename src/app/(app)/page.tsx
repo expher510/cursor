@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useTransition } from "react";
+import { useState, useRef } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
 import { VideoHistory } from "@/components/video-history";
 import { Button } from "@/components/ui/button";
@@ -65,7 +65,7 @@ function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivi
 function MainContent() {
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const { user } = useFirebase();
-  const { userProfile, isLoading: isProfileLoading } = useUserProfile();
+  const { userProfile, isLoading: isProfileLoading, setIsEditing } = useUserProfile();
   const router = useRouter();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -104,7 +104,15 @@ function MainContent() {
       }
       if (userProfile?.targetLanguage) {
           const languageName = LANGUAGE_MAP[userProfile.targetLanguage] || userProfile.targetLanguage;
-          return `Learn ${languageName} with YouTube. Paste a link below to start a lesson.`
+          return (
+            <span>
+                Learn{' '}
+                <Button variant="link" className="p-0 h-auto text-xl text-primary" onClick={() => setIsEditing(true)}>
+                    {languageName}
+                </Button>
+                {' '}with YouTube. Paste a link below to start a lesson.
+            </span>
+          )
       }
       return 'Paste a YouTube link below to turn any video into an interactive language lesson.'
   }

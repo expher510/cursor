@@ -29,8 +29,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import type { UserProfile } from '@/hooks/use-user-profile';
 
 const OnboardingSchema = z.object({
   displayName: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -44,18 +45,34 @@ type OnboardingFormValues = z.infer<typeof OnboardingSchema>;
 type OnboardingModalProps = {
   open: boolean;
   onSave: (data: OnboardingFormValues) => Promise<void>;
+  isEditMode?: boolean;
+  initialData?: Partial<UserProfile>;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export function OnboardingModal({ open, onSave }: OnboardingModalProps) {
+export function OnboardingModal({ open, onSave, isEditMode = false, initialData, onOpenChange }: OnboardingModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<OnboardingFormValues>({
     resolver: zodResolver(OnboardingSchema),
     defaultValues: {
-      displayName: '',
-      learningGoal: '',
+      displayName: initialData?.displayName || '',
+      targetLanguage: initialData?.targetLanguage || undefined,
+      proficiencyLevel: initialData?.proficiencyLevel || undefined,
+      learningGoal: initialData?.learningGoal || '',
     },
   });
+  
+  useEffect(() => {
+    if (initialData) {
+      form.reset({
+        displayName: initialData.displayName || '',
+        targetLanguage: initialData.targetLanguage || undefined,
+        proficiencyLevel: initialData.proficiencyLevel || undefined,
+        learningGoal: initialData.learningGoal || '',
+      });
+    }
+  }, [initialData, form]);
 
   const onSubmit = async (data: OnboardingFormValues) => {
     setIsSubmitting(true);
@@ -65,12 +82,12 @@ export function OnboardingModal({ open, onSave }: OnboardingModalProps) {
   };
 
   return (
-    <Dialog open={open}>
-      <DialogContent className="sm:max-w-[480px]" onInteractOutside={(e) => e.preventDefault()}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[480px]" onInteractOutside={(e) => { if (!isEditMode) e.preventDefault(); }}>
         <DialogHeader>
-          <DialogTitle className="text-2xl">Welcome to LinguaStream!</DialogTitle>
+          <DialogTitle className="text-2xl">{isEditMode ? 'Update Your Profile' : 'Welcome to LinguaStream!'}</DialogTitle>
           <DialogDescription>
-            Let&apos;s personalize your learning experience. Tell us a bit about yourself.
+             {isEditMode ? 'Make changes to your learning preferences below.' : "Let's personalize your learning experience. Tell us a bit about yourself."}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -95,7 +112,7 @@ export function OnboardingModal({ open, onSave }: OnboardingModalProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>I want to learn...</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select a language" />
@@ -117,7 +134,7 @@ export function OnboardingModal({ open, onSave }: OnboardingModalProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>My level is...</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="Select your level" />
@@ -154,7 +171,7 @@ export function OnboardingModal({ open, onSave }: OnboardingModalProps) {
             <DialogFooter>
               <Button type="submit" className="w-full" disabled={isSubmitting}>
                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Get Started
+                {isEditMode ? 'Save Changes' : 'Get Started'}
               </Button>
             </DialogFooter>
           </form>

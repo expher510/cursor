@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 function AuthenticatedFlow({ children }: { children: React.ReactNode }) {
     const { user, firestore, auth } = useFirebase();
-    const { userProfile, isLoading: isProfileLoading, refetch } = useUserProfile();
+    const { userProfile, isLoading: isProfileLoading, refetch, isEditing, setIsEditing } = useUserProfile();
     const [isEnsuringUserDoc, setIsEnsuringUserDoc] = useState(false);
 
     useEffect(() => {
@@ -85,6 +85,7 @@ function AuthenticatedFlow({ children }: { children: React.ReactNode }) {
                 onboardingCompleted: true,
             }, { merge: true });
             refetch(); // Refetch the user profile to hide the modal
+            setIsEditing(false); // Close modal if it was in edit mode
         } catch (error) {
             console.error("Failed to save onboarding data:", error);
             // Optionally, show a toast to the user
@@ -93,6 +94,8 @@ function AuthenticatedFlow({ children }: { children: React.ReactNode }) {
 
     const isLoading = isProfileLoading || isEnsuringUserDoc;
     const showOnboarding = userProfile && !userProfile.onboardingCompleted;
+    const showEditModal = isEditing && userProfile;
+
 
     if (isLoading) {
        return (
@@ -107,8 +110,20 @@ function AuthenticatedFlow({ children }: { children: React.ReactNode }) {
 
     return (
         <>
-            {showOnboarding && <OnboardingModal open={showOnboarding} onSave={handleOnboardingSave} />}
-            {!showOnboarding && children}
+            {(showOnboarding || showEditModal) && (
+                 <OnboardingModal
+                    open={showOnboarding || showEditModal}
+                    onSave={handleOnboardingSave}
+                    isEditMode={showEditModal}
+                    initialData={userProfile || undefined}
+                    onOpenChange={(open) => {
+                        if (!open) {
+                            setIsEditing(false);
+                        }
+                    }}
+                />
+            )}
+            {!(showOnboarding || showEditModal) && children}
         </>
     )
 }
