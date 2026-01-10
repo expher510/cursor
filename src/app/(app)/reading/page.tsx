@@ -313,10 +313,12 @@ function ReadingPracticePageContent() {
                         disabled={recorderState.status === 'stopped' || !segmentToLoop}
                         className={cn(
                             "h-20 w-20 rounded-full shadow-lg",
-                            !segmentToLoop && "bg-muted-foreground",
-                            recorderState.status === 'recording' && "bg-red-600 hover:bg-red-700 animate-pulse",
-                            recorderState.status === 'stopped' && "bg-muted-foreground",
-                             recorderState.status !== 'recording' && recorderState.status !== 'stopped' && segmentToLoop && "bg-primary"
+                            {
+                                'bg-muted-foreground': !segmentToLoop,
+                                'bg-red-600 hover:bg-red-700 animate-pulse': recorderState.status === 'recording',
+                                'bg-primary': recorderState.status !== 'recording' && recorderState.status !== 'stopped' && segmentToLoop,
+                                'bg-muted-foreground': recorderState.status === 'stopped',
+                            }
                         )}
                     >
                         <Mic className="h-10 w-10" />
@@ -354,3 +356,5 @@ export default function ReadingPage() {
       </>
   );
 }
+
+    
