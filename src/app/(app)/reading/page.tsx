@@ -58,7 +58,7 @@ function RecordingTimer({ isRecording }: { isRecording: boolean }) {
 }
 
 function ReadOutLoudController() {
-    const { videoData, isLoading, error } = useWatchPage();
+    const { videoData } = useWatchPage();
     const { user, firestore } = useFirebase();
     const { userProfile } = useUserProfile();
     const { toast } = useToast();
@@ -88,9 +88,18 @@ function ReadOutLoudController() {
 
         const fullTranscript = videoData.transcript.map(t => t.text).join(' ');
 
+        // This is a placeholder for a proper Speech-to-Text service
+        const FAKE_TRANSCRIPTION = "This is a placeholder for the real transcription from the audio.";
+
+
         try {
+            // NOTE: The current AI model doesn't process audio directly.
+            // In a real scenario, you'd use a speech-to-text service first,
+            // then pass the transcribed text to the feedback flow.
+            // For now, we'll simulate this by sending a placeholder transcription.
+            
             const feedback = await generateSpeechFeedback({
-                audioDataUri: audioData.url,
+                transcribedText: FAKE_TRANSCRIPTION, // This should be the real transcription
                 originalText: fullTranscript,
                 targetLanguage: userProfile.targetLanguage,
             });
@@ -101,9 +110,10 @@ function ReadOutLoudController() {
             await addDoc(attemptsCollection, {
                 userId: user.uid,
                 videoId: videoData.videoId,
-                audioUrl: audioData.url,
+                audioUrl: audioData.url, // Still save the audio for future use
                 timestamp: Date.now(),
                 originalText: fullTranscript,
+                transcribedText: FAKE_TRANSCRIPTION, // Save the (fake) transcription
                 aiFeedback: feedback,
             });
             toast({ title: "Recording Saved!", description: "Your speaking practice has been saved with AI feedback." });
@@ -170,7 +180,7 @@ function ReadOutLoudController() {
 
 
 function ReadingPracticePageContent() {
-    const { videoData, isLoading, error, isGeneratingQuiz } = useWatchPage();
+    const { videoData, isLoading, error } = useWatchPage();
 
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
@@ -333,3 +343,5 @@ export default function ReadingPage() {
       </>
   );
 }
+
+    
