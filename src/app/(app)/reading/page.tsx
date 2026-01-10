@@ -12,6 +12,7 @@ import { useState, useRef, useCallback, useMemo } from "react";
 import ReactPlayer from "react-player";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 
 function ReadingPracticePageContent() {
@@ -20,17 +21,22 @@ function ReadingPracticePageContent() {
     const [currentTime, setCurrentTime] = useState(0);
     const [duration, setDuration] = useState(0);
     const playerRef = useRef<ReactPlayer>(null);
+    const [isShadowing, setIsShadowing] = useState(false);
+    const [segmentToLoop, setSegmentToLoop] = useState<{ start: number, duration: number } | null>(null);
 
     const handlePlayPause = () => {
         setIsPlaying(prev => !prev);
     };
 
-    const handlePlaySegment = useCallback((offset: number) => {
+    const handlePlaySegment = useCallback((offset: number, duration: number) => {
         if (playerRef.current) {
+            if (isShadowing) {
+                setSegmentToLoop({ start: offset / 1000, duration: duration / 1000 });
+            }
             playerRef.current.seekTo(offset / 1000, 'seconds');
             setIsPlaying(true);
         }
-    }, []);
+    }, [isShadowing]);
 
     const activeSegmentId = useMemo(() => {
         const transcript = videoData?.transcript;
@@ -68,6 +74,16 @@ function ReadingPracticePageContent() {
         return activeIndex !== -1 ? `${videoData?.videoId}-${activeIndex}` : null;
     }, [videoData?.transcript, videoData?.videoId, currentTime]);
 
+    const handleToggleShadowing = () => {
+      setIsShadowing(prev => {
+        const newMode = !prev;
+        if (!newMode) {
+          // When turning off shadowing, stop any looping.
+          setSegmentToLoop(null);
+        }
+        return newMode;
+      });
+    }
 
     if (isLoading) {
         return (
@@ -118,10 +134,17 @@ function ReadingPracticePageContent() {
                 <div className="flex justify-center">
                     <Logo />
                 </div>
-                <div className="mt-2 space-y-2">
+                <div className="mt-2 space-y-4">
                     <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                       Read the text, save new words, and listen along. Click any line to play its audio.
+                       {isShadowing 
+                         ? "Shadowing Mode: Click a line to loop its audio and practice along."
+                         : "Read the text, save new words, and listen along. Click any line to play its audio."
+                       }
                     </p>
+                    <Button variant={isShadowing ? "secondary" : "outline"} onClick={handleToggleShadowing} size="lg">
+                      <BrainCircuit className={cn("mr-2", isShadowing && "text-primary")} />
+                      {isShadowing ? "Exit Shadowing" : "Shadowing Practice"}
+                    </Button>
                 </div>
             </div>
             
@@ -138,7 +161,7 @@ function ReadingPracticePageContent() {
             </>
 
             {/* Floating Audio Player Button */}
-            {videoData.audioUrl && (
+            {videoData.audioUrl && !isShadowing && (
                 <Button 
                     onClick={handlePlayPause} 
                     size="lg"
@@ -150,6 +173,19 @@ function ReadingPracticePageContent() {
                 </Button>
             )}
 
+            {/* Shadowing UI */}
+            {isShadowing && (
+                 <div className="fixed bottom-8 right-8 z-50 flex flex-col items-center gap-4">
+                     <Button 
+                        size="lg"
+                        className="h-20 w-20 rounded-full shadow-lg bg-red-600 hover:bg-red-700"
+                    >
+                        <Mic className="h-10 w-10" />
+                        <span className="sr-only">Record</span>
+                    </Button>
+                </div>
+            )}
+
 
             {/* Hidden Audio Player */}
             {videoData.audioUrl && (
@@ -158,11 +194,17 @@ function ReadingPracticePageContent() {
                         ref={playerRef}
                         url={videoData.audioUrl}
                         playing={isPlaying}
-                        onProgress={(state) => setCurrentTime(state.playedSeconds * 1000)}
+                        onProgress={(state) => {
+                          setCurrentTime(state.playedSeconds * 1000);
+                          if (segmentToLoop && state.playedSeconds >= segmentToLoop.start + segmentToLoop.duration) {
+                            playerRef.current?.seekTo(segmentToLoop.start, 'seconds');
+                          }
+                        }}
                         onDuration={setDuration}
                         width="0"
                         height="0"
                         controls={false}
+                        loop={isShadowing}
                     />
                 </div>
             )}
