@@ -95,8 +95,18 @@ const generateQuizFlow = ai.defineFlow(
         throw new Error("No content in AI response.");
       }
 
+      // Find the start and end of the JSON object
+      const jsonStart = content.indexOf('{');
+      const jsonEnd = content.lastIndexOf('}');
+
+      if (jsonStart === -1 || jsonEnd === -1) {
+          throw new Error("Valid JSON object not found in AI response.");
+      }
+      
+      const jsonString = content.substring(jsonStart, jsonEnd + 1);
+
       // The AI should return a JSON string, so we parse it.
-      const parsedContent = JSON.parse(content);
+      const parsedContent = JSON.parse(jsonString);
 
       // Validate the parsed content against our Zod schema.
       const validatedOutput = GenerateQuizOutputSchema.parse(parsedContent);
