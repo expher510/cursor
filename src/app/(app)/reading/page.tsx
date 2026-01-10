@@ -1,3 +1,4 @@
+
 'use client';
 import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
@@ -21,9 +22,6 @@ function ReadingPracticePageContent() {
     const [duration, setDuration] = useState(0);
     const playerRef = useRef<ReactPlayer>(null);
 
-    const [isExerciseMode, setIsExerciseMode] = useState(false);
-    const [currentExerciseSegment, setCurrentExerciseSegment] = useState<number | null>(null);
-
     const handlePlayPause = () => {
         setIsPlaying(prev => !prev);
     };
@@ -38,12 +36,7 @@ function ReadingPracticePageContent() {
     const activeSegmentId = useMemo(() => {
         if (!videoData?.transcript) return null;
         
-        // If in exercise mode, the active segment is the one being exercised
-        if (isExerciseMode && currentExerciseSegment !== null) {
-            return `${videoData.videoId}-${currentExerciseSegment}`;
-        }
-
-        // Otherwise, it's based on audio playback time
+        // it's based on audio playback time
         let activeIndex = -1;
         for (let i = 0; i < videoData.transcript.length; i++) {
             if (videoData.transcript[i].offset <= currentTime) {
@@ -58,19 +51,7 @@ function ReadingPracticePageContent() {
         }
 
         return null;
-    }, [currentTime, videoData?.transcript, videoData?.videoId, isExerciseMode, currentExerciseSegment]);
-
-    const startExercise = () => {
-        setIsExerciseMode(true);
-        setCurrentExerciseSegment(0);
-        handlePlaySegment(videoData?.transcript[0]?.offset ?? 0);
-    };
-
-    const finishExercise = () => {
-        setIsExerciseMode(false);
-        setCurrentExerciseSegment(null);
-        setIsPlaying(false);
-    };
+    }, [currentTime, videoData?.transcript, videoData?.videoId]);
 
 
     if (isLoading) {
@@ -122,23 +103,11 @@ function ReadingPracticePageContent() {
                 <div className="flex justify-center">
                     <Logo />
                 </div>
-                 {isExerciseMode ? (
-                    <div className="mt-2 space-y-2">
-                        <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                            <span className="font-semibold text-primary">Shadowing Mode:</span> Listen to the current segment, then record yourself repeating it.
-                        </p>
-                        <Button onClick={finishExercise} variant="secondary">Finish Exercise</Button>
-                    </div>
-                ) : (
-                    <div className="mt-2 space-y-2">
-                        <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                           Read the text, save new words, and listen along. Click any line to play its audio.
-                        </p>
-                        <Button onClick={startExercise}>
-                            <BrainCircuit className="mr-2 h-5 w-5"/> Start Shadowing Exercise
-                        </Button>
-                    </div>
-                 )}
+                <div className="mt-2 space-y-2">
+                    <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+                       Read the text, save new words, and listen along. Click any line to play its audio.
+                    </p>
+                </div>
             </div>
             
             <>
@@ -167,27 +136,6 @@ function ReadingPracticePageContent() {
                         controls={false}
                     />
                 </div>
-            )}
-
-
-            {/* Floating Action Buttons */}
-            {isExerciseMode && (
-                 <div className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-3">
-                    <Button
-                        size="icon"
-                        className="h-16 w-16 rounded-full shadow-lg bg-blue-500 hover:bg-blue-600"
-                        onClick={() => currentExerciseSegment !== null && handlePlaySegment(videoData.transcript[currentExerciseSegment].offset)}
-                    >
-                        <Play className="h-8 w-8" />
-                    </Button>
-                     <Button
-                        size="icon"
-                        className="h-16 w-16 rounded-full shadow-lg bg-red-500 hover:bg-red-600"
-                        onClick={() => alert("Recording feature coming soon!")}
-                    >
-                        <Mic className="h-8 w-8" />
-                    </Button>
-                 </div>
             )}
         </div>
     )
