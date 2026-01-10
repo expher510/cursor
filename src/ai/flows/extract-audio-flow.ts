@@ -34,8 +34,8 @@ const pollForLink = async (videoId: string, apiKey: string): Promise<any> => {
     const options = {
         method: 'GET',
         headers: {
-            'X-RapidAPI-Key': apiKey,
-            'X-RapidAPI-Host': 'youtube-mp36.p.rapidapi.com'
+            'x-rapidapi-key': apiKey,
+            'x-rapidapi-host': 'youtube-mp36.p.rapidapi.com'
         }
     };
     const response = await fetch(url, options);
@@ -43,7 +43,11 @@ const pollForLink = async (videoId: string, apiKey: string): Promise<any> => {
         const errorBody = await response.text();
         throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
     }
-    return response.json();
+    const result = await response.json();
+    if (!result || typeof result !== 'object') {
+        throw new Error('Invalid JSON response from API');
+    }
+    return result;
 }
 
 
@@ -65,6 +69,7 @@ const extractAudioFlow = ai.defineFlow(
 
         // If the API returns a processing status, wait and poll again.
         if (result.status === 'processing') {
+            console.log(`Audio for ${videoId} is processing, waiting 5 seconds...`);
             await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds
             result = await pollForLink(videoId, apiKey);
         }
@@ -72,8 +77,8 @@ const extractAudioFlow = ai.defineFlow(
         if (result.status === 'ok' && result.link) {
              return { audioUrl: result.link };
         } else {
-            // Handle other statuses like 'fail' or unexpected responses
-            throw new Error(result.msg || 'Failed to extract audio link from API response.');
+            // Handle other statuses like 'fail' or unexpected responses after retry
+            throw new Error(`Failed to extract audio. Final status: ${result.status}, Message: ${result.msg}`);
         }
     } catch (e: any) {
         console.error("Failed to extract audio from video:", e.message);
