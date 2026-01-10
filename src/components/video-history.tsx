@@ -77,8 +77,7 @@ function HistoryCard({ item, isActive, onSelect, onAction }: { item: HistoryItem
                     <div
                         className={cn(
                             "absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity",
-                            isActive && "opacity-100",
-                            isNavigating && "opacity-100"
+                            (isActive || isNavigating) && "opacity-100"
                         )}
                     >
                          <Button variant="secondary" disabled={isNavigating}>
@@ -86,7 +85,7 @@ function HistoryCard({ item, isActive, onSelect, onAction }: { item: HistoryItem
                          </Button>
                     </div>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-2" onClick={(e) => e.stopPropagation()}>
+                <PopoverContent side="top" className="w-auto p-2 bg-transparent border-none shadow-none" onClick={(e) => e.stopPropagation()}>
                     <div className="flex gap-2">
                         <Button variant="ghost" size="sm" onClick={(e) => handleAction(e, 'watch')}><Headphones className="mr-2"/> Listen</Button>
                         <Button variant="ghost" size="sm" onClick={(e) => handleAction(e, 'reading')}><BookOpen className="mr-2"/> Read</Button>
