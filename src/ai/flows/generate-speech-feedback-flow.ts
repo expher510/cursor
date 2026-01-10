@@ -104,7 +104,7 @@ const generateSpeechFeedbackFlow = ai.defineFlow(
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                model: "google/gemini-flash-1.5", 
+                model: "google/gemma-2-9b-it:free", 
                 messages: [{ "role": "user", "content": prompt }],
             })
         });
