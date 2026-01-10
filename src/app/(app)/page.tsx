@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef } from "react";
+import { useState, useRef, useTransition } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
 import { VideoHistory } from "@/components/video-history";
 import { Button } from "@/components/ui/button";
@@ -20,26 +20,32 @@ type SourceType = 'youtube' | 'cards';
 
 function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivitySelect: (activity: ActivityType) => void, isProcessing: boolean, videoId: string | null }) {
   const isEnabled = !!videoId;
+  const [pendingActivity, setPendingActivity] = useState<ActivityType | null>(null);
+
+  const handleClick = (activity: ActivityType) => {
+    setPendingActivity(activity);
+    onActivitySelect(activity);
+  }
 
   return (
     <div className="w-full max-w-4xl pt-10 text-left">
        <h2 className="text-2xl font-bold font-headline mb-6 text-center">Choose Your Practice</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => onActivitySelect('watch')}>
-            {isProcessing && <Loader2 className="mr-2 animate-spin" />}
+        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleClick('watch')}>
+            {isProcessing && pendingActivity === 'watch' && <Loader2 className="mr-2 animate-spin" />}
             <Headphones className="mr-2" />
             Start Listening
         </Button>
         
-        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => onActivitySelect('reading')}>
-            {isProcessing && <Loader2 className="mr-2 animate-spin" />}
+        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleClick('reading')}>
+            {isProcessing && pendingActivity === 'reading' && <Loader2 className="mr-2 animate-spin" />}
             <BookOpen className="mr-2" />
             Start Reading
         </Button>
 
-        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => onActivitySelect('writing')}>
-            {isProcessing && <Loader2 className="mr-2 animate-spin" />}
+        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleClick('writing')}>
+            {isProcessing && pendingActivity === 'writing' && <Loader2 className="mr-2 animate-spin" />}
             <Edit className="mr-2" />
             Start Writing
         </Button>
@@ -73,6 +79,7 @@ function MainContent() {
         return;
     };
     
+    setIsProcessing(true);
     // The responsibility of fetching/checking data is in the WatchPageProvider.
     // This component's only job is to navigate with the correct parameters.
     router.push(`/${activity}?v=${videoIdToUse}&shouldGenerate=${shouldGenerate}`);
