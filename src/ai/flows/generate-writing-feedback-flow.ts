@@ -17,6 +17,7 @@ const GenerateWritingFeedbackInputSchema = z.object({
   writingText: z.string().describe("The text written by the user."),
   usedWords: z.array(z.string()).describe("The list of words the user was prompted to use."),
   targetLanguage: z.string().describe("The language the user is learning."),
+  nativeLanguage: z.string().describe("The user's native language."),
   proficiencyLevel: z.string().describe("The user's proficiency level."),
 });
 export type GenerateWritingFeedbackInput = z.infer<typeof GenerateWritingFeedbackInputSchema>;
@@ -43,7 +44,7 @@ const generateWritingFeedbackFlow = ai.defineFlow(
     inputSchema: GenerateWritingFeedbackInputSchema,
     outputSchema: GenerateWritingFeedbackOutputSchema,
   },
-  async ({ writingText, usedWords, targetLanguage, proficiencyLevel }) => {
+  async ({ writingText, usedWords, targetLanguage, nativeLanguage, proficiencyLevel }) => {
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
       throw new Error("OPENROUTER_API_KEY is not defined in environment variables.");
@@ -51,8 +52,9 @@ const generateWritingFeedbackFlow = ai.defineFlow(
 
     const prompt = `
       You are an expert ${targetLanguage} language teacher evaluating a writing sample from a student whose proficiency level is '${proficiencyLevel}'.
+      The student's native language is ${nativeLanguage}.
 
-      The student was asked to write a short text using the following words:
+      The student was asked to write a short text in ${targetLanguage} using the following words:
       [${usedWords.join(', ')}]
 
       Here is the student's writing sample:
@@ -60,12 +62,12 @@ const generateWritingFeedbackFlow = ai.defineFlow(
       ${writingText}
       ---
 
-      Your task is to provide feedback in a structured JSON format.
+      Your task is to provide feedback in a structured JSON format. The feedback ITSELF must be in the student's NATIVE language (${nativeLanguage}).
       
       Here are the rules for your evaluation:
-      1.  **Feedback**: Write a concise, constructive paragraph of feedback. Comment on grammar, vocabulary usage (did they use the words correctly?), and overall coherence. Keep the feedback encouraging.
+      1.  **Feedback**: Write a concise, constructive paragraph of feedback in ${nativeLanguage}. Comment on grammar, vocabulary usage (did they use the words correctly?), and overall coherence. Keep the feedback encouraging.
       2.  **Score**: Give a score from 0 to 100.
-      3.  **Suggestions**: Provide a list of 2-3 specific, actionable suggestions for improvement.
+      3.  **Suggestions**: Provide a list of 2-3 specific, actionable suggestions for improvement, also written in ${nativeLanguage}.
 
       Provide the output as a SINGLE, VALID JSON object with the keys "feedback", "score", and "suggestions".
       Return ONLY the JSON object. Do not include any other text, explanations, or markdown formatting like \`\`\`json.

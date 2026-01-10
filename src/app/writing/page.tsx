@@ -162,6 +162,7 @@ function WritingWorkspace() {
                 writingText,
                 usedWords: exerciseWords,
                 targetLanguage: userProfile.targetLanguage,
+                nativeLanguage: userProfile.nativeLanguage,
                 proficiencyLevel: userProfile.proficiencyLevel,
             });
 
