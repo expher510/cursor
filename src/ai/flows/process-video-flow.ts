@@ -2,7 +2,7 @@
 'use server';
 /**
  * @fileOverview A flow for processing YouTube videos to extract transcripts
- * using the `youtube-transcript` library.
+ * using the `youtube-caption-extractor` library.
  *
  * - processVideo - A function that takes a YouTube video ID and returns its transcript.
  * - ProcessVideoInput - The input type for the processVideo function.
@@ -11,7 +11,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { YoutubeTranscript } from 'youtube-transcript';
+import { getYoutubeCaption } from 'youtube-caption-extractor';
 
 // Schema Definitions
 const ProcessVideoInputSchema = z.object({
@@ -47,22 +47,18 @@ const processVideoFlow = ai.defineFlow(
     outputSchema: ProcessVideoOutputSchema,
   },
   async ({ videoId, lang }) => {
-    const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    
     try {
-        const transcriptResponse = await YoutubeTranscript.fetchTranscript(videoUrl, { lang });
+        const transcriptResponse = await getYoutubeCaption({ videoID: videoId, lang });
         
         if (!transcriptResponse || transcriptResponse.length === 0) {
              throw new Error("No transcript found for this video. It might not have captions enabled in the requested language.");
         }
         
-        const formattedTranscript: TranscriptItem[] = transcriptResponse.map((item, index) => {
-            const nextItem = transcriptResponse[index + 1];
-            const duration = nextItem ? nextItem.offset - item.offset : 3000;
+        const formattedTranscript: TranscriptItem[] = transcriptResponse.map((item) => {
             return {
-                ...item,
-                offset: item.offset,
-                duration: duration,
+                text: item.text,
+                offset: parseFloat(item.start) * 1000,
+                duration: parseFloat(item.dur) * 1000,
             };
         });
         
