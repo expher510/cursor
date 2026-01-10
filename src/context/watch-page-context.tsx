@@ -9,9 +9,8 @@ import { useMemoFirebase } from '@/firebase/provider';
 import { processVideo, type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 import { translateWord } from '@/ai/flows/translate-word-flow';
 import { useSearchParams } from 'next/navigation';
-import { type QuizData } from '@/lib/quiz-data';
+import { type QuizData, MOCK_QUIZ_QUESTIONS } from '@/lib/quiz-data';
 import { useToast } from '@/hooks/use-toast';
-import { generateQuiz } from '@/ai/flows/generate-quiz-flow';
 import { extractAudio } from '@/ai/flows/extract-audio-flow';
 import { extractYouTubeVideoId } from '@/lib/utils';
 
@@ -165,31 +164,16 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               videoId: cleanVideoId,
               content: result.transcript,
           }, { merge: true });
-
-          if (result.transcript.length > 0) {
-            const transcriptText = result.transcript.map(t => t.text).join(' ');
-            const vocabForQuiz = Array.from(new Set(
-                  result.transcript
-                  .flatMap(item => item.text.split(' '))
-                  .map(word => word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,""))
-                  .filter(Boolean)
-              )).slice(0, 15);
-            
-            const quizQuestions = await generateQuiz({
-                transcript: transcriptText,
-                vocabulary: vocabForQuiz.map(word => ({word, translation: ''}))
-            });
-            
-            const quizDocRef = doc(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`, 'comprehensive-test');
-            await setDoc(quizDocRef, {
-              id: 'comprehensive-test',
-              videoId: cleanVideoId,
-              userId: user.uid,
-              questions: quizQuestions.questions,
-              userAnswers: [],
-              score: 0
-            }, { merge: true });
-          }
+          
+          const quizDocRef = doc(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`, 'comprehensive-test');
+          await setDoc(quizDocRef, {
+            id: 'comprehensive-test',
+            videoId: cleanVideoId,
+            userId: user.uid,
+            questions: MOCK_QUIZ_QUESTIONS,
+            userAnswers: [],
+            score: 0
+          }, { merge: true });
 
           setVideoData({ ...result, videoId: cleanVideoId, audioUrl: audioUrl });
         } else {
@@ -320,5 +304,3 @@ export function useWatchPage() {
   }
   return context;
 }
-
-    
