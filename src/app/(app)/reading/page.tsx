@@ -34,30 +34,40 @@ function ReadingPracticePageContent() {
     }, []);
 
     const activeSegmentId = useMemo(() => {
-    const transcript = videoData?.transcript;
-    
-    if (!transcript?.length) {
-        return null;
-    }
-
-    // Binary search for better performance with large transcripts
-    let left = 0;
-    let right = transcript.length - 1;
-    let activeIndex = -1;
-
-    while (left <= right) {
-        const mid = Math.floor((left + right) / 2);
-        
-        if (transcript[mid].offset <= currentTime) {
-            activeIndex = mid;
-            left = mid + 1; // Look for a later match
-        } else {
-            right = mid - 1;
+        const transcript = videoData?.transcript;
+        if (!transcript || transcript.length === 0) {
+            return null;
         }
-    }
 
-    return activeIndex !== -1 ? `${videoData.videoId}-${activeIndex}` : null;
-}, [videoData?.transcript, videoData?.videoId, currentTime]);
+        // Find the index of the first segment that starts AFTER the current time.
+        let nextSegmentIndex = -1;
+        let left = 0;
+        let right = transcript.length - 1;
+
+        while (left <= right) {
+            const mid = Math.floor(left + (right - left) / 2);
+            if (transcript[mid].offset > currentTime) {
+                nextSegmentIndex = mid;
+                right = mid - 1; // Look for an earlier segment that's also in the future
+            } else {
+                left = mid + 1; // This segment has already started, look later
+            }
+        }
+        
+        let activeIndex;
+        if (nextSegmentIndex === -1) {
+            // If no segment is in the future, we're at the last segment.
+            activeIndex = transcript.length - 1;
+        } else if (nextSegmentIndex === 0) {
+            // If the first segment is in the future, nothing is active yet.
+            activeIndex = -1;
+        } else {
+            // The active segment is the one right before the "next" one.
+            activeIndex = nextSegmentIndex - 1;
+        }
+
+        return activeIndex !== -1 ? `${videoData?.videoId}-${activeIndex}` : null;
+    }, [videoData?.transcript, videoData?.videoId, currentTime]);
 
 
     if (isLoading) {
