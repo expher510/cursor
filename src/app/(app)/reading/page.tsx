@@ -1,4 +1,3 @@
-
 'use client';
 import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
