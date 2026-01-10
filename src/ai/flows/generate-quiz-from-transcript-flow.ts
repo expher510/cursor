@@ -76,7 +76,6 @@ const generateQuizFlow = ai.defineFlow(
         },
         body: JSON.stringify({
           model: "google/gemma-3n-e2b-it:free",
-          response_format: { "type": "json_object" },
           messages: [
             { "role": "user", "content": prompt }
           ]
@@ -110,4 +109,3 @@ const generateQuizFlow = ai.defineFlow(
     }
   }
 );
-
