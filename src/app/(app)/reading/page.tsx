@@ -1,9 +1,10 @@
+
 'use client';
 import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, BrainCircuit, Check, Mic, Play, Pause, Trash2 } from "lucide-react";
+import { AlertTriangle, BrainCircuit, Check, Mic, Play, Pause, Trash2, Loader2, Sparkles, CheckCircle } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -17,11 +18,14 @@ import { useRecorder } from "@/hooks/use-recorder";
 import { useFirebase } from "@/firebase";
 import { addDoc, collection } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { useUserProfile } from "@/hooks/use-user-profile";
+import { generateSpeechFeedback, type GenerateSpeechFeedbackOutput } from "@/ai/flows/generate-speech-feedback-flow";
 
 
 function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
     const { user, firestore } = useFirebase();
+    const { userProfile } = useUserProfile();
     const { toast } = useToast();
     const { recorderState, startRecording, stopRecording, cancelRecording, audioData } = useRecorder();
 
@@ -29,18 +33,21 @@ function ReadingPracticePageContent() {
     const [currentTime, setCurrentTime] = useState(0);
     const playerRef = useRef<ReactPlayer>(null);
     const [isShadowing, setIsShadowing] = useState(false);
-    const [segmentToLoop, setSegmentToLoop] = useState<{ start: number, duration: number } | null>(null);
+    const [segmentToLoop, setSegmentToLoop] = useState<{ start: number, duration: number, text: string } | null>(null);
+    
+    const [isSaving, setIsSaving] = useState(false);
+    const [feedbackResult, setFeedbackResult] = useState<GenerateSpeechFeedbackOutput | null>(null);
 
     const handlePlayPause = () => {
         setIsPlaying(prev => !prev);
     };
 
-    const handlePlaySegment = useCallback((offset: number, duration: number) => {
+    const handlePlaySegment = useCallback((offset: number, duration: number, text: string) => {
         if (playerRef.current) {
             if (recorderState.status === 'recording' || recorderState.status === 'stopped') return;
 
             if (isShadowing) {
-                setSegmentToLoop({ start: offset / 1000, duration: duration / 1000 });
+                setSegmentToLoop({ start: offset / 1000, duration: duration / 1000, text });
                  playerRef.current.seekTo(offset / 1000, 'seconds');
                  setIsPlaying(true);
             } else {
@@ -68,7 +75,6 @@ function ReadingPracticePageContent() {
             }
         }
         
-        // If not found, check if it's between lines
         if(activeIndex === -1) {
              for (let i = 0; i < transcript.length; i++) {
                 if (transcript[i].offset <= currentTime) {
@@ -90,6 +96,7 @@ function ReadingPracticePageContent() {
           cancelRecording();
         }
         setIsPlaying(false);
+        setFeedbackResult(null);
         return newMode;
       });
     }
@@ -99,33 +106,51 @@ function ReadingPracticePageContent() {
         setIsPlaying(false);
         setSegmentToLoop(null);
         startRecording();
+        setFeedbackResult(null);
       } else if (recorderState.status === 'recording') {
         stopRecording();
       }
     };
     
     const saveRecording = async () => {
-        if (!audioData?.url || !user || !firestore || !videoData?.videoId) {
-             toast({ variant: 'destructive', title: "Save failed", description: "Missing required data to save."});
+        if (!audioData?.url || !user || !firestore || !videoData?.videoId || !segmentToLoop?.text || !userProfile) {
+             toast({ variant: 'destructive', title: "Save failed", description: "Missing required data to save and get feedback."});
             return;
         }
         
+        setIsSaving(true);
         try {
+            const feedback = await generateSpeechFeedback({
+                audioDataUri: audioData.url,
+                originalText: segmentToLoop.text,
+                targetLanguage: userProfile.targetLanguage,
+            });
+            
+            setFeedbackResult(feedback);
+
             const attemptsCollection = collection(firestore, `users/${user.uid}/speakingAttempts`);
             await addDoc(attemptsCollection, {
                 userId: user.uid,
                 videoId: videoData.videoId,
                 audioUrl: audioData.url,
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                aiFeedback: feedback,
+                originalText: segmentToLoop.text
             });
-            toast({ title: "Recording Saved!", description: "Your speaking practice has been saved." });
-        } catch(e) {
-            console.error("Failed to save recording", e);
-            toast({ variant: 'destructive', title: "Save failed", description: "There was an error saving your recording."});
+            toast({ title: "Feedback Received!", description: "Your speaking practice and AI feedback have been saved." });
+        } catch(e: any) {
+            console.error("Failed to get feedback or save recording", e);
+            toast({ variant: 'destructive', title: "Feedback Failed", description: e.message || "There was an error getting feedback."});
         } finally {
+            setIsSaving(false);
             cancelRecording();
         }
     };
+
+    const handleCancel = () => {
+        cancelRecording();
+        setFeedbackResult(null);
+    }
 
 
     if (isLoading) {
@@ -202,6 +227,38 @@ function ReadingPracticePageContent() {
                     />
                 </Card>
             </>
+            
+            {feedbackResult && (
+                 <Card className="bg-muted/50">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-3">
+                            <CheckCircle className="h-6 w-6 text-green-500" />
+                            AI Feedback
+                        </CardTitle>
+                        <CardDescription>Here's the analysis of your recording.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <h4 className="font-semibold">You said:</h4>
+                            <p className="text-muted-foreground italic">"{feedbackResult.transcribedText}"</p>
+                        </div>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <h4 className="font-semibold">Accuracy</h4>
+                                <p className="text-muted-foreground text-sm">{feedbackResult.accuracy}</p>
+                            </div>
+                             <div>
+                                <h4 className="font-semibold">Fluency</h4>
+                                <p className="text-muted-foreground text-sm">{feedbackResult.fluency}</p>
+                            </div>
+                             <div>
+                                <h4 className="font-semibold">Pronunciation</h4>
+                                <p className="text-muted-foreground text-sm">{feedbackResult.pronunciation}</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {/* Hidden Audio Player */}
             {videoData.audioUrl && (
@@ -228,7 +285,6 @@ function ReadingPracticePageContent() {
                 </div>
             )}
             
-            {/* Play/Pause for normal mode */}
             {!isShadowing && videoData.audioUrl && (
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
                     <Button onClick={handlePlayPause} size="lg" className="rounded-full h-16 w-16 shadow-lg">
@@ -238,29 +294,29 @@ function ReadingPracticePageContent() {
             )}
 
 
-            {/* Shadowing UI */}
             {isShadowing && (
                  <div className="fixed bottom-8 right-8 z-50 flex flex-col items-center gap-4">
                      <div className={cn(
                          "flex flex-col gap-3 transition-all duration-300",
                          recorderState.status === 'stopped' ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
                      )}>
-                         <Button size="icon" className="h-12 w-12 rounded-full bg-green-600 hover:bg-green-700" onClick={saveRecording}>
-                             <Check className="h-6 w-6" />
+                         <Button size="icon" className="h-12 w-12 rounded-full bg-green-600 hover:bg-green-700" onClick={saveRecording} disabled={isSaving}>
+                             {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Check className="h-6 w-6" />}
                          </Button>
-                         <Button size="icon" variant="destructive" className="h-12 w-12 rounded-full" onClick={cancelRecording}>
+                         <Button size="icon" variant="destructive" className="h-12 w-12 rounded-full" onClick={handleCancel} disabled={isSaving}>
                              <Trash2 className="h-6 w-6" />
                          </Button>
                      </div>
                      <Button
                         onClick={handleRecordClick}
                         size="lg"
-                        disabled={recorderState.status === 'stopped'}
+                        disabled={recorderState.status === 'stopped' || !segmentToLoop}
                         className={cn(
                             "h-20 w-20 rounded-full shadow-lg",
+                            !segmentToLoop && "bg-muted-foreground",
                             recorderState.status === 'recording' && "bg-red-600 hover:bg-red-700 animate-pulse",
                             recorderState.status === 'stopped' && "bg-muted-foreground",
-                            recorderState.status !== 'recording' && recorderState.status !== 'stopped' && "bg-primary"
+                             recorderState.status !== 'recording' && recorderState.status !== 'stopped' && segmentToLoop && "bg-primary"
                         )}
                     >
                         <Mic className="h-10 w-10" />
