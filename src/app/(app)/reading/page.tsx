@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Pause, Play, BookOpenCheck, Mic, BrainCircuit } from "lucide-react";
+import { AlertTriangle, Pause, Play, BookOpenCheck, Mic, BrainCircuit, Volume2, VolumeX } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -111,12 +111,6 @@ function ReadingPracticePageContent() {
             </div>
             
             <>
-                <div className="flex justify-center">
-                    <Button onClick={handlePlayPause} size="lg" disabled={!videoData.audioUrl}>
-                        {isPlaying ? <Pause className="mr-2" /> : <Play className="mr-2" />}
-                        {isPlaying ? 'Pause' : 'Play Audio'}
-                    </Button>
-                </div>
                 <VocabularyList layout="scroll" />
                 <Card>
                     <TranscriptView 
@@ -127,6 +121,18 @@ function ReadingPracticePageContent() {
                     />
                 </Card>
             </>
+
+            {/* Floating Audio Player Button */}
+            <Button 
+                onClick={handlePlayPause} 
+                size="lg"
+                className="fixed bottom-8 right-8 z-50 h-16 w-16 rounded-full shadow-lg"
+                disabled={!videoData.audioUrl}
+            >
+                {isPlaying ? <VolumeX className="h-8 w-8" /> : <Volume2 className="h-8 w-8" />}
+                <span className="sr-only">{isPlaying ? 'Pause Audio' : 'Play Audio'}</span>
+            </Button>
+
 
             {/* Hidden Audio Player */}
             {videoData.audioUrl && (
