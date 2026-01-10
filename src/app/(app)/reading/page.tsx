@@ -131,14 +131,7 @@ function ReadingPracticePageContent() {
     const { toast } = useToast();
     const { firestore, user } = useFirebase();
 
-    const playerRef = useRef<ReactPlayer>(null);
-    const [isPlayerReady, setIsPlayerReady] = useState(false);
-    const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-    const [playbackRate, setPlaybackRate] = useState(1);
-    const [volume, setVolume] = useState(0);
-    const [isBuffering, setIsBuffering] = useState(false);
     const [activeSegmentId, setActiveSegmentId] = useState<string | null>(null);
-    const [duration, setDuration] = useState(0);
 
 
     useEffect(() => {
@@ -152,41 +145,6 @@ function ReadingPracticePageContent() {
         };
     }, []);
     
-    const handlePlaySegment = useCallback((offset: number) => {
-        if (!playerRef.current || !isPlayerReady) return;
-
-        if (isAudioPlaying) {
-            setVolume(0);
-            setIsAudioPlaying(false);
-        } else {
-            playerRef.current.seekTo(offset / 1000, 'seconds');
-            setVolume(1);
-            setIsAudioPlaying(true);
-        }
-    }, [isPlayerReady, isAudioPlaying]);
-    
-    
-    const handleToggleSpeed = () => {
-        setPlaybackRate(prev => {
-            if (prev === 1) return 0.75;
-            if (prev === 0.75) return 0.5;
-            return 1;
-        });
-    }
-
-    const SpeedIcon = ({rate}: {rate: number}) => {
-        if (rate === 0.75) return <Glasses className="h-8 w-8" />;
-        if (rate === 0.5) return <Turtle className="h-8 w-8" />;
-        return <Zap className="h-8 w-8" />;
-    }
-
-    const handleVideoEnd = () => {
-        if (playerRef.current && duration > 0) {
-          const seekToTime = duration > 3 ? duration - 3 : 0;
-          playerRef.current.seekTo(seekToTime, 'seconds');
-        }
-    };
-
 
     const startRecording = async () => {
         if (testState !== 'idle' && testState !== 'recorded') return;
@@ -328,39 +286,6 @@ function ReadingPracticePageContent() {
     return (
         <div className="w-full max-w-4xl mx-auto space-y-6">
             
-            <div className="relative" style={{ paddingTop: '56.25%', display: 'none' }}>
-                {isBuffering && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                        <Loader2 className="h-12 w-12 animate-spin text-white" />
-                    </div>
-                )}
-                <ReactPlayer
-                    ref={playerRef}
-                    url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={true}
-                    volume={volume}
-                    onReady={() => setIsPlayerReady(true)}
-                    playbackRate={playbackRate}
-                    onBuffer={() => setIsBuffering(true)}
-                    onBufferEnd={() => setIsBuffering(false)}
-                    onEnded={handleVideoEnd}
-                    onDuration={setDuration}
-                    config={{
-                        youtube: {
-                            playerVars: {
-                                modestbranding: 1,
-                                rel: 0,
-                                vq: 'tiny'
-                            }
-                        }
-                    }}
-                    controls={false}
-                    width="100%"
-                    height="100%"
-                    style={{ position: 'absolute', top: 0, left: 0 }}
-                />
-            </div>
-
             {testState !== 'finished' && (
                  <div className="mb-4 text-center">
                     <div className="flex justify-center">
@@ -417,8 +342,8 @@ function ReadingPracticePageContent() {
                         <TranscriptView 
                            transcript={formattedTranscript} 
                            videoId={videoData.videoId}
-                           onPlaySegment={handlePlaySegment}
-                           isGloballyPlaying={isAudioPlaying}
+                           onPlaySegment={null}
+                           isGloballyPlaying={false}
                            activeSegmentId={activeSegmentId}
                         />
                     </Card>
@@ -427,25 +352,14 @@ function ReadingPracticePageContent() {
 
             {/* Floating Action Buttons */}
              <div className="fixed bottom-6 right-6 z-50 flex flex-col items-center gap-3">
-                {testState === 'idle' && isPlayerReady && (
-                    <>
-                        <Button
-                            size="icon"
-                            variant={playbackRate === 1 ? "secondary" : "default"}
-                            className={cn("h-14 w-14 rounded-full shadow-lg", playbackRate !== 1 && "bg-green-500 hover:bg-green-600 text-white")}
-                            onClick={handleToggleSpeed}
-                        >
-                            <SpeedIcon rate={playbackRate} />
-                        </Button>
-                        
-                        <Button
-                            size="icon"
-                            className="h-16 w-16 rounded-full shadow-lg"
-                            onClick={startRecording}
-                        >
-                            <Mic className="h-8 w-8" />
-                        </Button>
-                    </>
+                {testState === 'idle' && (
+                    <Button
+                        size="icon"
+                        className="h-16 w-16 rounded-full shadow-lg"
+                        onClick={startRecording}
+                    >
+                        <Mic className="h-8 w-8" />
+                    </Button>
                 )}
 
                 {testState === 'recording' && (
