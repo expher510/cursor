@@ -226,6 +226,48 @@
         }
       },
       "required": ["id", "userId", "videoId", "audioUrl", "timestamp"]
+    },
+    "WritingFeedback": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Writing Feedback",
+        "description": "Stores AI-generated feedback for a user's writing exercise.",
+        "type": "object",
+        "properties": {
+            "id": {
+                "type": "string"
+            },
+            "userId": {
+                "type": "string"
+            },
+            "videoId": {
+                "type": "string"
+            },
+            "originalText": {
+                "type": "string"
+            },
+            "usedWords": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "feedback": {
+                "type": "string"
+            },
+            "score": {
+                "type": "number"
+            },
+            "suggestions": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "createdAt": {
+                "type": "number"
+            }
+        },
+        "required": ["id", "userId", "originalText", "feedback", "score", "createdAt"]
     }
   },
   "auth": {
@@ -358,6 +400,26 @@
               "description": "The unique identifier of the exercise attempt."
             }
           ]
+        }
+      },
+      {
+        "path": "/users/{userId}/writingFeedback/{feedbackId}",
+        "definition": {
+            "entityName": "WritingFeedback",
+            "schema": {
+                "$ref": "#/entities/WritingFeedback"
+            },
+            "description": "Stores AI-generated feedback for a user's writing exercises. Path-based ownership ensures data isolation.",
+            "params": [
+                {
+                    "name": "userId",
+                    "description": "The unique identifier of the user."
+                },
+                {
+                    "name": "feedbackId",
+                    "description": "The unique identifier of the feedback entry."
+                }
+            ]
         }
       }
     ],

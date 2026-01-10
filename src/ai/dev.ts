@@ -5,4 +5,5 @@
 // import './flows/translate-word-flow';
 // import './flows/hello-flow';
 import './flows/generate-quiz-from-transcript-flow';
+import './flows/generate-writing-feedback-flow';
 // import './flows/extract-audio-flow';

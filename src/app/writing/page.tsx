@@ -6,23 +6,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useState, useMemo, useRef, useEffect }from "react";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, CheckCircle } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import { useFirebase } from "@/firebase";
+import { useUserProfile } from "@/hooks/use-user-profile";
+import { generateWritingFeedback, type GenerateWritingFeedbackOutput } from "@/ai/flows/generate-writing-feedback-flow";
+import { collection, addDoc } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 function WritingWorkspace() {
     const { videoData, vocabulary, isLoading: isContextLoading } = useWatchPage();
-    const { user } = useFirebase();
+    const { user, firestore } = useFirebase();
+    const { userProfile } = useUserProfile();
+    const { toast } = useToast();
+
     const [wordCount, setWordCount] = useState(10);
     const [exerciseWords, setExerciseWords] = useState<string[]>([]);
     const [availableWords, setAvailableWords] = useState<string[]>([]);
     const [isStarted, setIsStarted] = useState(false);
     const [isGettingFeedback, setIsGettingFeedback] = useState(false);
-    const [isConfirmed, setIsConfirmed] = useState(false);
+    const [feedbackResult, setFeedbackResult] = useState<GenerateWritingFeedbackOutput | null>(null);
     
     const editorRef = useRef<HTMLDivElement>(null);
     const lastSelectionRef = useRef<Range | null>(null);
@@ -76,7 +83,8 @@ function WritingWorkspace() {
             editorRef.current.innerHTML = '';
         }
         setIsStarted(true);
-        setIsConfirmed(false);
+        setFeedbackResult(null);
+        lastSelectionRef.current = null;
     };
 
     const insertTextAtCursor = (text: string) => {
@@ -113,7 +121,6 @@ function WritingWorkspace() {
         range.insertNode(span);
         range.insertNode(leadingSpace);
         
-        // Move cursor after the trailing space
         range.setStartAfter(trailingSpace);
         range.collapse(true);
 
@@ -135,16 +142,49 @@ function WritingWorkspace() {
         setIsStarted(false);
         setAvailableWords([]);
         setExerciseWords([]);
-        setIsConfirmed(false);
+        setFeedbackResult(null);
         lastSelectionRef.current = null;
     }
 
     const getFeedback = async () => {
+        if (!editorRef.current || !userProfile || !firestore || !user) return;
+        const writingText = editorRef.current.innerText;
+        if (writingText.trim().length < 10) {
+             toast({ variant: "destructive", title: "Text is too short", description: "Please write a bit more before getting feedback."});
+             return;
+        }
+
         setIsGettingFeedback(true);
-        // Placeholder for AI feedback flow
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        setIsGettingFeedback(false);
-        setIsConfirmed(true);
+        setFeedbackResult(null);
+
+        try {
+            const feedback = await generateWritingFeedback({
+                writingText,
+                usedWords: exerciseWords,
+                targetLanguage: userProfile.targetLanguage,
+                proficiencyLevel: userProfile.proficiencyLevel,
+            });
+
+            setFeedbackResult(feedback);
+
+            const feedbackCollectionRef = collection(firestore, `users/${user.uid}/writingFeedback`);
+            await addDoc(feedbackCollectionRef, {
+                ...feedback,
+                userId: user.uid,
+                videoId: videoData?.videoId || 'unknown',
+                originalText: writingText,
+                usedWords: exerciseWords,
+                createdAt: Date.now()
+            });
+
+            toast({ title: "Feedback Saved", description: "Your writing exercise and feedback have been saved."});
+
+        } catch(e: any) {
+            console.error("Failed to get or save feedback:", e);
+            toast({ variant: "destructive", title: "Feedback Failed", description: e.message || "An error occurred while generating feedback." });
+        } finally {
+            setIsGettingFeedback(false);
+        }
     };
 
     if (isContextLoading) {
@@ -206,23 +246,41 @@ function WritingWorkspace() {
             <div className="flex justify-between items-center min-h-[40px]">
                 <Button variant="outline" onClick={resetExercise}>Reset</Button>
                 <div className="text-right">
-                    {isConfirmed ? (
-                        <div className="text-sm text-muted-foreground">
-                            <p>A detailed performance evaluation will be sent to:</p>
-                            <p className="text-base font-semibold text-primary">{user?.email}</p>
-                        </div>
-                    ) : (
-                        <Button onClick={getFeedback} disabled={isGettingFeedback || availableWords.length > 0}>
-                            {isGettingFeedback ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Sparkles className="mr-2 h-4 w-4" />
-                            )}
-                            Confirm
-                        </Button>
-                    )}
+                    <Button onClick={getFeedback} disabled={isGettingFeedback || availableWords.length > 0}>
+                        {isGettingFeedback ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                            <Sparkles className="mr-2 h-4 w-4" />
+                        )}
+                        Get Feedback
+                    </Button>
                 </div>
             </div>
+
+            {feedbackResult && (
+                <Card className="bg-muted/50">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-3">
+                            <CheckCircle className="h-6 w-6 text-green-500" />
+                            AI Feedback
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div>
+                            <h4 className="font-semibold">Overall Feedback (Score: {feedbackResult.score}/100)</h4>
+                            <p className="text-muted-foreground">{feedbackResult.feedback}</p>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold">Suggestions for Improvement</h4>
+                            <ul className="list-disc pl-5 text-muted-foreground">
+                                {feedbackResult.suggestions.map((suggestion, i) => (
+                                    <li key={i}>{suggestion}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </div>
     );
 }
