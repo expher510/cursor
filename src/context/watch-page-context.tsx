@@ -12,6 +12,7 @@ import { useSearchParams } from 'next/navigation';
 import { type QuizData } from '@/lib/quiz-data';
 import { useToast } from '@/hooks/use-toast';
 import { generateQuiz } from '@/ai/flows/generate-quiz-flow';
+import { extractAudio } from '@/ai/flows/extract-audio-flow';
 
 
 type VocabularyItem = {
@@ -133,6 +134,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           setVideoData(combinedData);
         } else {
           const result = await processVideo({ videoId: activeVideoId });
+          const { audioUrl } = await extractAudio({ videoId: activeVideoId });
           
           await setDoc(videoDocRef, {
               id: activeVideoId,
@@ -140,6 +142,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               description: result.description,
               userId: user.uid,
               timestamp: Date.now(),
+              audioUrl: audioUrl,
           }, { merge: true });
 
           await setDoc(transcriptDocRef, {
