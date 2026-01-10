@@ -28,6 +28,24 @@ export async function extractAudio(input: ExtractAudioInput): Promise<ExtractAud
   return extractAudioFlow(input);
 }
 
+// Function to poll the API until the link is ready
+const pollForLink = async (videoId: string, apiKey: string): Promise<any> => {
+    const url = `https://youtube-mp36.p.rapidapi.com/dl?id=${videoId}`;
+    const options = {
+        method: 'GET',
+        headers: {
+            'X-RapidAPI-Key': apiKey,
+            'X-RapidAPI-Host': 'youtube-mp36.p.rapidapi.com'
+        }
+    };
+    const response = await fetch(url, options);
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+    }
+    return response.json();
+}
+
 
 // The Main Flow
 const extractAudioFlow = ai.defineFlow(
@@ -42,27 +60,19 @@ const extractAudioFlow = ai.defineFlow(
       throw new Error("RAPIDAPI_KEY is not defined in environment variables.");
     }
     
-    const url = `https://youtube-mp36.p.rapidapi.com/dl?id=${videoId}`;
-    const options = {
-        method: 'GET',
-        headers: {
-            'X-RapidAPI-Key': apiKey,
-            'X-RapidAPI-Host': 'youtube-mp36.p.rapidapi.com'
-        }
-    };
-
     try {
-        const response = await fetch(url, options);
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
+        let result = await pollForLink(videoId, apiKey);
+
+        // If the API returns a processing status, wait and poll again.
+        if (result.status === 'processing') {
+            await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds
+            result = await pollForLink(videoId, apiKey);
         }
 
-        const result = await response.json();
-        
         if (result.status === 'ok' && result.link) {
              return { audioUrl: result.link };
         } else {
+            // Handle other statuses like 'fail' or unexpected responses
             throw new Error(result.msg || 'Failed to extract audio link from API response.');
         }
     } catch (e: any) {
