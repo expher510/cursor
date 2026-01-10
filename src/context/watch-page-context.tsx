@@ -23,7 +23,7 @@ type VocabularyItem = {
   userId: string;
 };
 
-type VideoData = ProcessVideoOutput & { videoId?: string };
+type VideoData = ProcessVideoOutput & { videoId?: string, audioUrl?: string };
 
 
 type WatchPageContextType = {
@@ -125,14 +125,17 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         const transcriptDocSnap = await getDoc(transcriptDocRef);
 
         if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
+           toast({ variant: 'subtle', title: "Loading Existing Lesson"});
           const combinedData: VideoData = {
             title: videoDocSnap.data().title,
             description: videoDocSnap.data().description,
+            audioUrl: videoDocSnap.data().audioUrl,
             transcript: transcriptDocSnap.data().content,
             videoId: activeVideoId
           };
           setVideoData(combinedData);
         } else {
+          toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
           const result = await processVideo({ videoId: activeVideoId });
           const { audioUrl } = await extractAudio({ videoId: activeVideoId });
           
@@ -174,7 +177,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             score: 0
           }, { merge: true });
 
-          setVideoData({ ...result, videoId: activeVideoId });
+          setVideoData({ ...result, videoId: activeVideoId, audioUrl: audioUrl });
         }
       } catch (e: any) {
         console.error("Error fetching or processing video data:", e);

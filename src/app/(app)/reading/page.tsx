@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, X, Play, Volume2 } from "lucide-react";
+import { AlertTriangle, Mic, RefreshCw, UploadCloud, Pause, X, Play } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -375,7 +375,6 @@ function ReadingPracticePageContent() {
                            transcript={formattedTranscript} 
                            videoId={videoData.videoId}
                            onPlaySegment={handlePlaySegment}
-                           isGloballyPlaying={isPlaying}
                            activeSegmentId={activeSegmentId}
                         />
                     </Card>
@@ -459,5 +458,3 @@ export default function ReadingPage() {
       </>
   );
 }
-
-    
