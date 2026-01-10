@@ -2,7 +2,7 @@
 'use client';
 import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, BrainCircuit, Check, Mic, Play, Pause, Trash2, Loader2, Sparkles, CheckCircle, StopCircle, X } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
@@ -51,28 +51,133 @@ function RecordingTimer({ isRecording }: { isRecording: boolean }) {
     };
 
     return (
-        <div className="text-4xl font-mono font-bold text-foreground">
+        <div className="text-2xl font-mono font-bold text-foreground">
             {formatTime(seconds)}
         </div>
     );
 }
 
-
-function ReadingPracticePageContent() {
+function ReadOutLoudController() {
     const { videoData, isLoading, error } = useWatchPage();
     const { user, firestore } = useFirebase();
     const { userProfile } = useUserProfile();
     const { toast } = useToast();
     const { recorderState, startRecording, stopRecording, cancelRecording, audioData } = useRecorder();
 
+    const [isSaving, setIsSaving] = useState(false);
+    const [feedbackResult, setFeedbackResult] = useState<GenerateSpeechFeedbackOutput | null>(null);
+
+    const handleReadOutLoudClick = () => {
+        setFeedbackResult(null);
+        startRecording();
+    };
+    
+    const handleStopReadingOutLoud = () => {
+        stopRecording();
+    };
+    
+    const confirmReadOutLoud = async () => {
+        if (!audioData?.url || !user || !firestore || !videoData?.videoId || !userProfile) {
+             toast({ variant: 'destructive', title: "Save failed", description: "Missing required data to save."});
+             cancelRecording();
+            return;
+        }
+        
+        setIsSaving(true);
+        setFeedbackResult(null);
+
+        const fullTranscript = videoData.transcript.map(t => t.text).join(' ');
+
+        try {
+            const feedback = await generateSpeechFeedback({
+                audioDataUri: audioData.url,
+                originalText: fullTranscript,
+                targetLanguage: userProfile.targetLanguage,
+            });
+
+            setFeedbackResult(feedback);
+            
+            const attemptsCollection = collection(firestore, `users/${user.uid}/speakingAttempts`);
+            await addDoc(attemptsCollection, {
+                userId: user.uid,
+                videoId: videoData.videoId,
+                audioUrl: audioData.url,
+                timestamp: Date.now(),
+                originalText: fullTranscript,
+                aiFeedback: feedback,
+            });
+            toast({ title: "Recording Saved!", description: "Your speaking practice has been saved with AI feedback." });
+        } catch(e: any) {
+            console.error("Failed to save recording or get feedback", e);
+            toast({ variant: 'destructive', title: "Save Failed", description: e.message || "There was an error saving your recording."});
+        } finally {
+            setIsSaving(false);
+            cancelRecording();
+        }
+    };
+    
+    const cancelReadOutLoud = () => {
+        cancelRecording();
+        setFeedbackResult(null);
+    }
+    
+    if (recorderState.status === 'idle' || recorderState.error) {
+        return (
+            <div className="flex flex-col items-center gap-4">
+                <Button variant="outline" onClick={handleReadOutLoudClick} size="lg">
+                    <Mic className="mr-2" />
+                    Read Out Loud
+                </Button>
+                 {recorderState.error && <p className="text-sm text-destructive">{recorderState.error}</p>}
+            </div>
+        )
+    }
+
+    return (
+        <Card className="w-full max-w-2xl mx-auto p-4 transition-all">
+            {recorderState.status === 'recording' && (
+                <CardContent className="flex flex-col items-center justify-center gap-4 text-center p-0">
+                    <div className="flex items-center gap-4">
+                        <Mic className="h-8 w-8 text-destructive animate-pulse" />
+                        <RecordingTimer isRecording={recorderState.status === 'recording'} />
+                    </div>
+                    <Button onClick={handleStopReadingOutLoud} size="lg" variant="destructive">
+                        <StopCircle className="mr-2" />
+                        Stop Recording
+                    </Button>
+                </CardContent>
+            )}
+             {recorderState.status === 'stopped' && (
+                 <CardContent className="flex flex-col items-center justify-center gap-4 text-center p-0">
+                     <h3 className="text-lg font-semibold">Recording Finished</h3>
+                     <p className="text-muted-foreground text-sm">Save to get AI feedback or discard.</p>
+                    <div className="flex gap-4 pt-2">
+                         <Button onClick={confirmReadOutLoud} size="lg" disabled={isSaving}>
+                            {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Check className="mr-2" />}
+                            Confirm
+                        </Button>
+                        <Button onClick={cancelReadOutLoud} size="lg" variant="outline">
+                            <X className="mr-2" />
+                            Cancel
+                        </Button>
+                    </div>
+                </CardContent>
+            )}
+        </Card>
+    );
+
+}
+
+
+function ReadingPracticePageContent() {
+    const { videoData, isLoading, error, isGeneratingQuiz } = useWatchPage();
+
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const playerRef = useRef<ReactPlayer>(null);
     
-    const [isReadingOutLoud, setIsReadingOutLoud] = useState(false);
+    const [segmentToLoop, setSegmentToLoop] = useState<{ offset: number, duration: number, text: string } | null>(null);
 
-    const [isSaving, setIsSaving] = useState(false);
-    const [feedbackResult, setFeedbackResult] = useState<GenerateSpeechFeedbackOutput | null>(null);
 
     const handlePlayPause = () => {
         setIsPlaying(prev => !prev);
@@ -90,63 +195,16 @@ function ReadingPracticePageContent() {
         if (!transcript || transcript.length === 0) {
             return -1;
         }
-
-        // Find the index of the last line that has started
         let lastPassedIndex = -1;
         for (let i = 0; i < transcript.length; i++) {
             if (transcript[i].offset <= currentTime) {
                 lastPassedIndex = i;
             } else {
-                break; // We've passed the current time
+                break; 
             }
         }
-        
         return lastPassedIndex;
-
     }, [videoData?.transcript, currentTime]);
-    
-    const handleReadOutLoudClick = () => {
-        setIsReadingOutLoud(true);
-        startRecording();
-    };
-    
-    const handleStopReadingOutLoud = () => {
-        stopRecording();
-    };
-    
-    const confirmReadOutLoud = async () => {
-        if (!audioData?.url || !user || !firestore || !videoData?.videoId || !userProfile) {
-             toast({ variant: 'destructive', title: "Save failed", description: "Missing required data to save."});
-             setIsReadingOutLoud(false);
-             cancelRecording();
-            return;
-        }
-        
-        setIsSaving(true);
-        try {
-            const attemptsCollection = collection(firestore, `users/${user.uid}/speakingAttempts`);
-            await addDoc(attemptsCollection, {
-                userId: user.uid,
-                videoId: videoData.videoId,
-                audioUrl: audioData.url,
-                timestamp: Date.now(),
-                originalText: "Read out loud practice",
-            });
-            toast({ title: "Recording Saved!", description: "Your speaking practice has been saved." });
-        } catch(e: any) {
-            console.error("Failed to save recording", e);
-            toast({ variant: 'destructive', title: "Save Failed", description: e.message || "There was an error saving your recording."});
-        } finally {
-            setIsSaving(false);
-            cancelRecording();
-            setIsReadingOutLoud(false);
-        }
-    };
-    
-    const cancelReadOutLoud = () => {
-        cancelRecording();
-        setIsReadingOutLoud(false);
-    }
 
 
     if (isLoading) {
@@ -185,46 +243,6 @@ function ReadingPracticePageContent() {
         );
     }
     
-    if (isReadingOutLoud) {
-        return (
-            <div className="w-full max-w-2xl mx-auto">
-                 <Card className="text-center p-8">
-                    <CardContent className="flex flex-col items-center justify-center gap-6 min-h-[300px]">
-                        {recorderState.status === 'recording' && (
-                             <>
-                                <div className="relative">
-                                    <Mic className="h-20 w-20 text-destructive animate-pulse" />
-                                </div>
-                                <h3 className="text-2xl font-semibold text-muted-foreground">Recording...</h3>
-                                <RecordingTimer isRecording={recorderState.status === 'recording'} />
-                                <Button onClick={handleStopReadingOutLoud} size="lg" variant="destructive">
-                                    <StopCircle className="mr-2" />
-                                    Stop Recording
-                                </Button>
-                            </>
-                        )}
-                        {recorderState.status === 'stopped' && (
-                            <>
-                                 <h3 className="text-2xl font-semibold">Recording Finished</h3>
-                                 <p className="text-muted-foreground">Save or discard your recording.</p>
-                                <div className="flex gap-4 pt-4">
-                                     <Button onClick={confirmReadOutLoud} size="lg" disabled={isSaving}>
-                                        {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Check className="mr-2" />}
-                                        Confirm
-                                    </Button>
-                                    <Button onClick={cancelReadOutLoud} size="lg" variant="outline">
-                                        <X className="mr-2" />
-                                        Cancel
-                                    </Button>
-                                </div>
-                            </>
-                        )}
-                    </CardContent>
-                 </Card>
-            </div>
-        )
-    }
-    
     const formattedTranscript = videoData.transcript.map(item => ({
         ...item,
         text: item.text,
@@ -242,10 +260,7 @@ function ReadingPracticePageContent() {
                     <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
                         Read the text, save new words, and listen along. Click any line to play its audio.
                     </p>
-                    <Button variant="outline" onClick={handleReadOutLoudClick} size="lg">
-                      <Mic className={cn("mr-2")} />
-                      Read Out Loud
-                    </Button>
+                    <ReadOutLoudController />
                 </div>
             </div>
             
@@ -272,7 +287,7 @@ function ReadingPracticePageContent() {
                             setCurrentTime(state.playedSeconds * 1000);
                         }}
                         onEnded={() => {
-                            setIsPlaying(false);
+                           setIsPlaying(false);
                         }}
                         width="0"
                         height="0"
@@ -282,11 +297,11 @@ function ReadingPracticePageContent() {
             )}
             
             {videoData.audioUrl && (
-                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
-                    <Button onClick={handlePlayPause} size="lg" className="rounded-full h-16 w-16 shadow-lg">
-                        {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
-                    </Button>
-                </div>
+                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+                     <Button onClick={handlePlayPause} size="lg" className="rounded-full h-16 w-16 shadow-lg">
+                         {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
+                     </Button>
+                 </div>
             )}
 
         </div>
