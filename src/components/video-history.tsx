@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import Image from 'next/image';
 import { Button } from './ui/button';
-import { BookOpen, Edit, Headphones, Trash2 } from 'lucide-react';
+import { BookOpen, Edit, Headphones, Loader2, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMemo, useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
@@ -24,6 +24,7 @@ type ActivityType = 'watch' | 'reading' | 'writing';
 function HistoryCard({ item, isActive, onSelect, onAction }: { item: HistoryItem, isActive: boolean, onSelect: (id: string) => void, onAction: (id: string, activity: ActivityType) => void }) {
     const { firestore, user } = useFirebase();
     const [popoverOpen, setPopoverOpen] = useState(false);
+    const [isNavigating, setIsNavigating] = useState(false);
 
     const handleDelete = async (e: React.MouseEvent<HTMLButtonElement>) => {
         e.stopPropagation();
@@ -44,7 +45,9 @@ function HistoryCard({ item, isActive, onSelect, onAction }: { item: HistoryItem
 
     const handleAction = (e: React.MouseEvent, activity: ActivityType) => {
         e.stopPropagation();
+        setIsNavigating(true);
         onAction(item.id, activity);
+        // We don't set isNavigating back to false because the component will unmount on navigation.
         setPopoverOpen(false);
     }
 
@@ -77,7 +80,9 @@ function HistoryCard({ item, isActive, onSelect, onAction }: { item: HistoryItem
                             isActive && "opacity-100"
                         )}
                     >
-                         <Button variant="secondary">Choose Activity</Button>
+                         <Button variant="secondary" disabled={isNavigating}>
+                           {isNavigating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Choose Activity'}
+                         </Button>
                     </div>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-2" onClick={(e) => e.stopPropagation()}>

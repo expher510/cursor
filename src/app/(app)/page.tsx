@@ -79,7 +79,11 @@ function MainContent() {
         return;
     };
     
-    setIsProcessing(true);
+    // Only set the main page processing state if we are generating a new lesson
+    if (shouldGenerate) {
+      setIsProcessing(true);
+    }
+
     // The responsibility of fetching/checking data is in the WatchPageProvider.
     // This component's only job is to navigate with the correct parameters.
     router.push(`/${activity}?v=${videoIdToUse}&shouldGenerate=${shouldGenerate}`);
@@ -122,7 +126,11 @@ function MainContent() {
           <YoutubeUrlForm onUrlChange={handleUrlChange} />
       </div>
 
-      <ActivityButtons videoId={activeVideoId} isProcessing={isProcessing} onActivitySelect={(activity) => handlePracticeNavigation(activity)} />
+      <ActivityButtons 
+        videoId={activeVideoId} 
+        isProcessing={isProcessing} 
+        onActivitySelect={(activity) => handlePracticeNavigation(activity, activeVideoId, true)} 
+      />
 
       <div className="w-full max-w-4xl pt-10" ref={cardsContainerRef}>
         <div className="flex justify-center mb-4">
@@ -131,7 +139,7 @@ function MainContent() {
                     <History className="mr-2" />
                     History
                 </Button>
-                <Button variant={sourceType === 'cards' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'cards' && 'bg-background shadow-sm')} onClick={() => setSourceType('cards')}>
+                <Button variant={sourceType === 'cards' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'cards' && 'bg-background shadow-sm')} onClick={handleCardsClick}>
                     <Copy className="mr-2" />
                     Cards
                 </Button>
