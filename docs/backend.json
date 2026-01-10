@@ -19,6 +19,10 @@
           "type": "string",
           "description": "The user's display name."
         },
+        "nativeLanguage": {
+          "type": "string",
+          "description": "The user's native language (e.g., 'en', 'ar')."
+        },
         "targetLanguage": {
           "type": "string",
           "description": "The language the user wants to learn (e.g., 'ar', 'es')."

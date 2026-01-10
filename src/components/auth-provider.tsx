@@ -76,7 +76,7 @@ function AuthenticatedFlow({ children }: { children: React.ReactNode }) {
         }
     }, [user, firestore, auth]);
     
-    const handleOnboardingSave = async (data: { displayName: string; targetLanguage: string; proficiencyLevel: string; learningGoal?: string; }) => {
+    const handleOnboardingSave = async (data: { displayName: string; nativeLanguage: string; targetLanguage: string; proficiencyLevel: string; learningGoal?: string; }) => {
         if (!user || !firestore) return;
         const userDocRef = doc(firestore, `users/${user.uid}`);
         try {

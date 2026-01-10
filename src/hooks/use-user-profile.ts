@@ -12,6 +12,7 @@ export type UserProfile = {
   id: string;
   email: string;
   displayName: string;
+  nativeLanguage: string;
   targetLanguage: string;
   proficiencyLevel: "beginner" | "intermediate" | "advanced";
   learningGoal?: string;

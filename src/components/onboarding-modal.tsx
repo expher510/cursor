@@ -35,7 +35,8 @@ import type { UserProfile } from '@/hooks/use-user-profile';
 
 const OnboardingSchema = z.object({
   displayName: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  targetLanguage: z.string({ required_error: 'Please select a language.' }),
+  nativeLanguage: z.string({ required_error: 'Please select your native language.' }),
+  targetLanguage: z.string({ required_error: 'Please select a language to learn.' }),
   proficiencyLevel: z.string({ required_error: 'Please select your level.' }),
   learningGoal: z.string().optional(),
 });
@@ -57,6 +58,7 @@ export function OnboardingModal({ open, onSave, isEditMode = false, initialData,
     resolver: zodResolver(OnboardingSchema),
     defaultValues: {
       displayName: initialData?.displayName || '',
+      nativeLanguage: initialData?.nativeLanguage || undefined,
       targetLanguage: initialData?.targetLanguage || undefined,
       proficiencyLevel: initialData?.proficiencyLevel || undefined,
       learningGoal: initialData?.learningGoal || '',
@@ -67,6 +69,7 @@ export function OnboardingModal({ open, onSave, isEditMode = false, initialData,
     if (initialData) {
       form.reset({
         displayName: initialData.displayName || '',
+        nativeLanguage: initialData.nativeLanguage || undefined,
         targetLanguage: initialData.targetLanguage || undefined,
         proficiencyLevel: initialData.proficiencyLevel || undefined,
         learningGoal: initialData.learningGoal || '',
@@ -91,7 +94,7 @@ export function OnboardingModal({ open, onSave, isEditMode = false, initialData,
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pt-4">
             <FormField
               control={form.control}
               name="displayName"
@@ -105,6 +108,31 @@ export function OnboardingModal({ open, onSave, isEditMode = false, initialData,
                 </FormItem>
               )}
             />
+            
+            <FormField
+                control={form.control}
+                name="nativeLanguage"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>My native language is...</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select your language" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="en">English</SelectItem>
+                        <SelectItem value="ar">Arabic</SelectItem>
+                        <SelectItem value="es">Spanish</SelectItem>
+                        <SelectItem value="fr">French</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
