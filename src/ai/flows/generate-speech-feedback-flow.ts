@@ -9,6 +9,7 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { googleAI } from '@genkit-ai/google-genai';
 import { z } from 'zod';
 
 // Input schema for the flow
@@ -43,6 +44,7 @@ const prompt = ai.definePrompt({
     name: 'generateSpeechFeedbackPrompt',
     input: { schema: GenerateSpeechFeedbackInputSchema },
     output: { schema: GenerateSpeechFeedbackOutputSchema },
+    model: googleAI('gemini-1.5-flash'),
     prompt: `You are a language coach for a student learning ${'{{{targetLanguage}}}'}.
     The user was asked to say the following text:
     ---
