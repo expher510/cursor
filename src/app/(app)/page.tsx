@@ -52,7 +52,7 @@ function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivi
 
 function MainContent() {
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
-  const { firestore, user } = useFirebase();
+  const { user } = useFirebase();
   const { userProfile, isLoading: isProfileLoading } = useUserProfile();
   const router = useRouter();
   const { toast } = useToast();
@@ -66,17 +66,17 @@ function MainContent() {
     setActiveVideoId(videoId);
   };
 
-  const handlePracticeNavigation = async (activity: ActivityType, videoId?: string) => {
+  const handlePracticeNavigation = async (activity: ActivityType, videoId?: string, shouldGenerate: boolean = true) => {
     const videoIdToUse = videoId || activeVideoId;
 
-    if (!user || !firestore || !videoIdToUse) {
+    if (!user || !videoIdToUse) {
         toast({ variant: "destructive", title: "No Video Selected", description: "Please enter a URL or select a video from your history." });
         return;
     };
     
-    // The responsibility of fetching/checking data is now in the WatchPageProvider.
-    // This component's only job is to navigate.
-    router.push(`/${activity}?v=${videoIdToUse}`);
+    // The responsibility of fetching/checking data is in the WatchPageProvider.
+    // This component's only job is to navigate with the correct parameters.
+    router.push(`/${activity}?v=${videoIdToUse}&shouldGenerate=${shouldGenerate}`);
   };
 
   const handleCardsClick = () => {
@@ -125,10 +125,6 @@ function MainContent() {
                     <History className="mr-2" />
                     History
                 </Button>
-                <Button variant={sourceType === 'cards' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'cards' && 'bg-background shadow-sm')} onClick={handleCardsClick}>
-                    <Copy className="mr-2" />
-                    Cards
-                </Button>
             </div>
         </div>
 
@@ -136,7 +132,7 @@ function MainContent() {
              <VideoHistory 
                 activeVideoId={activeVideoId}
                 onVideoSelect={setActiveVideoId}
-                onVideoAction={(videoId, activity) => handlePracticeNavigation(activity, videoId)}
+                onVideoAction={(videoId, activity) => handlePracticeNavigation(activity, videoId, false)}
             />
         ) : (
              <div className="mt-8">

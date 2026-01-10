@@ -44,6 +44,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const { firestore, user } = useFirebase();
   const searchParams = useSearchParams();
   const urlVideoId = searchParams.get('v');
+  const shouldGenerate = searchParams.get('shouldGenerate') !== 'false'; // Default to true
   const { toast } = useToast();
 
   const [videoData, setVideoData] = useState<VideoData | null>(null);
@@ -118,7 +119,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     setVideoData(null);
 
     async function fetchAndProcessVideoData() {
-      // Ensure we are only using the 11-character video ID
       const cleanVideoId = extractYouTubeVideoId(activeVideoId);
       if (!cleanVideoId) {
           setError("The provided YouTube URL or ID is invalid.");
@@ -134,7 +134,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         const transcriptDocSnap = await getDoc(transcriptDocRef);
 
         if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
-           toast({ variant: 'subtle', title: "Loading Existing Lesson"});
+          toast({ variant: 'subtle', title: "Loading Existing Lesson"});
           const videoDocData = videoDocSnap.data();
           const combinedData: VideoData = {
             title: videoDocData.title,
@@ -144,10 +144,13 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             videoId: cleanVideoId
           };
           setVideoData(combinedData);
-        } else {
+        } else if (shouldGenerate) {
           toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
-          const result = await processVideo({ videoId: cleanVideoId });
-          const { audioUrl } = await extractAudio({ videoId: cleanVideoId });
+          const [result, audioResult] = await Promise.all([
+             processVideo({ videoId: cleanVideoId }),
+             extractAudio({ videoId: cleanVideoId })
+          ]);
+          const { audioUrl } = audioResult;
           
           await setDoc(videoDocRef, {
               id: cleanVideoId,
@@ -190,6 +193,10 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           }
 
           setVideoData({ ...result, videoId: cleanVideoId, audioUrl: audioUrl });
+        } else {
+            // Data doesn't exist and we should not generate it
+            setError("Video data not found. Please process it from the homepage first.");
+            toast({ variant: "destructive", title: "Data Not Found", description: "This video hasn't been processed yet. Please add it from the homepage." });
         }
       } catch (e: any) {
         console.error("Error fetching or processing video data:", e);
@@ -202,7 +209,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     
     fetchAndProcessVideoData();
 
-  }, [activeVideoId, user, firestore, toast]);
+  }, [activeVideoId, user, firestore, toast, shouldGenerate]);
 
 
   const vocabQuery = useMemoFirebase(() => {

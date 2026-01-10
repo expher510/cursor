@@ -32,11 +32,11 @@ function HistoryCard({ item, isActive, onSelect, onAction }: { item: HistoryItem
         if (!firestore || !user) return;
 
         const videoDocRef = doc(firestore, `users/${user.uid}/videos`, item.id);
-        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${item.id}/transcripts`, item.id);
         
         try {
             await deleteDoc(videoDocRef);
-            await deleteDoc(transcriptDocRef);
+            // Associated subcollections like transcripts, quizzes will need to be handled
+            // via Firebase Functions for a complete cleanup, but this removes it from history.
         } catch (error) {
             console.error("Error deleting video history:", error);
         }
