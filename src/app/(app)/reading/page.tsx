@@ -64,27 +64,18 @@ function ReadingPracticePageContent() {
             return -1;
         }
 
-        // Find the currently active line based on currentTime
+        // Find the index of the last line that has started
+        let lastPassedIndex = -1;
         for (let i = 0; i < transcript.length; i++) {
-            const line = transcript[i];
-            const startTime = line.offset;
-            const endTime = startTime + line.duration;
-            if (currentTime >= startTime && currentTime < endTime) {
-                return i;
+            if (transcript[i].offset <= currentTime) {
+                lastPassedIndex = i;
+            } else {
+                break; // We've passed the current time
             }
         }
         
-        // Fallback for when between lines, find the last line that has passed
-        let lastPassedIndex = -1;
-        for (let i = 0; i < transcript.length; i++) {
-           if (transcript[i].offset <= currentTime) {
-               lastPassedIndex = i;
-           } else {
-               break; 
-           }
-        }
-
         return lastPassedIndex;
+
     }, [videoData?.transcript, currentTime]);
 
     const handleToggleShadowing = () => {
@@ -268,9 +259,7 @@ function ReadingPracticePageContent() {
                         playing={isPlaying}
                         loop={isShadowing}
                         onProgress={(state) => {
-                          if (!isShadowing) {
                             setCurrentTime(state.playedSeconds * 1000);
-                          }
                         }}
                         onEnded={() => {
                            if (!isShadowing) {
@@ -288,37 +277,6 @@ function ReadingPracticePageContent() {
                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
                     <Button onClick={handlePlayPause} size="lg" className="rounded-full h-16 w-16 shadow-lg">
                         {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
-                    </Button>
-                </div>
-            )}
-
-
-            {isShadowing && (
-                 <div className="fixed bottom-8 right-8 z-50 flex flex-col items-center gap-4">
-                     <div className={cn(
-                         "flex flex-col gap-3 transition-all duration-300",
-                         recorderState.status === 'stopped' ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
-                     )}>
-                         <Button size="icon" className="h-12 w-12 rounded-full bg-green-600 hover:bg-green-700" onClick={saveRecording} disabled={isSaving}>
-                             {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <Check className="h-6 w-6" />}
-                         </Button>
-                         <Button size="icon" variant="destructive" className="h-12 w-12 rounded-full" onClick={handleCancel} disabled={isSaving}>
-                             <Trash2 className="h-6 w-6" />
-                         </Button>
-                     </div>
-                     <Button
-                        onClick={handleRecordClick}
-                        size="lg"
-                        disabled={!segmentToLoop}
-                        className={cn(
-                            "h-20 w-20 rounded-full shadow-lg",
-                            recorderState.status === 'recording' && 'bg-red-600 hover:bg-red-700 animate-pulse',
-                            recorderState.status === 'stopped' && 'bg-muted-foreground',
-                            !segmentToLoop && 'bg-muted-foreground cursor-not-allowed'
-                        )}
-                    >
-                        <Mic className="h-10 w-10" />
-                        <span className="sr-only">{recorderState.status === 'recording' ? 'Stop Recording' : 'Record'}</span>
                     </Button>
                 </div>
             )}
@@ -352,3 +310,5 @@ export default function ReadingPage() {
       </>
   );
 }
+
+    
