@@ -89,13 +89,11 @@ function ReadOutLoudController() {
         const fullTranscript = videoData.transcript.map(t => t.text).join(' ');
 
         try {
-            // Since we don't have a speech-to-text service, we send the original transcript
-            // as both the original and the "transcribed" text. The AI will compare the text to itself,
-            // resulting in a "perfect" score, but it validates the end-to-end flow.
             const feedback = await generateSpeechFeedback({
-                transcribedText: fullTranscript, 
+                audioDataUri: audioData.url,
                 originalText: fullTranscript,
                 targetLanguage: userProfile.targetLanguage,
+                nativeLanguage: userProfile.nativeLanguage,
             });
 
             setFeedbackResult(feedback);
@@ -104,11 +102,15 @@ function ReadOutLoudController() {
             await addDoc(attemptsCollection, {
                 userId: user.uid,
                 videoId: videoData.videoId,
-                audioUrl: audioData.url, // Still save the audio for future use
+                audioUrl: audioData.url,
                 timestamp: Date.now(),
                 originalText: fullTranscript,
-                transcribedText: fullTranscript, // Using original text as placeholder
-                aiFeedback: feedback,
+                transcribedText: feedback.transcribedText,
+                aiFeedback: {
+                    accuracy: feedback.accuracy,
+                    fluency: feedback.fluency,
+                    pronunciation: feedback.pronunciation,
+                },
             });
             toast({ title: "Recording Saved!", description: "Your speaking practice has been saved with AI feedback." });
         } catch(e: any) {
@@ -138,10 +140,15 @@ function ReadOutLoudController() {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-base">
                                 <Sparkles className="h-5 w-5 text-primary" />
-                                AI Feedback
+                                AI Feedback (in {userProfile?.nativeLanguage})
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4 text-sm">
+                           <div>
+                                <h4 className="font-semibold">What you said:</h4>
+                                <p className="text-muted-foreground italic">"{feedbackResult.transcribedText}"</p>
+                           </div>
+                           <hr />
                            <div>
                                 <h4 className="font-semibold">Accuracy</h4>
                                 <p className="text-muted-foreground">{feedbackResult.accuracy}</p>
