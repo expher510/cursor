@@ -106,14 +106,6 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
         </div>
         
         <nav className="flex items-center justify-end gap-2" style={{minWidth: '150px'}}>
-             {user && (
-                  <Button asChild variant="outline" className="border-primary/80 hover:bg-primary/10 text-primary">
-                      <Link href="/flashcards">
-                          <Copy className="h-5 w-5" />
-                          <span className="hidden sm:inline">Cards</span>
-                      </Link>
-                  </Button>
-             )}
         </nav>
       </div>
        <div className="md:hidden flex justify-center pb-2">
