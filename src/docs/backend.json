@@ -1,0 +1,434 @@
+{
+  "entities": {
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the LinguaStream application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the user.",
+          "format": "email"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "nativeLanguage": {
+          "type": "string",
+          "description": "The user's native language (e.g., 'en', 'ar')."
+        },
+        "targetLanguage": {
+          "type": "string",
+          "description": "The language the user wants to learn (e.g., 'ar', 'es')."
+        },
+        "proficiencyLevel": {
+          "type": "string",
+          "description": "The user's self-assessed proficiency level.",
+          "enum": ["beginner", "intermediate", "advanced"]
+        },
+        "learningGoal": {
+          "type": "string",
+          "description": "The user's personal learning goal."
+        },
+        "onboardingCompleted": {
+          "type": "boolean",
+          "description": "Flag indicating if the user has completed the initial onboarding."
+        }
+      },
+      "required": [
+        "id",
+        "email"
+      ]
+    },
+    "Video": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Video",
+      "type": "object",
+      "description": "Represents a YouTube video that the user has interacted with.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the video entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Video)"
+        },
+        "youtubeUrl": {
+          "type": "string",
+          "description": "The URL of the YouTube video."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the YouTube video."
+        },
+        "audioUrl": {
+          "type": "string",
+          "description": "The URL of the extracted audio file."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "youtubeUrl",
+        "title"
+      ]
+    },
+    "Transcript": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Transcript",
+      "type": "object",
+      "description": "Represents the transcript of a YouTube video.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the transcript entity."
+        },
+        "videoId": {
+          "type": "string",
+          "description": "Reference to Video. (Relationship: Video 1:1 Transcript)"
+        },
+        "content": {
+          "type": "array",
+          "description": "The full text content of the video transcript as an array of segments.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "text": { "type": "string" },
+              "offset": { "type": "number" },
+              "duration": { "type": "number" }
+            },
+            "required": ["text", "offset", "duration"]
+          }
+        }
+      },
+      "required": [
+        "id",
+        "videoId",
+        "content"
+      ]
+    },
+    "Vocabulary": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Vocabulary",
+      "type": "object",
+      "description": "Represents a custom vocabulary list created by the user for a specific video.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the vocabulary entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Vocabulary)"
+        },
+        "videoId": {
+          "type": "string",
+          "description": "Reference to Video. (Relationship: Video 1:N Vocabulary)"
+        },
+        "word": {
+            "type": "string"
+        },
+        "translation": {
+            "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "videoId",
+        "word"
+      ]
+    },
+    "Quiz": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Quiz",
+      "description": "Represents a quiz for a video, including user answers and score for a specific attempt.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "The unique identifier for the quiz."
+        },
+        "videoId": {
+          "type": "string",
+          "description": "The ID of the video this quiz belongs to."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who took the quiz."
+        },
+        "questions": {
+          "type": "array",
+          "description": "A list of questions in the quiz.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "questionText": {
+                "type": "string",
+                "description": "The text of the question."
+              },
+              "options": {
+                "type": "array",
+                "description": "A list of possible answers.",
+                "items": { "type": "string" }
+              },
+              "correctAnswer": {
+                "type": "string",
+                "description": "The correct answer from the options list."
+              }
+            },
+            "required": ["questionText", "options", "correctAnswer"]
+          }
+        },
+        "score": {
+          "type": "number",
+          "description": "The user's score (number of correct answers) for this quiz attempt. Optional."
+        },
+        "userAnswers": {
+          "type": "array",
+          "description": "The user's selected answers for each question. The index corresponds to the questions array. Optional.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": ["id", "videoId", "userId", "questions"]
+    },
+    "SpeakingExerciseAttempt": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Speaking Exercise Attempt",
+      "description": "Represents a user's attempt at a speaking exercise.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the speaking exercise attempt."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who took the exercise."
+        },
+         "videoId": {
+          "type": "string",
+          "description": "The ID of the video associated with this attempt."
+        },
+        "audioUrl": {
+          "type": "string",
+          "description": "The Data URI of the recorded audio.",
+          "format": "uri"
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "The timestamp when the exercise was completed."
+        }
+      },
+      "required": ["id", "userId", "videoId", "audioUrl", "timestamp"]
+    },
+    "WritingFeedback": {
+        "$schema": "http://json-schema.org/draft-07/schema#",
+        "title": "Writing Feedback",
+        "description": "Stores AI-generated feedback for a user's writing exercise.",
+        "type": "object",
+        "properties": {
+            "id": {
+                "type": "string"
+            },
+            "userId": {
+                "type": "string"
+            },
+            "videoId": {
+                "type": "string"
+            },
+            "originalText": {
+                "type": "string"
+            },
+            "usedWords": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "feedback": {
+                "type": "string"
+            },
+            "score": {
+                "type": "number"
+            },
+            "suggestions": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            },
+            "createdAt": {
+                "type": "number"
+            }
+        },
+        "required": ["id", "userId", "originalText", "feedback", "score", "createdAt"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "google.com",
+      "password"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/entities/User"
+          },
+          "description": "Stores user profiles.  Path-based ownership, allowing access only to the user themselves.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/videos/{videoId}",
+        "definition": {
+          "entityName": "Video",
+          "schema": {
+            "$ref": "#/entities/Video"
+          },
+          "description": "Stores videos associated with a specific user. Path-based ownership, so only the user can access their own videos.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "videoId",
+              "description": "The unique identifier of the video."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/videos/{videoId}/transcripts/{transcriptId}",
+        "definition": {
+          "entityName": "Transcript",
+          "schema": {
+            "$ref": "#/entities/Transcript"
+          },
+          "description": "Stores transcripts for videos owned by a specific user. Path-based ownership ensures data isolation.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "videoId",
+              "description": "The unique identifier of the video."
+            },
+            {
+              "name": "transcriptId",
+              "description": "The unique identifier of the transcript."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/videos/{videoId}/quizzes/{quizId}",
+        "definition": {
+          "entityName": "Quiz",
+          "schema": {
+            "$ref": "#/entities/Quiz"
+          },
+          "description": "Stores quizzes for videos owned by a specific user. Path-based ownership ensures data isolation.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "videoId",
+              "description": "The unique identifier of the video."
+            },
+            {
+              "name": "quizId",
+              "description": "The unique identifier of the quiz."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/vocabularies/{vocabularyId}",
+        "definition": {
+          "entityName": "Vocabulary",
+          "schema": {
+            "$ref": "#/entities/Vocabulary"
+          },
+          "description": "Stores vocabulary lists created by a user. Path-based ownership ensures data isolation.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "vocabularyId",
+              "description": "The unique identifier of the vocabulary list."
+            }
+          ]
+        }
+      },
+       {
+        "path": "/users/{userId}/speakingAttempts/{attemptId}",
+        "definition": {
+          "entityName": "SpeakingExerciseAttempt",
+          "schema": {
+            "$ref": "#/entities/SpeakingExerciseAttempt"
+          },
+          "description": "Stores a user's speaking exercise attempts. Path-based ownership ensures data isolation.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user."
+            },
+            {
+              "name": "attemptId",
+              "description": "The unique identifier of the exercise attempt."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/writingFeedback/{feedbackId}",
+        "definition": {
+            "entityName": "WritingFeedback",
+            "schema": {
+                "$ref": "#/entities/WritingFeedback"
+            },
+            "description": "Stores AI-generated feedback for a user's writing exercises. Path-based ownership ensures data isolation.",
+            "params": [
+                {
+                    "name": "userId",
+                    "description": "The unique identifier of the user."
+                },
+                {
+                    "name": "feedbackId",
+                    "description": "The unique identifier of the feedback entry."
+                }
+            ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure data isolation and facilitate secure access based on user ownership. Each user has their own collection of videos, transcripts, quizzes, and vocabularies, eliminating the need for complex authorization rules. This structure adheres to the principles of Authorization Independence and Structural Segregation. Specifically:\n\n1.  **Authorization Independence:** The design focuses on path-based ownership for all user-related data (videos, transcripts, quizzes, vocabularies). This eliminates the need for `get()` calls in security rules because access control is directly tied to the path. This allows atomic operations and simplifies debugging.\n\n2.  **Structural Segregation:**  Each user's data is stored under their own document ID (`/users/{userId}`).  This ensures that all documents within a given collection share the same security requirements.  This simplifies security rules because they can be applied to entire collections rather than requiring filtering based on document content.\n\n3.  **QAPs (Rules are not Filters):** The structure supports secure `list` operations because each user's resources are isolated within their own path. A user can list their videos, transcripts, and vocabularies without exposing data from other users.\n\n4.  **Access Modeling:** All data is modeled using Path-Based ownership, which directly represents the `User 1:N Entity` relationships.\n\nThis design prioritizes clarity, security, and scalability by leveraging Firestore's hierarchical data model and enforcing strict ownership."
+  }
+}
+
+    

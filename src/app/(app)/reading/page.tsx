@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Pause, Play, BookOpenCheck, Mic, BrainCircuit, Volume2, VolumeX } from "lucide-react";
+import { AlertTriangle, BrainCircuit, Check, Mic, Trash2, X } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -13,13 +13,20 @@ import ReactPlayer from "react-player";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { useRecorder } from "@/hooks/use-recorder";
+import { useFirebase } from "@/firebase";
+import { addDoc, collection } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 
 function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
+    const { user, firestore } = useFirebase();
+    const { toast } = useToast();
+    const { recorderState, startRecording, stopRecording, cancelRecording, audioData } = useRecorder();
+
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
-    const [duration, setDuration] = useState(0);
     const playerRef = useRef<ReactPlayer>(null);
     const [isShadowing, setIsShadowing] = useState(false);
     const [segmentToLoop, setSegmentToLoop] = useState<{ start: number, duration: number } | null>(null);
@@ -30,13 +37,16 @@ function ReadingPracticePageContent() {
 
     const handlePlaySegment = useCallback((offset: number, duration: number) => {
         if (playerRef.current) {
+            // Don't play if recording is active
+            if (recorderState.status === 'recording' || recorderState.status === 'stopped') return;
+
             if (isShadowing) {
                 setSegmentToLoop({ start: offset / 1000, duration: duration / 1000 });
             }
             playerRef.current.seekTo(offset / 1000, 'seconds');
             setIsPlaying(true);
         }
-    }, [isShadowing]);
+    }, [isShadowing, recorderState.status]);
 
     const activeSegmentId = useMemo(() => {
         const transcript = videoData?.transcript;
@@ -44,31 +54,13 @@ function ReadingPracticePageContent() {
             return null;
         }
 
-        // Find the index of the first segment that starts AFTER the current time.
-        let nextSegmentIndex = -1;
-        let left = 0;
-        let right = transcript.length - 1;
-
-        while (left <= right) {
-            const mid = Math.floor(left + (right - left) / 2);
-            if (transcript[mid].offset > currentTime) {
-                nextSegmentIndex = mid;
-                right = mid - 1; // Look for an earlier segment that's also in the future
+        let activeIndex = -1;
+        for (let i = 0; i < transcript.length; i++) {
+            if (transcript[i].offset <= currentTime) {
+                activeIndex = i;
             } else {
-                left = mid + 1; // This segment has already started, look later
+                break; 
             }
-        }
-        
-        let activeIndex;
-        if (nextSegmentIndex === -1) {
-            // If no segment is in the future, we're at the last segment.
-            activeIndex = transcript.length - 1;
-        } else if (nextSegmentIndex === 0) {
-            // If the first segment is in the future, nothing is active yet.
-            activeIndex = -1;
-        } else {
-            // The active segment is the one right before the "next" one.
-            activeIndex = nextSegmentIndex - 1;
         }
 
         return activeIndex !== -1 ? `${videoData?.videoId}-${activeIndex}` : null;
@@ -78,12 +70,47 @@ function ReadingPracticePageContent() {
       setIsShadowing(prev => {
         const newMode = !prev;
         if (!newMode) {
-          // When turning off shadowing, stop any looping.
           setSegmentToLoop(null);
+          cancelRecording();
         }
+        setIsPlaying(false);
         return newMode;
       });
     }
+
+    const handleRecordClick = () => {
+      if (recorderState.status === 'idle' || recorderState.status === 'stopped') {
+        setIsPlaying(false); // Stop audio playback
+        setSegmentToLoop(null); // Stop looping
+        startRecording();
+      } else if (recorderState.status === 'recording') {
+        stopRecording();
+      }
+    };
+    
+    const saveRecording = async () => {
+        if (!audioData?.url || !user || !firestore || !videoData?.videoId) {
+             toast({ variant: 'destructive', title: "Save failed", description: "Missing required data to save."});
+            return;
+        }
+        
+        try {
+            const attemptsCollection = collection(firestore, `users/${user.uid}/speakingAttempts`);
+            await addDoc(attemptsCollection, {
+                userId: user.uid,
+                videoId: videoData.videoId,
+                audioUrl: audioData.url,
+                timestamp: Date.now()
+            });
+            toast({ title: "Recording Saved!", description: "Your speaking practice has been saved." });
+        } catch(e) {
+            console.error("Failed to save recording", e);
+            toast({ variant: 'destructive', title: "Save failed", description: "There was an error saving your recording."});
+        } finally {
+            cancelRecording(); // Reset recorder state
+        }
+    };
+
 
     if (isLoading) {
         return (
@@ -137,7 +164,7 @@ function ReadingPracticePageContent() {
                 <div className="mt-2 space-y-4">
                     <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
                        {isShadowing 
-                         ? "Shadowing Mode: Click a line to loop its audio and practice along."
+                         ? "Shadowing Mode: Click a line to loop its audio, then record yourself."
                          : "Read the text, save new words, and listen along. Click any line to play its audio."
                        }
                     </p>
@@ -160,33 +187,6 @@ function ReadingPracticePageContent() {
                 </Card>
             </>
 
-            {/* Floating Audio Player Button */}
-            {videoData.audioUrl && !isShadowing && (
-                <Button 
-                    onClick={handlePlayPause} 
-                    size="lg"
-                    className="fixed bottom-8 right-8 z-50 h-16 w-16 rounded-full shadow-lg"
-                    disabled={!videoData.audioUrl}
-                >
-                    {isPlaying ? <VolumeX className="h-8 w-8" /> : <Volume2 className="h-8 w-8" />}
-                    <span className="sr-only">{isPlaying ? 'Pause Audio' : 'Play Audio'}</span>
-                </Button>
-            )}
-
-            {/* Shadowing UI */}
-            {isShadowing && (
-                 <div className="fixed bottom-8 right-8 z-50 flex flex-col items-center gap-4">
-                     <Button 
-                        size="lg"
-                        className="h-20 w-20 rounded-full shadow-lg bg-red-600 hover:bg-red-700"
-                    >
-                        <Mic className="h-10 w-10" />
-                        <span className="sr-only">Record</span>
-                    </Button>
-                </div>
-            )}
-
-
             {/* Hidden Audio Player */}
             {videoData.audioUrl && (
                 <div className="hidden">
@@ -200,14 +200,41 @@ function ReadingPracticePageContent() {
                             playerRef.current?.seekTo(segmentToLoop.start, 'seconds');
                           }
                         }}
-                        onDuration={setDuration}
                         width="0"
                         height="0"
                         controls={false}
-                        loop={isShadowing}
                     />
                 </div>
             )}
+
+            {/* Shadowing UI */}
+            {isShadowing && (
+                 <div className="fixed bottom-8 right-8 z-50 flex flex-col items-center gap-4">
+                     {recorderState.status === 'stopped' ? (
+                         <div className="flex gap-4">
+                             <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={saveRecording}>
+                                 <Check className="mr-2" /> Confirm
+                             </Button>
+                             <Button size="lg" variant="destructive" onClick={cancelRecording}>
+                                 <Trash2 className="mr-2" /> Cancel
+                             </Button>
+                         </div>
+                     ) : (
+                         <Button
+                            onClick={handleRecordClick}
+                            size="lg"
+                            className={cn(
+                                "h-20 w-20 rounded-full shadow-lg",
+                                recorderState.status === 'recording' ? "bg-red-600 hover:bg-red-700 animate-pulse" : "bg-primary"
+                            )}
+                        >
+                            <Mic className="h-10 w-10" />
+                            <span className="sr-only">{recorderState.status === 'recording' ? 'Stop Recording' : 'Record'}</span>
+                        </Button>
+                     )}
+                </div>
+            )}
+
         </div>
     )
 }
@@ -237,3 +264,5 @@ export default function ReadingPage() {
       </>
   );
 }
+
+    
