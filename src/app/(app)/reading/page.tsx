@@ -34,28 +34,30 @@ function ReadingPracticePageContent() {
     }, []);
 
     const activeSegmentId = useMemo(() => {
-        if (!videoData?.transcript || videoData.transcript.length === 0) {
-            return null;
-        }
+    const transcript = videoData?.transcript;
     
-        const transcript = videoData.transcript;
-        let activeIndex = -1;
-    
-        for (let i = 0; i < transcript.length; i++) {
-            if (transcript[i].offset <= currentTime) {
-                activeIndex = i;
-            } else {
-                // Since the transcript is sorted, we can break early
-                break;
-            }
-        }
-    
-        if (activeIndex !== -1) {
-            return `${videoData.videoId}-${activeIndex}`;
-        }
-    
+    if (!transcript?.length) {
         return null;
-    }, [currentTime, videoData?.transcript, videoData?.videoId]);
+    }
+
+    // Binary search for better performance with large transcripts
+    let left = 0;
+    let right = transcript.length - 1;
+    let activeIndex = -1;
+
+    while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        
+        if (transcript[mid].offset <= currentTime) {
+            activeIndex = mid;
+            left = mid + 1; // Look for a later match
+        } else {
+            right = mid - 1;
+        }
+    }
+
+    return activeIndex !== -1 ? `${videoData.videoId}-${activeIndex}` : null;
+}, [videoData?.transcript, videoData?.videoId, currentTime]);
 
 
     if (isLoading) {
