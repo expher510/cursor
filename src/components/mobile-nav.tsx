@@ -60,10 +60,6 @@ export function MobileNav({ setOpen }: { setOpen: (open: boolean) => void }) {
           <BookOpen className="w-5 h-5" />
           <span>Reading Practice</span>
         </MobileLink>
-        <MobileLink href="/speaking" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
-          <Mic className="w-5 h-5" />
-          <span>Speaking Practice</span>
-        </MobileLink>
         <MobileLink href="/writing" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
           <Edit className="w-5 h-5" />
           <span>Writing Practice</span>
