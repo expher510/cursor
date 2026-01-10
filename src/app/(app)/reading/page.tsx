@@ -41,11 +41,13 @@ function ReadingPracticePageContent() {
 
             if (isShadowing) {
                 setSegmentToLoop({ start: offset / 1000, duration: duration / 1000 });
+                 playerRef.current.seekTo(offset / 1000, 'seconds');
+                 setIsPlaying(true);
             } else {
                 setSegmentToLoop(null); // Ensure no looping in normal mode
+                playerRef.current.seekTo(offset / 1000, 'seconds');
+                setIsPlaying(true);
             }
-            playerRef.current.seekTo(offset / 1000, 'seconds');
-            setIsPlaying(true);
         }
     }, [isShadowing, recorderState.status]);
 
@@ -239,28 +241,31 @@ function ReadingPracticePageContent() {
             {/* Shadowing UI */}
             {isShadowing && (
                  <div className="fixed bottom-8 right-8 z-50 flex flex-col items-center gap-4">
-                     {recorderState.status === 'stopped' ? (
-                         <div className="flex gap-4">
-                             <Button size="lg" className="bg-green-600 hover:bg-green-700" onClick={saveRecording}>
-                                 <Check className="mr-2" /> Confirm
-                             </Button>
-                             <Button size="lg" variant="destructive" onClick={cancelRecording}>
-                                 <Trash2 className="mr-2" /> Cancel
-                             </Button>
-                         </div>
-                     ) : (
-                         <Button
-                            onClick={handleRecordClick}
-                            size="lg"
-                            className={cn(
-                                "h-20 w-20 rounded-full shadow-lg",
-                                recorderState.status === 'recording' ? "bg-red-600 hover:bg-red-700 animate-pulse" : "bg-primary"
-                            )}
-                        >
-                            <Mic className="h-10 w-10" />
-                            <span className="sr-only">{recorderState.status === 'recording' ? 'Stop Recording' : 'Record'}</span>
-                        </Button>
-                     )}
+                     <div className={cn(
+                         "flex flex-col gap-3 transition-all duration-300",
+                         recorderState.status === 'stopped' ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'
+                     )}>
+                         <Button size="icon" className="h-12 w-12 rounded-full bg-green-600 hover:bg-green-700" onClick={saveRecording}>
+                             <Check className="h-6 w-6" />
+                         </Button>
+                         <Button size="icon" variant="destructive" className="h-12 w-12 rounded-full" onClick={cancelRecording}>
+                             <Trash2 className="h-6 w-6" />
+                         </Button>
+                     </div>
+                     <Button
+                        onClick={handleRecordClick}
+                        size="lg"
+                        disabled={recorderState.status === 'stopped'}
+                        className={cn(
+                            "h-20 w-20 rounded-full shadow-lg",
+                            recorderState.status === 'recording' && "bg-red-600 hover:bg-red-700 animate-pulse",
+                            recorderState.status === 'stopped' && "bg-muted-foreground",
+                            recorderState.status !== 'recording' && recorderState.status !== 'stopped' && "bg-primary"
+                        )}
+                    >
+                        <Mic className="h-10 w-10" />
+                        <span className="sr-only">{recorderState.status === 'recording' ? 'Stop Recording' : 'Record'}</span>
+                    </Button>
                 </div>
             )}
 
