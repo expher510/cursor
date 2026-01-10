@@ -44,7 +44,7 @@ const prompt = ai.definePrompt({
     name: 'generateSpeechFeedbackPrompt',
     input: { schema: GenerateSpeechFeedbackInputSchema },
     output: { schema: GenerateSpeechFeedbackOutputSchema },
-    model: googleAI('gemini-1.5-flash'),
+    model: googleAI.model('gemini-1.5-flash'),
     prompt: `You are a language coach for a student learning ${'{{{targetLanguage}}}'}.
     The user was asked to say the following text:
     ---
