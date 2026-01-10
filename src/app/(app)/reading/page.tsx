@@ -34,19 +34,30 @@ function ReadingPracticePageContent() {
     }, []);
 
     const activeSegmentId = useMemo(() => {
-        if (!videoData?.transcript) return null;
-        
-        // Find the last segment whose offset is less than or equal to the current time.
-        const activeSegment = videoData.transcript
-            .slice()
-            .reverse()
-            .find(segment => segment.offset <= currentTime);
+        if (!videoData?.transcript || videoData.transcript.length === 0) return null;
 
-        if (activeSegment) {
-             const activeIndex = videoData.transcript.indexOf(activeSegment);
-             return `${videoData.videoId}-${activeIndex}`;
+        const transcript = videoData.transcript;
+        
+        // Find the index of the first segment whose offset is *greater* than the current time.
+        const nextSegmentIndex = transcript.findIndex(segment => segment.offset > currentTime);
+
+        let activeIndex;
+
+        if (nextSegmentIndex === -1) {
+            // If no future segment is found, we're on the last one.
+            activeIndex = transcript.length - 1;
+        } else if (nextSegmentIndex === 0) {
+            // If the first segment hasn't started yet, nothing is active.
+            return null;
+        } else {
+            // The active segment is the one *before* the next one.
+            activeIndex = nextSegmentIndex - 1;
         }
 
+        if (activeIndex >= 0) {
+            return `${videoData.videoId}-${activeIndex}`;
+        }
+        
         return null;
     }, [currentTime, videoData?.transcript, videoData?.videoId]);
 
