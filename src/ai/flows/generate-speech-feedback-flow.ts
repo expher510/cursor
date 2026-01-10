@@ -39,6 +39,43 @@ export async function generateSpeechFeedback(input: GenerateSpeechFeedbackInput)
   return generateSpeechFeedbackFlow(input);
 }
 
+const feedbackPrompt = ai.definePrompt({
+    name: 'speechFeedbackPrompt',
+    model: 'gemini-1.5-flash',
+    input: { schema: GenerateSpeechFeedbackInputSchema },
+    output: { schema: z.object({
+        accuracy: z.string(),
+        fluency: z.string(),
+        pronunciation: z.string(),
+    })},
+    prompt: `
+        You are a language coach for a student learning ${'{{targetLanguage}}'}.
+        The student's native language is ${'{{nativeLanguage}}'}.
+        
+        The user was asked to say the following text:
+        ---
+        Original Text: ${'{{originalText}}'}
+        ---
+
+        Here is the user's audio recording:
+        ---
+        Audio: {{media url=audioDataUri}}
+        ---
+
+        Your tasks are:
+        1. Transcribe the audio recording.
+        2. Compare your transcription to the "Original Text".
+        3. Provide feedback on the user's performance in their NATIVE language (${'{{nativeLanguage}}'}).
+
+        Your analysis should cover three aspects:
+        1.  **Accuracy**: Compare the transcribed text to the original text. Point out any missed, extra, or incorrect words. Be specific.
+        2.  **Fluency**: Based on the transcription and audio, comment on the likely fluency, rhythm, and pauses.
+        3.  **Pronunciation**: Based on the transcription and audio (e.g., if a word sounds different), identify potential pronunciation mistakes. Be encouraging.
+
+        Provide your response ONLY as a valid JSON object with three keys: "accuracy", "fluency", and "pronunciation". The entire response, including the content of these keys, MUST be in the user's native language: ${'{{nativeLanguage}}'}.
+    `,
+});
+
 
 // The Main Genkit Flow
 const generateSpeechFeedbackFlow = ai.defineFlow(
@@ -54,13 +91,8 @@ const generateSpeechFeedbackFlow = ai.defineFlow(
       throw new Error("ASSEMBLYAI_API_KEY is not defined in environment variables.");
     }
     
-    const openRouterKey = process.env.OPENROUTER_API_KEY;
-     if (!openRouterKey) {
-      throw new Error("OPENROUTER_API_KEY is not defined in environment variables.");
-    }
-
     try {
-        // Step 1: Transcribe the audio using AssemblyAI
+        // Step 1: Transcribe the audio using AssemblyAI for a baseline transcription
         const assemblyClient = new AssemblyAI({ apiKey: assemblyAiKey });
         const transcript = await assemblyClient.transcripts.transcribe({
             audio: audioDataUri,
@@ -72,65 +104,23 @@ const generateSpeechFeedbackFlow = ai.defineFlow(
         
         const transcribedText = transcript.text;
 
-        // Step 2: Get feedback on the transcription using OpenRouter
-        const prompt = `
-            You are a language coach for a student learning ${targetLanguage}.
-            The student's native language is ${nativeLanguage}.
-            
-            The user was asked to say the following text:
-            ---
-            Original Text: ${originalText}
-            ---
-
-            The user's speech was transcribed as:
-            ---
-            Transcribed Text: ${transcribedText}
-            ---
-
-            Your tasks are to analyze the transcribed speech and provide feedback in the user's NATIVE language (${nativeLanguage}).
-
-            Your analysis should cover three aspects:
-            1.  **Accuracy**: Compare the transcribed text to the original text. Point out any missed, extra, or incorrect words. Be specific.
-            2.  **Fluency**: Based on the transcription, comment on the likely fluency. Does it seem like they spoke naturally or hesitated?
-            3.  **Pronunciation**: Based on the transcription (e.g., if a word was transcribed as a different but similarly sounding word), identify potential pronunciation mistakes. Be encouraging.
-
-            Provide your response ONLY as a valid JSON object with three keys: "accuracy", "fluency", and "pronunciation".
-        `;
-
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${openRouterKey}`,
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                model: "google/gemma-2-9b-it:free", 
-                messages: [{ "role": "user", "content": prompt }],
-            })
+        // Step 2: Get feedback from Gemini, providing it with the audio and text
+        const { output } = await feedbackPrompt({
+            audioDataUri,
+            originalText,
+            targetLanguage,
+            nativeLanguage,
         });
 
-        if (!response.ok) {
-            const errorBody = await response.text();
-            throw new Error(`OpenRouter API request failed: ${errorBody}`);
-        }
-        
-        const result = await response.json();
-        const content = result.choices[0]?.message?.content;
-
-        if (!content) {
+        if (!output) {
             throw new Error("AI feedback generation failed.");
         }
-        
-        const jsonStart = content.indexOf('{');
-        const jsonEnd = content.lastIndexOf('}');
-        const jsonString = content.substring(jsonStart, jsonEnd + 1);
-        const feedback = JSON.parse(jsonString);
 
         return {
-            transcribedText: transcribedText,
-            accuracy: feedback.accuracy,
-            fluency: feedback.fluency,
-            pronunciation: feedback.pronunciation,
+            transcribedText: transcribedText, // Return the transcription from AssemblyAI
+            accuracy: output.accuracy,
+            fluency: output.fluency,
+            pronunciation: output.pronunciation,
         };
 
     } catch (e: any) {
