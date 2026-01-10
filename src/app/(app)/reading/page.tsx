@@ -38,27 +38,14 @@ function ReadingPracticePageContent() {
 
         const transcript = videoData.transcript;
         
-        // Find the index of the first segment whose offset is *greater* than the current time.
-        const nextSegmentIndex = transcript.findIndex(segment => segment.offset > currentTime);
-
-        let activeIndex;
-
-        if (nextSegmentIndex === -1) {
-            // If no future segment is found, we're on the last one.
-            activeIndex = transcript.length - 1;
-        } else if (nextSegmentIndex === 0) {
-            // If the first segment hasn't started yet, nothing is active.
-            return null;
-        } else {
-            // The active segment is the one *before* the next one.
-            activeIndex = nextSegmentIndex - 1;
-        }
-
-        if (activeIndex >= 0) {
-            return `${videoData.videoId}-${activeIndex}`;
+        // Iterate backwards to find the last segment that has started
+        for (let i = transcript.length - 1; i >= 0; i--) {
+            if (transcript[i].offset <= currentTime) {
+                return `${videoData.videoId}-${i}`;
+            }
         }
         
-        return null;
+        return null; // Nothing is active if before the first offset
     }, [currentTime, videoData?.transcript, videoData?.videoId]);
 
 
