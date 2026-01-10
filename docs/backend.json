@@ -44,8 +44,15 @@
           "description": "The title of the YouTube video."
         },
         "audioUrl": {
-            "type": "string",
-            "description": "The URL of the extracted audio file."
+          "type": "string",
+          "description": "The URL of the extracted audio file."
+        },
+        "availableLangs": {
+          "type": "array",
+          "description": "A list of available language codes for the video's transcript.",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "required": [

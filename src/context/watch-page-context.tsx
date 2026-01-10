@@ -130,6 +130,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             title: videoDocSnap.data().title,
             description: videoDocSnap.data().description,
             audioUrl: videoDocSnap.data().audioUrl,
+            availableLangs: videoDocSnap.data().availableLangs || [],
             transcript: transcriptDocSnap.data().content,
             videoId: activeVideoId
           };
@@ -146,6 +147,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               userId: user.uid,
               timestamp: Date.now(),
               audioUrl: audioUrl,
+              availableLangs: result.availableLangs,
           }, { merge: true });
 
           await setDoc(transcriptDocRef, {
