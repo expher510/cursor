@@ -77,7 +77,7 @@ function ReadOutLoudController() {
     };
     
     const confirmReadOutLoud = async () => {
-        if (!audioData?.url || !user || !firestore || !videoData?.videoId || !userProfile) {
+        if (!audioData?.url || !user || !firestore || !videoData?.videoId || !userProfile || !videoData.transcript) {
              toast({ variant: 'destructive', title: "Save failed", description: "Missing required data to save."});
              cancelRecording();
             return;
@@ -89,9 +89,9 @@ function ReadOutLoudController() {
         const fullTranscript = videoData.transcript.map(t => t.text).join(' ');
 
         try {
-            // In a real app with a speech-to-text service, we would transcribe `audioData.url`
-            // and send that as `transcribedText`. For now, we send the original text
-            // to the AI to get a baseline feedback structure.
+            // Since we don't have a speech-to-text service, we send the original transcript
+            // as both the original and the "transcribed" text. The AI will compare the text to itself,
+            // resulting in a "perfect" score, but it validates the end-to-end flow.
             const feedback = await generateSpeechFeedback({
                 transcribedText: fullTranscript, 
                 originalText: fullTranscript,
@@ -107,7 +107,7 @@ function ReadOutLoudController() {
                 audioUrl: audioData.url, // Still save the audio for future use
                 timestamp: Date.now(),
                 originalText: fullTranscript,
-                transcribedText: fullTranscript, // Save the original text as the transcription for now
+                transcribedText: fullTranscript, // Using original text as placeholder
                 aiFeedback: feedback,
             });
             toast({ title: "Recording Saved!", description: "Your speaking practice has been saved with AI feedback." });
@@ -252,7 +252,7 @@ function ReadingPracticePageContent() {
         )
     }
 
-    if (error || !videoData || !videoData.videoId) {
+    if (error || !videoData || !videoData.videoId || !videoData.transcript) {
         return (
             <Card className="max-w-md mx-auto text-center border-destructive bg-destructive/10">
               <CardHeader>
@@ -358,5 +358,3 @@ export default function ReadingPage() {
       </>
   );
 }
-
-    
