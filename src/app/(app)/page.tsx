@@ -3,7 +3,7 @@ import { useState, useRef } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
 import { VideoHistory } from "@/components/video-history";
 import { Button } from "@/components/ui/button";
-import { Headphones, BookOpen, Edit, Loader2, Youtube, Book, Copy, History, User, Award } from "lucide-react";
+import { Headphones, BookOpen, Edit, Loader2, Youtube, Book, Copy, History, User, Award, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { extractYouTubeVideoId } from "@/lib/utils";
 import { useFirebase } from "@/firebase";
@@ -14,6 +14,13 @@ import { cn } from "@/lib/utils";
 import { FlashcardGrid } from "@/components/flashcard-grid";
 import { useUserProfile } from "@/hooks/use-user-profile";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
 
 type ActivityType = 'watch' | 'reading' | 'writing';
 type SourceType = 'youtube' | 'cards';
@@ -23,6 +30,12 @@ const LANGUAGE_MAP: Record<string, string> = {
   es: 'Spanish',
   fr: 'French',
 };
+
+const AVAILABLE_LANGUAGES = [
+    { code: 'ar', name: 'Arabic' },
+    { code: 'es', name: 'Spanish' },
+    { code: 'fr', name: 'French' },
+];
 
 
 function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivitySelect: (activity: ActivityType) => void, isProcessing: boolean, videoId: string | null }) {
@@ -65,7 +78,7 @@ function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivi
 function MainContent() {
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const { user } = useFirebase();
-  const { userProfile, isLoading: isProfileLoading, setIsEditing } = useUserProfile();
+  const { userProfile, isLoading: isProfileLoading, updateTargetLanguage } = useUserProfile();
   const router = useRouter();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -107,9 +120,21 @@ function MainContent() {
           return (
             <span>
                 Learn{' '}
-                <Button variant="link" className="p-0 h-auto text-xl text-primary" onClick={() => setIsEditing(true)}>
-                    {languageName}
-                </Button>
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="link" className="p-0 h-auto text-xl text-primary">
+                            {languageName}
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="center">
+                         {AVAILABLE_LANGUAGES.map(lang => (
+                             <DropdownMenuItem key={lang.code} onSelect={() => updateTargetLanguage(lang.code)}>
+                                 <span className="flex-1">{lang.name}</span>
+                                 {userProfile.targetLanguage === lang.code && <Check className="h-4 w-4" />}
+                             </DropdownMenuItem>
+                         ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
                 {' '}with YouTube. Paste a link below to start a lesson.
             </span>
           )
