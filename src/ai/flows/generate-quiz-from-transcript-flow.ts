@@ -1,0 +1,112 @@
+
+'use server';
+/**
+ * @fileOverview A flow for generating a multiple-choice quiz from a video transcript
+ * using the OpenRouter API.
+ *
+ * - generateQuizFromTranscript - A function that creates quiz questions.
+ * - GenerateQuizInput - The input type for the function.
+ * - GenerateQuizOutput - The return type for the function.
+ */
+
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
+import 'dotenv/config';
+
+// Schema for a single quiz question
+const QuizQuestionSchema = z.object({
+  questionText: z.string().describe('The text of the question.'),
+  options: z.array(z.string()).describe('An array of 4 possible answers.'),
+  correctAnswer: z.string().describe('The correct answer from the options array.'),
+});
+
+// Input schema for the flow
+const GenerateQuizInputSchema = z.object({
+  transcript: z.string().describe('The full transcript of the video.'),
+});
+export type GenerateQuizInput = z.infer<typeof GenerateQuizInputSchema>;
+
+// Output schema for the flow
+const GenerateQuizOutputSchema = z.object({
+  questions: z.array(QuizQuestionSchema).describe('The generated list of quiz questions.'),
+});
+export type GenerateQuizOutput = z.infer<typeof GenerateQuizOutputSchema>;
+
+
+// This is the public wrapper function that components will call.
+export async function generateQuizFromTranscript(input: GenerateQuizInput): Promise<GenerateQuizOutput> {
+  return generateQuizFlow(input);
+}
+
+
+// The Main Genkit Flow
+const generateQuizFlow = ai.defineFlow(
+  {
+    name: 'generateQuizFromTranscriptFlow',
+    inputSchema: GenerateQuizInputSchema,
+    outputSchema: GenerateQuizOutputSchema,
+  },
+  async ({ transcript }) => {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) {
+      throw new Error("OPENROUTER_API_KEY is not defined in environment variables.");
+    }
+
+    const prompt = `
+      Based on the following transcript, create a quiz with exactly 7 questions to test comprehension.
+      The questions should be a mix of multiple-choice and true/false.
+      Provide the output as a valid JSON object containing a single key "questions", which is an array of question objects.
+      Each question object must have the following properties: "questionText", "options", and "correctAnswer".
+      For true/false questions, the "options" array should be ["True", "False"].
+
+      Transcript:
+      ---
+      ${transcript.substring(0, 3000)}
+      ---
+
+      Return ONLY the JSON object. Do not include any other text or markdown formatting.
+    `;
+    
+    try {
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "google/gemma-2b-it:free",
+          response_format: { "type": "json_object" },
+          messages: [
+            { "role": "user", "content": prompt }
+          ]
+        })
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("OpenRouter API Error:", errorBody);
+        throw new Error(`OpenRouter API request failed with status ${response.status}`);
+      }
+
+      const result = await response.json();
+      const content = result.choices[0]?.message?.content;
+      
+      if (!content) {
+        throw new Error("No content in AI response.");
+      }
+
+      // The AI should return a JSON string, so we parse it.
+      const parsedContent = JSON.parse(content);
+
+      // Validate the parsed content against our Zod schema.
+      const validatedOutput = GenerateQuizOutputSchema.parse(parsedContent);
+
+      return validatedOutput;
+
+    } catch (e: any) {
+      console.error("Failed to generate or parse quiz:", e);
+      throw new Error(`Could not generate quiz. Original error: ${e.message}`);
+    }
+  }
+);

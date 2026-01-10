@@ -9,10 +9,11 @@ import { useMemoFirebase } from '@/firebase/provider';
 import { processVideo, type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 import { translateWord } from '@/ai/flows/translate-word-flow';
 import { useSearchParams } from 'next/navigation';
-import { type QuizData, MOCK_QUIZ_QUESTIONS } from '@/lib/quiz-data';
+import { type QuizData } from '@/lib/quiz-data';
 import { useToast } from '@/hooks/use-toast';
 import { extractAudio } from '@/ai/flows/extract-audio-flow';
 import { extractYouTubeVideoId } from '@/lib/utils';
+import { generateQuizFromTranscript } from '@/ai/flows/generate-quiz-from-transcript-flow';
 
 
 type VocabularyItem = {
@@ -165,12 +166,15 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               content: result.transcript,
           }, { merge: true });
           
+          const fullTranscript = result.transcript.map(t => t.text).join(' ');
+          const quizQuestions = await generateQuizFromTranscript({transcript: fullTranscript});
+
           const quizDocRef = doc(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`, 'comprehensive-test');
           await setDoc(quizDocRef, {
             id: 'comprehensive-test',
             videoId: cleanVideoId,
             userId: user.uid,
-            questions: MOCK_QUIZ_QUESTIONS,
+            questions: quizQuestions.questions,
             userAnswers: [],
             score: 0
           }, { merge: true });
