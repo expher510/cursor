@@ -88,18 +88,12 @@ function ReadOutLoudController() {
 
         const fullTranscript = videoData.transcript.map(t => t.text).join(' ');
 
-        // This is a placeholder for a proper Speech-to-Text service
-        const FAKE_TRANSCRIPTION = "This is a placeholder for the real transcription from the audio.";
-
-
         try {
-            // NOTE: The current AI model doesn't process audio directly.
-            // In a real scenario, you'd use a speech-to-text service first,
-            // then pass the transcribed text to the feedback flow.
-            // For now, we'll simulate this by sending a placeholder transcription.
-            
+            // In a real app with a speech-to-text service, we would transcribe `audioData.url`
+            // and send that as `transcribedText`. For now, we send the original text
+            // to the AI to get a baseline feedback structure.
             const feedback = await generateSpeechFeedback({
-                transcribedText: FAKE_TRANSCRIPTION, // This should be the real transcription
+                transcribedText: fullTranscript, 
                 originalText: fullTranscript,
                 targetLanguage: userProfile.targetLanguage,
             });
@@ -113,7 +107,7 @@ function ReadOutLoudController() {
                 audioUrl: audioData.url, // Still save the audio for future use
                 timestamp: Date.now(),
                 originalText: fullTranscript,
-                transcribedText: FAKE_TRANSCRIPTION, // Save the (fake) transcription
+                transcribedText: fullTranscript, // Save the original text as the transcription for now
                 aiFeedback: feedback,
             });
             toast({ title: "Recording Saved!", description: "Your speaking practice has been saved with AI feedback." });
@@ -139,6 +133,30 @@ function ReadOutLoudController() {
                     Read Out Loud
                 </Button>
                  {recorderState.error && <p className="text-sm text-destructive">{recorderState.error}</p>}
+                 {feedbackResult && (
+                    <Card className="w-full max-w-2xl bg-muted/50">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-base">
+                                <Sparkles className="h-5 w-5 text-primary" />
+                                AI Feedback
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 text-sm">
+                           <div>
+                                <h4 className="font-semibold">Accuracy</h4>
+                                <p className="text-muted-foreground">{feedbackResult.accuracy}</p>
+                           </div>
+                            <div>
+                                <h4 className="font-semibold">Fluency</h4>
+                                <p className="text-muted-foreground">{feedbackResult.fluency}</p>
+                           </div>
+                            <div>
+                                <h4 className="font-semibold">Pronunciation</h4>
+                                <p className="text-muted-foreground">{feedbackResult.pronunciation}</p>
+                           </div>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         )
     }
@@ -186,9 +204,6 @@ function ReadingPracticePageContent() {
     const [currentTime, setCurrentTime] = useState(0);
     const playerRef = useRef<ReactPlayer>(null);
     
-    const [segmentToLoop, setSegmentToLoop] = useState<{ offset: number, duration: number, text: string } | null>(null);
-
-
     const handlePlayPause = () => {
         setIsPlaying(prev => !prev);
     };
