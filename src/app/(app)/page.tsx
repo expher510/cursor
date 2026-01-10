@@ -18,6 +18,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 type ActivityType = 'watch' | 'reading' | 'writing';
 type SourceType = 'youtube' | 'cards';
 
+const LANGUAGE_MAP: Record<string, string> = {
+  ar: 'Arabic',
+  es: 'Spanish',
+  fr: 'French',
+};
+
+
 function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivitySelect: (activity: ActivityType) => void, isProcessing: boolean, videoId: string | null }) {
   const isEnabled = !!videoId;
   const [pendingActivity, setPendingActivity] = useState<ActivityType | null>(null);
@@ -79,13 +86,10 @@ function MainContent() {
         return;
     };
     
-    // Only set the main page processing state if we are generating a new lesson
     if (shouldGenerate) {
       setIsProcessing(true);
     }
 
-    // The responsibility of fetching/checking data is in the WatchPageProvider.
-    // This component's only job is to navigate with the correct parameters.
     router.push(`/${activity}?v=${videoIdToUse}&shouldGenerate=${shouldGenerate}`);
   };
 
@@ -93,14 +97,25 @@ function MainContent() {
     setSourceType('cards');
     cardsContainerRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+  
+  const getSubtitle = () => {
+      if (isProfileLoading) {
+          return <Skeleton className="h-7 w-96 max-w-full" />;
+      }
+      if (userProfile?.targetLanguage) {
+          const languageName = LANGUAGE_MAP[userProfile.targetLanguage] || userProfile.targetLanguage;
+          return `Learn ${languageName} with YouTube. Paste a link below to start a lesson.`
+      }
+      return 'Paste a YouTube link below to turn any video into an interactive language lesson.'
+  }
 
 
   return (
     <>
       <div className="flex flex-col items-center gap-2 max-w-2xl">
           <Logo />
-        <p className="text-muted-foreground md:text-xl">
-          Paste a YouTube link below to turn any video into an interactive language lesson.
+        <p className="text-muted-foreground md:text-xl h-8">
+          {getSubtitle()}
         </p>
          {isProfileLoading ? (
             <div className="flex items-center gap-4 mt-4">
