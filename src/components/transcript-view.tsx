@@ -46,8 +46,8 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, isGloballyP
                   key={line.offset} 
                   className={cn(
                     "flex items-start gap-3 rounded-md transition-colors relative",
-                    onPlaySegment && "cursor-pointer hover:bg-muted/50",
-                    isActive && "bg-primary/10"
+                    onPlaySegment && "cursor-pointer",
+                    isActive ? "bg-primary/10" : "hover:bg-muted/50"
                   )}
                   onClick={() => onPlaySegment && onPlaySegment(line.offset)}
                 >
