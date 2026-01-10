@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useRef } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
@@ -124,6 +123,10 @@ function MainContent() {
                 <Button variant={sourceType === 'youtube' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'youtube' && 'bg-background shadow-sm')} onClick={() => setSourceType('youtube')}>
                     <History className="mr-2" />
                     History
+                </Button>
+                <Button variant={sourceType === 'cards' ? 'outline' : 'ghost'} className={cn("rounded-full", sourceType === 'cards' && 'bg-background shadow-sm')} onClick={() => setSourceType('cards')}>
+                    <Copy className="mr-2" />
+                    Cards
                 </Button>
             </div>
         </div>
