@@ -201,7 +201,10 @@ function DraggableVideoPlayer({ videoData }: { videoData: NonNullable<ReturnType
 
     const onDragMove = (e: React.MouseEvent | React.TouchEvent) => {
         if (!isDragging) return;
-        e.preventDefault();
+        if ('touches' in e) {
+            // Prevent scrolling page on touch devices
+            e.preventDefault();
+        }
         const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
         const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
         
@@ -235,7 +238,7 @@ function DraggableVideoPlayer({ videoData }: { videoData: NonNullable<ReturnType
             window.removeEventListener('touchmove', handleTouchMove);
             window.removeEventListener('touchend', onDragEnd);
         };
-    }, [isDragging]);
+    }, [isDragging, onDragMove]);
 
 
     return (
@@ -246,7 +249,7 @@ function DraggableVideoPlayer({ videoData }: { videoData: NonNullable<ReturnType
             onMouseDown={onDragStart}
             onTouchStart={onDragStart}
         >
-            <div className="absolute inset-0">
+            <div className="absolute inset-0 pointer-events-none">
                 <CircularProgressControl
                     progress={played * 100}
                     onSeek={handleSeek}
@@ -255,7 +258,7 @@ function DraggableVideoPlayer({ videoData }: { videoData: NonNullable<ReturnType
                 />
             </div>
 
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="absolute inset-0 flex items-center justify-center">
                  <div className="relative h-[112px] w-[112px] rounded-full overflow-hidden shadow-lg flex-shrink-0">
                     <ReactPlayer
                         ref={playerRef}
@@ -284,7 +287,7 @@ function DraggableVideoPlayer({ videoData }: { videoData: NonNullable<ReturnType
                     />
                 </div>
             </div>
-             <div className="absolute top-0 right-0 p-1 bg-muted/50 rounded-full">
+             <div className="absolute top-0 right-0 p-1 bg-muted/50 rounded-full pointer-events-none">
                 <Move className="h-4 w-4 text-white/50" />
             </div>
         </div>
