@@ -153,7 +153,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           setVideoData(combinedData);
         } else if (shouldGenerate) {
           toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
-          const result = await processVideo({ videoId: cleanVideoId });
+          const result = await processVideo({ videoId: cleanVideoId, lang: userProfile.targetLanguage });
           
           if (!result.transcript || result.transcript.length === 0) {
             console.warn(`[LinguaStream] No transcript found for video ${cleanVideoId}, but saving details anyway.`);
@@ -295,7 +295,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
 
   const addVocabularyItem = useCallback(async (word: string) => {
-    if (!user || !firestore || !activeVideoId) return;
+    if (!user || !firestore || !activeVideoId || !userProfile) return;
     const cleanVideoId = extractYouTubeVideoId(activeVideoId);
     if (!cleanVideoId) return;
 
@@ -314,7 +314,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     setAllVocabulary(prev => [optimisticItem, ...(prev || [])]);
 
     try {
-        const { translation } = await translateWord({ word: cleanedWord, sourceLang: 'en', targetLang: 'ar' });
+        // We pass an empty context for now, this could be improved
+        const { translation } = await translateWord({ word: cleanedWord, sourceLang: 'en', targetLang: userProfile.targetLanguage, context: '' });
 
         const vocabCollectionRef = collection(firestore, `users/${user.uid}/vocabularies`);
         const docRef = await addDoc(vocabCollectionRef, {
@@ -331,7 +332,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         setAllVocabulary(prev => prev?.filter(item => item.id !== tempId) || null);
     }
 
-  }, [user, firestore, activeVideoId, savedWordsSet, setAllVocabulary]);
+  }, [user, firestore, activeVideoId, savedWordsSet, setAllVocabulary, userProfile]);
 
   const removeVocabularyItem = useCallback(async (id: string) => {
       if (!firestore || !user) return;

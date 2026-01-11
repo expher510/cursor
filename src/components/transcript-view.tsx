@@ -24,14 +24,14 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
   const fullText = useMemo(() => transcript.map(line => line.text).join(' '), [transcript]);
   const isRtl = useMemo(() => /[\u0600-\u06FF]/.test(fullText), [fullText]);
 
-  const handleWordClick = (word: string, originalText: string, key: string) => {
+  const handleWordClick = (word: string, originalText: string, context: string, key: string) => {
     const isSaved = savedWordsSet.has(word);
     
     if (!isSaved) {
         addVocabularyItem(word);
     }
 
-    toggleTranslation(word, originalText, key);
+    toggleTranslation(word, originalText, context, key);
   };
   
   return (
@@ -83,7 +83,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                                     isSaved && !translation && "bg-amber-100 text-amber-900 cursor-help",
                                     translation && "bg-blue-100 text-blue-900"
                                     )}
-                                    onClick={() => handleWordClick(cleanedWord, originalText, key)}
+                                    onClick={() => handleWordClick(cleanedWord, originalText, line.text, key)}
                                     disabled={isCurrentlyTranslating || !cleanedWord}
                                 >
                                     {isCurrentlyTranslating ? '...' : displayedText}

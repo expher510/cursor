@@ -2,6 +2,7 @@
 'use client';
 import { translateWord } from "@/ai/flows/translate-word-flow";
 import { create } from "zustand";
+import { useUserProfile } from "./use-user-profile";
 
 type Translation = {
     originalText: string;
@@ -11,15 +12,17 @@ type Translation = {
 type TranslationState = {
   translations: Record<string, Translation>;
   isTranslating: Record<string, boolean>;
-  toggleTranslation: (word: string, originalText: string, key: string) => void;
+  toggleTranslation: (word: string, originalText: string, context: string, key: string) => void;
 };
 
 export const useTranslationStore = create<TranslationState>((set, get) => ({
   translations: {},
   isTranslating: {},
 
-  toggleTranslation: async (word, originalText, key) => {
+  toggleTranslation: async (word, originalText, context, key) => {
     const { translations, isTranslating } = get();
+    const targetLanguage = useUserProfile.getState().userProfile?.targetLanguage || 'ar';
+    const sourceLanguage = 'en';
 
     // If it's already translated, revert it
     if (translations[key]) {
@@ -38,7 +41,12 @@ export const useTranslationStore = create<TranslationState>((set, get) => ({
     set(state => ({ isTranslating: { ...state.isTranslating, [key]: true } }));
 
     try {
-        const { translation } = await translateWord({ word: word, sourceLang: 'en', targetLang: 'ar' });
+        const { translation } = await translateWord({ 
+            word: word, 
+            sourceLang: sourceLanguage, 
+            targetLang: targetLanguage,
+            context: context,
+        });
         
         set(state => ({
             translations: {
