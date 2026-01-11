@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { useTranslationStore } from "@/hooks/use-translation-store";
 import { useMemo, useRef } from "react";
 import { useUserProfile } from "@/hooks/use-user-profile";
-import { Languages, Loader2, Dot } from "lucide-react";
+import { Languages, Loader2, Circle } from "lucide-react";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
@@ -103,7 +103,10 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                         onPointerUp={handlePointerUp}
                         onPointerLeave={handlePointerUp}
                     >
-                        <Dot className={cn("h-8 w-8 text-muted-foreground/30", (translatedSentence || isSentenceCurrentlyTranslating) && "text-primary")} />
+                       <Circle className={cn(
+                        "h-8 w-8 text-muted-foreground/30 border-2 border-muted-foreground/30 rounded-full p-1 fill-current",
+                        (translatedSentence || isSentenceCurrentlyTranslating) && "text-primary border-primary"
+                        )} />
                     </div>
                     
                     <p className="flex-1 py-2 pl-1 pr-2">
