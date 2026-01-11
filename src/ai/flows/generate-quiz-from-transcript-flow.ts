@@ -70,7 +70,7 @@ export async function generateQuizFromTranscript(input: GenerateQuizInput): Prom
                     "content": prompt
                 }
             ],
-            "model": "openai/gpt-oss-120b",
+            "model": "llama3-8b-8192",
             "temperature": 0.7,
             "max_tokens": 1024,
             "top_p": 1,
