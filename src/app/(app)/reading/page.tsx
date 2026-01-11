@@ -9,7 +9,7 @@ import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import ReactPlayer from "react-player";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
