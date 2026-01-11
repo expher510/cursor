@@ -3,7 +3,7 @@ import { useState, useRef } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
 import { VideoHistory } from "@/components/video-history";
 import { Button } from "@/components/ui/button";
-import { Headphones, BookOpen, Edit, Loader2, Youtube, Book, Copy, History, User, Award, Check } from "lucide-react";
+import { Headphones, BookOpen, Edit, Loader2, Youtube, Book, Copy, History, User, Award, Check, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { extractYouTubeVideoId } from "@/lib/utils";
 import { useFirebase } from "@/firebase";
@@ -48,7 +48,7 @@ const AVAILABLE_LANGUAGES = [
     { code: 'es', name: 'Spanish' },
     { code: 'fr', name: 'French' },
     { code: 'hi', name: 'Hindi' },
-    { code: 'it', name: 'Italian' },
+    { code: 'it', 'name': 'Italian' },
     { code: 'ja', name: 'Japanese' },
     { code: 'ko', name: 'Korean' },
     { code: 'pt', name: 'Portuguese' },
@@ -96,7 +96,7 @@ function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivi
 function MainContent() {
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const { user } = useFirebase();
-  const { userProfile, isLoading: isProfileLoading, updateTargetLanguage } = useUserProfile();
+  const { userProfile, isLoading: isProfileLoading, updateTargetLanguage, setIsEditing } = useUserProfile();
   const router = useRouter();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -175,10 +175,11 @@ function MainContent() {
             </div>
           ) : userProfile && (
              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-4 text-sm font-medium text-muted-foreground">
-                <div className="flex items-center gap-2">
+                <Button variant="ghost" className="flex items-center gap-2" onClick={() => setIsEditing(true)}>
                     <User className="h-4 w-4 text-primary" />
                     <span>Welcome back, {userProfile.displayName}!</span>
-                </div>
+                    <Pencil className="h-3 w-3" />
+                </Button>
                 {userProfile.proficiencyLevel && (
                     <div className="flex items-center gap-2">
                         <Award className="h-4 w-4 text-primary" />

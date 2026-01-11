@@ -29,7 +29,6 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const { auth, user } = useFirebase();
-  const { setIsEditing } = useUserProfile();
 
   const handleLogout = () => {
     if (auth) {
@@ -70,10 +69,6 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
                           </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onSelect={() => setIsEditing(true)} className="cursor-pointer">
-                          <Edit className="mr-2 h-4 w-4" />
-                          <span>Edit Profile</span>
-                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                           <LogOut className="mr-2 h-4 w-4" />
                           <span>Log out</span>
