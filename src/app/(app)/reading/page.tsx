@@ -225,6 +225,13 @@ function PageWithProvider() {
                                     }}
                                 />
                             </div>
+                             <div className={cn("absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity", isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100')}>
+                                {isPlaying ? (
+                                    <Pause className="h-1/2 w-1/2 text-white/70" />
+                                ) : (
+                                    <Play className="h-1/2 w-1/2 text-white/70" />
+                                )}
+                            </div>
                         </div>
                     )}
                 </>
