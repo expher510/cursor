@@ -62,46 +62,43 @@ function buildPrompt(input: GenerateQuizInput): string {
 export async function generateQuizFromTranscript(input: GenerateQuizInput): Promise<GenerateQuizExtendedOutput> {
     const prompt = buildPrompt(input);
 
+    const chatCompletion = await groq.chat.completions.create({
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "model": "openai/gpt-oss-120b",
+        "temperature": 0.7,
+        "max_tokens": 1024,
+        "top_p": 1,
+        "stream": false,
+        "response_format": {
+            "type": "json_object"
+        },
+        "stop": null
+    });
+    
+    const responseContent = chatCompletion.choices[0]?.message?.content || '';
+    
+    let parsedOutput: GenerateQuizOutput = { questions: [] };
+    
     try {
-        const chatCompletion = await groq.chat.completions.create({
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            "model": "openai/gpt-oss-120b",
-            "temperature": 0.7,
-            "max_tokens": 1024,
-            "top_p": 1,
-            "stream": false,
-            "response_format": {
-                "type": "json_object"
-            },
-            "stop": null
-        });
-        
-        const responseContent = chatCompletion.choices[0]?.message?.content;
-        
-        if (!responseContent) {
-            throw new Error("Received an empty response from the AI model.");
-        }
-        
         const parsedJson = JSON.parse(responseContent);
-        
-        const validatedOutput = GenerateQuizOutputSchema.parse(parsedJson);
-        
-        return {
-          ...validatedOutput,
-          rawResponse: responseContent,
-        };
-
-    } catch (error) {
-        console.error("Error generating quiz with Groq:", error);
-        if (error instanceof z.ZodError) {
-             throw new Error(`AI returned data in an unexpected format. Details: ${error.message}`);
+        // We still try to parse with Zod, but we won't crash if it fails.
+        const validationResult = GenerateQuizOutputSchema.safeParse(parsedJson);
+        if (validationResult.success) {
+            parsedOutput = validationResult.data;
+        } else {
+             console.warn("AI response for quiz did not match schema:", validationResult.error);
         }
-        // Throw a generic error to be caught by the UI
-        throw new Error("Failed to generate quiz. Please try again later.");
+    } catch (e) {
+        console.error("Failed to parse AI response for quiz as JSON:", e);
     }
+    
+    return {
+      ...parsedOutput,
+      rawResponse: responseContent,
+    };
 }
