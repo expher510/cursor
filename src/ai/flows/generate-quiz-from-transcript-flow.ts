@@ -13,18 +13,14 @@ import { z } from 'zod';
 import Groq from 'groq-sdk';
 import 'dotenv/config';
 
-// Initialize the Groq SDK client
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-
-// Schema for a single quiz question
 const QuizQuestionSchema = z.object({
   questionText: z.string().describe('The text of the question.'),
   options: z.array(z.string()).describe('An array of 4 possible answers.'),
   correctAnswer: z.string().describe('The correct answer from the options array.'),
 });
 
-// Input schema for the flow
 const GenerateQuizInputSchema = z.object({
   transcript: z.string().describe('The full transcript of the video.'),
   targetLanguage: z.string().describe('The language the user is learning (e.g., "Spanish", "Arabic").'),
@@ -32,12 +28,10 @@ const GenerateQuizInputSchema = z.object({
 });
 export type GenerateQuizInput = z.infer<typeof GenerateQuizInputSchema>;
 
-// Output schema for the flow
 const GenerateQuizOutputSchema = z.object({
   questions: z.array(QuizQuestionSchema).describe('The generated list of quiz questions.'),
 });
 export type GenerateQuizOutput = z.infer<typeof GenerateQuizOutputSchema>;
-
 
 function buildPrompt(transcript: string, targetLanguage: string, proficiency: string): string {
     return `
@@ -63,7 +57,6 @@ function buildPrompt(transcript: string, targetLanguage: string, proficiency: st
     `;
 }
 
-// This is the public wrapper function that components will call.
 export async function generateQuizFromTranscript(input: GenerateQuizInput): Promise<GenerateQuizOutput> {
     if (!process.env.GROQ_API_KEY) {
         throw new Error('GROQ_API_KEY is not set in environment variables.');
@@ -80,11 +73,11 @@ export async function generateQuizFromTranscript(input: GenerateQuizInput): Prom
                 }
             ],
             model: "llama-3.1-70b-versatile",
-            temperature: 0.8,
+            temperature: 1,
             max_tokens: 2048,
             top_p: 1,
-            stream: false, // Disabled streaming for reliable JSON
-            response_format: { type: "json_object" }, // Ensure JSON output
+            stream: false,
+            response_format: { type: "json_object" },
             stop: null
         });
         
@@ -94,10 +87,7 @@ export async function generateQuizFromTranscript(input: GenerateQuizInput): Prom
             throw new Error("Groq API returned an empty response.");
         }
 
-        // The response should be a JSON object string, so we parse it.
         const parsedJson = JSON.parse(content);
-
-        // Validate the parsed JSON against our Zod schema
         const validatedOutput = GenerateQuizOutputSchema.parse(parsedJson);
 
         return validatedOutput;
