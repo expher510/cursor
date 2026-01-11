@@ -152,7 +152,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           setVideoData(combinedData);
         } else if (shouldGenerate) {
           toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
-          const result = await processVideo({ videoId: cleanVideoId, lang: userProfile.targetLanguage });
+          const result = await processVideo({ videoId: cleanVideoId });
           
           if (!result.transcript || result.transcript.length === 0) {
             console.warn(`[LinguaStream] No transcript found for video ${cleanVideoId}, but saving details anyway.`);
