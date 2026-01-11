@@ -54,7 +54,12 @@ const shuffleArray = (array: any[]) => {
     return newArray;
 };
 
-export function WatchPageProvider({ children }: { children: ReactNode }) {
+type WatchPageProviderProps = {
+    children: (state: { isLoading: boolean, videoData: VideoData | null }) => ReactNode;
+};
+
+
+export function WatchPageProvider({ children }: WatchPageProviderProps) {
   const { firestore, user } = useFirebase();
   const { userProfile } = useUserProfile();
   const searchParams = useSearchParams();
@@ -462,7 +467,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
   return (
     <WatchPageContext.Provider value={value}>
-      {children}
+      {children({ isLoading, videoData })}
     </WatchPageContext.Provider>
   );
 }

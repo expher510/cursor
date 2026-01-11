@@ -94,9 +94,7 @@ function ReadingQuiz() {
 
 function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
-    const [isPlaying, setIsPlaying] = useState(false);
-    const playerRef = useRef<ReactPlayer>(null);
-    
+
     if (isLoading) {
         return (
              <div className="w-full max-w-4xl mx-auto space-y-8">
@@ -138,32 +136,9 @@ function ReadingPracticePageContent() {
         text: item.text,
     }));
     
-    const handlePlayPause = () => {
-        setIsPlaying(!isPlaying);
-    }
-
 
     return (
         <div className="w-full max-w-4xl mx-auto space-y-6 relative">
-            <div style={{ display: 'none' }}>
-                <ReactPlayer
-                    ref={playerRef}
-                    url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                    playing={isPlaying}
-                    onEnded={() => setIsPlaying(false)}
-                    controls={false}
-                    width="0"
-                    height="0"
-                    volume={1}
-                />
-            </div>
-
-            <div className="fixed right-4 md:right-8 bottom-8 z-50">
-                 <Button onClick={handlePlayPause} size="lg" className="h-16 w-16 rounded-full shadow-lg">
-                    {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
-                 </Button>
-            </div>
-            
              <div className="mb-4 text-center">
                 <div className="flex justify-center">
                     <Logo />
@@ -196,9 +171,43 @@ function PageWithProvider() {
     const shouldGenerate = searchParams.get('shouldGenerate');
     const key = `${videoId}-${shouldGenerate}`;
 
+    const [isPlaying, setIsPlaying] = useState(false);
+    const playerRef = useRef<ReactPlayer>(null);
+
+    const handlePlayPause = () => {
+        setIsPlaying(prev => !prev);
+    }
+
     return (
         <WatchPageProvider key={key}>
-            <ReadingPracticePageContent />
+            {({ isLoading, videoData }) => (
+                <>
+                    {videoData?.videoId && (
+                         <div style={{ display: 'none' }}>
+                            <ReactPlayer
+                                ref={playerRef}
+                                url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                                playing={isPlaying}
+                                onEnded={() => setIsPlaying(false)}
+                                controls={false}
+                                width="0"
+                                height="0"
+                                volume={1}
+                            />
+                        </div>
+                    )}
+                    
+                    {!isLoading && videoData && (
+                        <div className="fixed right-4 md:right-8 bottom-8 z-50">
+                            <Button onClick={handlePlayPause} size="lg" className="h-16 w-16 rounded-full shadow-lg">
+                                {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
+                            </Button>
+                        </div>
+                    )}
+
+                    <ReadingPracticePageContent />
+                </>
+            )}
         </WatchPageProvider>
     );
 }
