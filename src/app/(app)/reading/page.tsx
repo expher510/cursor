@@ -95,10 +95,7 @@ function ReadingQuiz() {
 
 function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
-    const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
    
-    const playerRef = useRef<ReactPlayer>(null);
-
     if (isLoading) {
         return (
              <div className="w-full max-w-4xl mx-auto space-y-8">
@@ -160,7 +157,7 @@ function ReadingPracticePageContent() {
                     <TranscriptView 
                        transcript={formattedTranscript} 
                        videoId={videoData.videoId}
-                       activeSegmentIndex={activeSegmentIndex}
+                       activeSegmentIndex={-1}
                        onPlaySegment={null}
                     />
                 </Card>
@@ -177,7 +174,7 @@ function PageWithProvider() {
     const shouldGenerate = searchParams.get('shouldGenerate');
     const key = `${videoId}-${shouldGenerate}`;
     
-    const [isPlaying, setIsPlaying] = useState(false);
+    const playerRef = useRef<ReactPlayer>(null);
 
     return (
         <WatchPageProvider key={key}>
@@ -186,12 +183,11 @@ function PageWithProvider() {
                     <ReadingPracticePageContent />
 
                     {!isLoading && videoData && (
-                         <div className="group fixed right-4 md:right-8 bottom-8 z-50 h-7 w-7 rounded-full overflow-hidden shadow-lg border-2 border-primary bg-black transition-all duration-300 ease-in-out hover:h-24 hover:w-40 hover:rounded-lg opacity-50 hover:opacity-100">
+                         <div className="group fixed right-4 md:right-8 bottom-8 z-50 h-10 w-10 rounded-full overflow-hidden shadow-lg border-2 border-primary bg-black transition-all duration-300 ease-in-out hover:h-24 hover:w-40 hover:rounded-lg opacity-50 hover:opacity-100">
                             <ReactPlayer
+                                ref={playerRef}
                                 url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                                playing={isPlaying}
-                                onPlay={() => setIsPlaying(true)}
-                                onPause={() => setIsPlaying(false)}
+                                playing={true}
                                 volume={1}
                                 muted={false}
                                 width="100%"
