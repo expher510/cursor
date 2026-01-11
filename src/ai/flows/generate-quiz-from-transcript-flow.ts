@@ -48,7 +48,7 @@ function buildPrompt(transcript: string, targetLanguage: string, proficiency: st
       The questions should test understanding of the provided transcript snippet.
       
       Here are the rules for the output:
-      1. Provide the output as a SINGLE, VALID JSON object.
+      1. Your entire response MUST be a single, valid JSON object.
       2. The JSON object must contain a single key "questions".
       3. The value of "questions" must be an array of 3 question objects.
       4. Each question object must have three properties: "questionText", "options" (an array of 4 choices), and "correctAnswer".
@@ -59,7 +59,7 @@ function buildPrompt(transcript: string, targetLanguage: string, proficiency: st
       ${transcript.substring(0, 2000)}
       ---
 
-      Return ONLY the JSON object. Do not include any other text, explanations, or markdown formatting like \`\`\`json.
+      Return ONLY the JSON object. Do not include any other text, explanations, or markdown formatting.
     `;
 }
 
@@ -80,35 +80,22 @@ export async function generateQuizFromTranscript(input: GenerateQuizInput): Prom
                 }
             ],
             model: "llama-3.1-70b-versatile",
-            temperature: 1,
+            temperature: 0.8,
             max_tokens: 2048,
             top_p: 1,
-            stream: true, 
+            stream: false, // Disabled streaming for reliable JSON
+            response_format: { type: "json_object" }, // Ensure JSON output
             stop: null
         });
         
-        let fullContent = '';
-        for await (const chunk of chatCompletion) {
-            fullContent += chunk.choices[0]?.delta?.content || '';
-        }
+        const content = chatCompletion.choices[0]?.message?.content;
 
-        if (!fullContent) {
-            throw new Error("Groq API returned an empty streamed response.");
+        if (!content) {
+            throw new Error("Groq API returned an empty response.");
         }
-
-        // Find the start and end of the JSON object
-        const jsonStart = fullContent.indexOf('{');
-        const jsonEnd = fullContent.lastIndexOf('}');
-        
-        if (jsonStart === -1 || jsonEnd === -1) {
-            console.error("Could not find JSON object in Groq response:", fullContent);
-            throw new Error("AI returned a response that was not valid JSON.");
-        }
-        
-        const jsonString = fullContent.substring(jsonStart, jsonEnd + 1);
 
         // The response should be a JSON object string, so we parse it.
-        const parsedJson = JSON.parse(jsonString);
+        const parsedJson = JSON.parse(content);
 
         // Validate the parsed JSON against our Zod schema
         const validatedOutput = GenerateQuizOutputSchema.parse(parsedJson);
