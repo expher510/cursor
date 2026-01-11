@@ -193,51 +193,42 @@ function PageWithProvider() {
                     <ReadingPracticePageContent />
 
                     {!isLoading && videoData && (
-                         <div className="fixed right-4 bottom-8 z-50 h-24 w-24 flex items-center justify-center">
-                            <CircularProgressControl
-                                progress={played * 100}
-                                onSeek={handleSeek}
-                                size={96}
-                                strokeWidth={5}
-                            />
-                            <div className="relative h-[76px] w-[76px] rounded-full overflow-hidden shadow-lg flex-shrink-0">
-                                <ReactPlayer
-                                    ref={playerRef}
-                                    url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                                    volume={1}
-                                    muted={false}
-                                    width="100%"
-                                    height="100%"
-                                    playing={isPlaying}
-                                    onPlay={() => setIsPlaying(true)}
-                                    onPause={() => setIsPlaying(false)}
-                                    onProgress={(state) => setPlayed(state.played)}
-                                    controls={false}
-                                    light={false}
-                                    onClickPreview={() => setIsPlaying(!isPlaying)}
-                                    config={{
-                                        youtube: {
-                                            playerVars: {
-                                                controls: 0,
-                                                disablekb: 1,
-                                                fs: 0,
-                                                iv_load_policy: 3,
-                                                modestbranding: 1,
-                                                playsinline: 1,
-                                            }
-                                        }
-                                    }}
+                        <div className="fixed right-4 bottom-8 z-50 group">
+                            <div className="relative h-36 w-36 flex items-center justify-center">
+                                <CircularProgressControl
+                                    progress={played * 100}
+                                    onSeek={handleSeek}
+                                    size={140}
+                                    strokeWidth={6}
                                 />
-                                <button
-                                    className={cn(
-                                        "absolute inset-0 flex items-center justify-center transition-opacity bg-black/20",
-                                        "focus:outline-none",
-                                        isPlaying ? 'opacity-0' : 'opacity-100'
-                                    )}
-                                    onClick={() => setIsPlaying(!isPlaying)}
-                                >
-                                    {isPlaying ? <Pause className="h-8 w-8 text-white/70" /> : <Play className="h-8 w-8 text-white/70" />}
-                                </button>
+                                <div className="relative h-[112px] w-[112px] rounded-full overflow-hidden shadow-lg flex-shrink-0">
+                                    <ReactPlayer
+                                        ref={playerRef}
+                                        url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                                        volume={1}
+                                        muted={false}
+                                        width="100%"
+                                        height="100%"
+                                        playing={isPlaying}
+                                        onPlay={() => setIsPlaying(true)}
+                                        onPause={() => setIsPlaying(false)}
+                                        onProgress={(state) => setPlayed(state.played)}
+                                        controls={true}
+                                        light={false} // Important for click-to-play
+                                        config={{
+                                            youtube: {
+                                                playerVars: {
+                                                    // controls: 0, // We want youtube controls now
+                                                    disablekb: 1,
+                                                    fs: 0,
+                                                    iv_load_policy: 3,
+                                                    modestbranding: 1,
+                                                    playsinline: 1,
+                                                }
+                                            }
+                                        }}
+                                    />
+                                </div>
                             </div>
                         </div>
                     )}
