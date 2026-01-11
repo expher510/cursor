@@ -34,23 +34,30 @@ const ProcessVideoOutputSchema = z.object({
 });
 export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
 
-
-// This is the public wrapper function that components will call.
+/**
+ * معالجة فيديو يوتيوب لاستخراج النص والعنوان والوصف
+ * 
+ * @param input - كائن يحتوي على معرف الفيديو ورمز اللغة الاختياري
+ * @returns {Promise<ProcessVideoOutput>} تفاصيل الفيديو بما في ذلك العنوان والوصف والنص مع الأوقات
+ * @throws {Error} إذا لم يكن للفيديو ترجمة أو فشلت المعالجة
+ */
 export async function processVideo(input: ProcessVideoInput): Promise<ProcessVideoOutput> {
+    const { videoId, lang } = ProcessVideoInputSchema.parse(input);
     try {
-        const { videoId, lang } = ProcessVideoInputSchema.parse(input);
-        
         // Fetch subtitles and video details in parallel for efficiency
         const [subtitles, videoDetails] = await Promise.all([
             getSubtitles({ videoID: videoId, lang }),
-            getVideoDetails({ videoID: videoId, lang })
+            getVideoDetails({ videoID: videoId })
         ]);
 
         const formattedTranscript: TranscriptItem[] = (subtitles || []).map((item: Subtitle) => {
+            const start = typeof item.start === 'string' ? parseFloat(item.start) : item.start;
+            const dur = typeof item.dur === 'string' ? parseFloat(item.dur) : item.dur;
+    
             return {
                 text: item.text,
-                offset: parseFloat(item.start) * 1000,
-                duration: parseFloat(item.dur) * 1000,
+                offset: start * 1000,
+                duration: dur * 1000,
             };
         });
 
@@ -67,12 +74,12 @@ export async function processVideo(input: ProcessVideoInput): Promise<ProcessVid
         return ProcessVideoOutputSchema.parse(result);
 
     } catch (e: any) {
-         console.error("Failed to fetch video details:", e.message);
+         console.error("Failed to process video:", e.message);
          if (e.message.includes('Transcript is disabled')) {
              throw new Error(`This video does not have captions enabled, so a transcript cannot be created. Please try a different video.`);
          }
          if (e.message.includes('Could not find transcript for this video')) {
-             throw new Error(`No transcript available for the requested language (${input.lang}). Please try another video.`);
+             throw new Error(`No transcript available for the requested language (${lang}). Please try another video.`);
          }
          throw new Error(`Could not process video. Please check the video ID and try again. Original error: ${e.message}`);
     }
