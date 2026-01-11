@@ -44,32 +44,38 @@ export function CircularProgressControl({
   };
   
   const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
     setIsSeeking(true);
     handleInteraction(e);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isSeeking) {
-      handleInteraction(e);
+        e.preventDefault();
+        handleInteraction(e);
     }
   };
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (e: React.MouseEvent) => {
+    e.preventDefault();
     setIsSeeking(false);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.preventDefault();
     setIsSeeking(true);
     handleInteraction(e);
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
     if (isSeeking) {
-      handleInteraction(e);
+        e.preventDefault();
+        handleInteraction(e);
     }
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    e.preventDefault();
     setIsSeeking(false);
   };
 
@@ -93,7 +99,7 @@ export function CircularProgressControl({
         className="transform -rotate-90"
       >
         <circle
-          className="text-muted/30"
+          className="text-muted"
           stroke="currentColor"
           strokeWidth={strokeWidth}
           fill="transparent"
