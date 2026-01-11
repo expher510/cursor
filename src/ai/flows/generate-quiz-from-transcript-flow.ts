@@ -38,13 +38,13 @@ function buildPrompt(input: GenerateQuizInput): string {
       You are an expert language teacher. Your task is to create a quick comprehension quiz based on a snippet from a video transcript.
       The user is a ${input.proficiencyLevel} learner of ${input.targetLanguage}.
       
-      Create a quiz with exactly 3 questions that are appropriate for a ${input.proficiencyLevel} level.
-      The questions should test understanding of the provided transcript snippet.
+      Generate an appropriate number of questions (between 3 and 5) to thoroughly test the student's comprehension of the provided transcript snippet.
+      The questions should be appropriate for a ${input.proficiencyLevel} level.
       
       Here are the rules for the output:
       1. Your entire response MUST be a single, valid JSON object.
       2. The JSON object must contain a single key "questions".
-      3. The value of "questions" must be an array of 3 question objects.
+      3. The value of "questions" must be an array of question objects.
       4. Each question object must have three properties: "questionText", "options" (an array of 4 choices), and "correctAnswer".
       5. The language of "questionText", "options", and "correctAnswer" MUST be in ${input.targetLanguage}.
 
