@@ -6,9 +6,8 @@ import { Button } from "./ui/button";
 import { useWatchPage } from "@/context/watch-page-context";
 import { cn } from "@/lib/utils";
 import { useTranslationStore } from "@/hooks/use-translation-store";
-import { useMemo, useRef } from "react";
+import { useMemo } from "react";
 import { useUserProfile } from "@/hooks/use-user-profile";
-import { useToast } from "@/hooks/use-toast";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
@@ -22,8 +21,6 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
   const { addVocabularyItem, savedWordsSet, videoData } = useWatchPage();
   const { translations, toggleTranslation, isTranslating } = useTranslationStore();
   const { userProfile } = useUserProfile();
-  const longPressTimeout = useRef<NodeJS.Timeout | null>(null);
-  const { toast } = useToast();
 
   const fullText = useMemo(() => transcript.map(line => line.text).join(' '), [transcript]);
   const isRtl = useMemo(() => /[\u0600-\u06FF]/.test(fullText), [fullText]);
@@ -39,39 +36,6 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
       toggleTranslation(word, originalText, context, key, userProfile.targetLanguage, videoData.sourceLang);
     }
   };
-  
-  const speak = (text: string) => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Stop any previous speech
-        const utterance = new SpeechSynthesisUtterance(text);
-        window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  const handleMouseDown = (word: string) => {
-    if (!isLongPressEnabled) return;
-    longPressTimeout.current = setTimeout(() => {
-      speak(word);
-      longPressTimeout.current = null; // Prevent click after long press
-    }, 500); // 500ms for a long press
-  };
-
-  const handleMouseUp = () => {
-    if (longPressTimeout.current) {
-      clearTimeout(longPressTimeout.current);
-      longPressTimeout.current = null;
-    }
-  };
-  
-  const handleClick = (word: string, originalText: string, context: string, key: string) => {
-     if (longPressTimeout.current !== null) {
-      // If the timeout is still active, it's a short click
-      clearTimeout(longPressTimeout.current);
-      longPressTimeout.current = null;
-      handleWordClick(word, originalText, context, key);
-    }
-    // If timeout is null, it means a long press already happened, so do nothing.
-  }
   
   return (
     <div className={cn("p-4 leading-relaxed text-lg space-y-2", isRtl && "text-right")} dir={isRtl ? "rtl" : "ltr"}>
@@ -112,17 +76,6 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                             const displayedText = translation ? translation.translatedText : originalText;
                             const isCurrentlyTranslating = isTranslating[key];
 
-                            const buttonEventHandlers = isLongPressEnabled
-                              ? {
-                                  onMouseDown: () => handleMouseDown(cleanedWord),
-                                  onMouseUp: handleMouseUp,
-                                  onMouseLeave: handleMouseUp, // Cancel long press if mouse leaves
-                                  onClick: () => handleClick(cleanedWord, originalText, line.text, key),
-                                }
-                              : {
-                                  onClick: () => handleWordClick(cleanedWord, originalText, line.text, key),
-                                };
-
                             return (
                                 <span key={key} className="inline-block relative group/word" onClick={(e) => e.stopPropagation()}>
                                 <Button
@@ -134,7 +87,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                                     translation && "bg-blue-100 text-blue-900"
                                     )}
                                     disabled={isCurrentlyTranslating || !cleanedWord}
-                                    {...buttonEventHandlers}
+                                    onClick={() => handleWordClick(cleanedWord, originalText, line.text, key)}
                                 >
                                     {isCurrentlyTranslating ? '...' : displayedText}
                                 </Button>
