@@ -13,6 +13,7 @@ import { useSearchParams } from "next/navigation";
 import { QuizPlayer } from "@/components/quiz-player";
 import ReactPlayer from 'react-player/youtube';
 import { cn } from "@/lib/utils";
+import { CircularProgressControl } from "@/components/circular-progress-control";
 
 
 function ReadingQuiz() {
@@ -96,7 +97,7 @@ function ReadingQuiz() {
 function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
    
-    if (isLoading) {
+    if (isLoading && !videoData) {
         return (
              <div className="w-full max-w-4xl mx-auto space-y-8">
                 <Skeleton className="h-10 w-1/2" />
@@ -175,7 +176,16 @@ function PageWithProvider() {
     const key = `${videoId}-${shouldGenerate}`;
     
     const playerRef = useRef<ReactPlayer>(null);
+    const [played, setPlayed] = useState(0);
+    const [isPlaying, setIsPlaying] = useState(false);
 
+    const handleSeek = (progress: number) => {
+        if (playerRef.current) {
+            playerRef.current.seekTo(progress, 'fraction');
+            setPlayed(progress);
+        }
+    };
+    
     return (
         <WatchPageProvider key={key}>
             {({ isLoading, videoData }) => (
@@ -183,28 +193,38 @@ function PageWithProvider() {
                     <ReadingPracticePageContent />
 
                     {!isLoading && videoData && (
-                         <div className="group fixed right-4 md:right-8 bottom-8 z-50 h-10 w-10 rounded-full overflow-hidden shadow-lg border-2 border-primary bg-black transition-transform duration-300 ease-in-out hover:scale-[4] origin-bottom-right">
-                            <ReactPlayer
-                                ref={playerRef}
-                                url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                                volume={1}
-                                muted={false}
-                                width="100%"
-                                height="100%"
-                                controls={true}
-                                config={{
-                                    youtube: {
-                                        playerVars: {
-                                            controls: 1,
-                                            disablekb: 1,
-                                            fs: 0,
-                                            iv_load_policy: 3,
-                                            modestbranding: 1,
-                                            playsinline: 1,
-                                        }
-                                    }
-                                }}
+                         <div className="group fixed right-4 md:right-8 bottom-8 z-50 h-10 w-10 rounded-full transition-transform duration-300 ease-in-out origin-bottom-right hover:scale-[4]">
+                            <CircularProgressControl 
+                                progress={played * 100}
+                                onSeek={handleSeek}
                             />
+                            <div className="absolute inset-0.5 rounded-full overflow-hidden">
+                                <ReactPlayer
+                                    ref={playerRef}
+                                    url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                                    volume={1}
+                                    muted={false}
+                                    width="100%"
+                                    height="100%"
+                                    playing={isPlaying}
+                                    onPlay={() => setIsPlaying(true)}
+                                    onPause={() => setIsPlaying(false)}
+                                    onProgress={(state) => setPlayed(state.played)}
+                                    controls={true}
+                                    config={{
+                                        youtube: {
+                                            playerVars: {
+                                                controls: 1,
+                                                disablekb: 1,
+                                                fs: 0,
+                                                iv_load_policy: 3,
+                                                modestbranding: 1,
+                                                playsinline: 1,
+                                            }
+                                        }
+                                    }}
+                                />
+                            </div>
                         </div>
                     )}
                 </>
