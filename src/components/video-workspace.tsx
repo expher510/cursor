@@ -28,14 +28,14 @@ function LoadingState() {
   );
 }
 
-function ErrorState({ message }: { message: string }) {
+function ErrorState({ message, title = "Processing Error" }: { message: string, title?: string }) {
   return (
-    <div className="flex h-full items-center justify-center">
+    <div className="flex h-full w-full items-center justify-center py-4">
       <Card className="max-w-lg text-center bg-destructive/10 border-destructive">
         <CardHeader>
           <CardTitle className="flex items-center justify-center gap-2">
             <AlertTriangle />
-            Processing Error
+            {title}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -47,7 +47,7 @@ function ErrorState({ message }: { message: string }) {
 }
 
 export function VideoWorkspace() {
-  const { videoData, quizData, isLoading, error, handleQuizGeneration, isGeneratingQuiz, rawQuizResponse } = useWatchPage();
+  const { videoData, quizData, isLoading, error, handleQuizGeneration, isGeneratingQuiz, rawQuizResponse, quizGenerationError } = useWatchPage();
   const [currentTime, setCurrentTime] = useState(0);
   const [showTranscript, setShowTranscript] = useState(true);
   const [isQuizVisible, setIsQuizVisible] = useState(false);
@@ -69,7 +69,6 @@ export function VideoWorkspace() {
 
   const handleVideoEnd = () => {
     if (playerRef.current && duration > 0) {
-      // Loop the video silently to keep it "alive" by seeking to 1 second before the end
       const seekToTime = duration > 1 ? duration - 1 : 0;
       playerRef.current.seekTo(seekToTime, 'seconds');
     }
@@ -121,7 +120,7 @@ export function VideoWorkspace() {
                                 playerVars: {
                                     modestbranding: 1,
                                     rel: 0,
-                                    vq: 'tiny' // Attempt to request 144p quality
+                                    vq: 'tiny'
                                 }
                             }
                         }}
@@ -154,14 +153,18 @@ export function VideoWorkspace() {
                     {isGeneratingQuiz && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                     {!isGeneratingQuiz && <Edit className="mr-2 h-5 w-5" />}
                     {isQuizVisible
-                        ? (rawQuizResponse || 'Close Quiz')
+                        ? (rawQuizResponse ? "Close Quiz" : 'Close Quiz')
                         : 'Take a Quiz'
                     }
                 </Button>
+                
+                {quizGenerationError && !isQuizVisible && (
+                   <ErrorState title="Quiz Generation Failed" message={quizGenerationError} />
+                )}
 
                 {isQuizVisible && quizData && quizData.id && (
                     <div className="w-full">
-                        <QuizPlayer quizId={quizData.id} />
+                        <QuizPlayer quizData={quizData} onQuizComplete={() => {}} />
                     </div>
                 )}
             </div>

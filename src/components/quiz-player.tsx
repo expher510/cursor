@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { type QuizQuestion } from '@/lib/quiz-data';
+import { type QuizData, type QuizQuestion } from '@/lib/quiz-data';
 import { useFirebase } from '@/firebase';
 
 
@@ -188,11 +188,12 @@ export function QuizView({ questions, onRetry, title = "Quiz" }: { questions: Qu
 }
 
 
-export function QuizPlayer({ quizData, onQuizComplete }: { quizData: any, onQuizComplete: (results: any) => void }) {
+export function QuizPlayer({ quizData, onQuizComplete }: { quizData: QuizData, onQuizComplete: (results: any) => void }) {
     const [quizKey, setQuizKey] = useState(Date.now());
 
     const handleRetry = () => {
         setQuizKey(Date.now());
+        onQuizComplete({ score: 0, answers: []});
     };
     
     if (!quizData?.questions?.length) {

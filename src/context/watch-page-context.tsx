@@ -13,7 +13,7 @@ import { type QuizData } from '@/lib/quiz-data';
 import { useToast } from '@/hooks/use-toast';
 import { extractAudio } from '@/ai/flows/extract-audio-flow';
 import { extractYouTubeVideoId } from '@/lib/utils';
-import { generateQuizFromTranscript } from '@/ai/flows/generate-quiz-from-transcript-flow';
+import { generateQuizFromTranscript, GenerateQuizExtendedOutput } from '@/ai/flows/generate-quiz-from-transcript-flow';
 import { useUserProfile } from '@/hooks/use-user-profile';
 
 
@@ -40,6 +40,7 @@ type WatchPageContextType = {
   handleQuizGeneration: () => void;
   isGeneratingQuiz: boolean;
   rawQuizResponse: string | null;
+  quizGenerationError: string | null;
 };
 
 const WatchPageContext = createContext<WatchPageContextType | undefined>(undefined);
@@ -57,6 +58,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [rawQuizResponse, setRawQuizResponse] = useState<string | null>(null);
+  const [quizGenerationError, setQuizGenerationError] = useState<string | null>(null);
   
   const [activeVideoId, setActiveVideoId] = useState<string | null>(urlVideoId);
 
@@ -223,10 +225,11 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     
     setIsGeneratingQuiz(true);
     setRawQuizResponse(null);
+    setQuizGenerationError(null);
 
     try {
         const fullTranscript = videoData.transcript.map(t => t.text).join(' ');
-        const quizResult = await generateQuizFromTranscript({
+        const quizResult: GenerateQuizExtendedOutput = await generateQuizFromTranscript({
             transcript: fullTranscript,
             targetLanguage: userProfile.targetLanguage,
             proficiencyLevel: userProfile.proficiencyLevel
@@ -246,13 +249,13 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         const quizDocRef = doc(firestore, `users/${user.uid}/videos/${videoData.videoId}/quizzes`, 'comprehensive-test');
         await setDoc(quizDocRef, newQuizData, { merge: true });
         
-        // Optimistically update local state
         setQuizzes([newQuizData]);
 
         toast({ title: "Quiz Generated!", description: "Your quiz is ready." });
 
     } catch (e: any) {
         console.error("Failed to generate quiz on demand:", e);
+        setQuizGenerationError(e.message || "An unexpected error occurred while generating the quiz.");
         toast({ variant: "destructive", title: "Quiz Generation Failed", description: e.message || "An error occurred."});
     } finally {
         setIsGeneratingQuiz(false);
@@ -289,7 +292,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
       videoId: cleanVideoId,
     };
 
-    // Optimistic UI update
     setAllVocabulary(prev => [optimisticItem, ...(prev || [])]);
 
     try {
@@ -303,12 +305,10 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             videoId: cleanVideoId,
         });
 
-        // Replace temporary item with real one from Firestore
         setAllVocabulary(prev => prev?.map(item => item.id === tempId ? { ...item, id: docRef.id, translation: translation || 'No translation found' } : item));
 
     } catch (e: any) {
         console.error("Failed to translate or save word", e);
-        // Revert optimistic update on failure
         setAllVocabulary(prev => prev?.filter(item => item.id !== tempId) || null);
     }
 
@@ -337,6 +337,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     handleQuizGeneration,
     isGeneratingQuiz,
     rawQuizResponse,
+    quizGenerationError,
   };
 
   return (
