@@ -175,6 +175,11 @@ function PageWithProvider() {
     const key = `${videoId}-${shouldGenerate}`;
     
     const playerRef = useRef<ReactPlayer>(null);
+    const [isPlaying, setIsPlaying] = useState(false);
+
+    const handlePlayPause = () => {
+        setIsPlaying(!isPlaying);
+    };
 
     return (
         <WatchPageProvider key={key}>
@@ -183,11 +188,13 @@ function PageWithProvider() {
                     <ReadingPracticePageContent />
 
                     {!isLoading && videoData && (
-                         <div className="group fixed right-4 md:right-8 bottom-8 z-50 h-10 w-10 rounded-full overflow-hidden shadow-lg border-2 border-primary bg-black transition-all duration-300 ease-in-out hover:h-24 hover:w-40 hover:rounded-lg opacity-50 hover:opacity-100">
+                         <div className="group fixed right-4 md:right-8 bottom-8 z-50 h-10 w-10 rounded-full overflow-hidden shadow-lg border-2 border-primary bg-black transition-transform duration-300 ease-in-out hover:scale-[4] origin-bottom-right">
                             <ReactPlayer
                                 ref={playerRef}
                                 url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                                playing={true}
+                                playing={isPlaying}
+                                onPlay={() => setIsPlaying(true)}
+                                onPause={() => setIsPlaying(false)}
                                 volume={1}
                                 muted={false}
                                 width="100%"
