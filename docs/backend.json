@@ -68,10 +68,6 @@
         "title": {
           "type": "string",
           "description": "The title of the YouTube video."
-        },
-        "audioUrl": {
-          "type": "string",
-          "description": "The URL of the extracted audio file."
         }
       },
       "required": [

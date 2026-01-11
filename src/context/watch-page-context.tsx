@@ -146,7 +146,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           const combinedData: VideoData = {
             title: videoDocData.title,
             description: videoDocData.description,
-            audioUrl: videoDocData.audioUrl || videoUrl,
+            audioUrl: videoUrl,
             transcript: transcriptDocData.content,
             sourceLang: transcriptDocData.sourceLang || 'en',
             videoId: cleanVideoId
@@ -178,7 +178,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               description: result.description,
               userId: user.uid,
               timestamp: Date.now(),
-              audioUrl: videoUrl,
           }, { merge: true });
 
           await setDoc(transcriptDocRef, {
