@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for translating words using the MyMemory API.
@@ -7,7 +8,6 @@
  * - TranslateWordOutput - The return type for the translateWord function.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const TranslateWordInputSchema = z.object({
@@ -23,17 +23,7 @@ const TranslateWordOutputSchema = z.object({
 export type TranslateWordOutput = z.infer<typeof TranslateWordOutputSchema>;
 
 export async function translateWord(input: TranslateWordInput): Promise<TranslateWordOutput> {
-  return translateWordFlow(input);
-}
-
-const translateWordFlow = ai.defineFlow(
-  {
-    name: 'translateWordFlow',
-    inputSchema: TranslateWordInputSchema,
-    outputSchema: TranslateWordOutputSchema,
-  },
-  async (input) => {
-    const { word, sourceLang, targetLang } = input;
+    const { word, sourceLang, targetLang } = TranslateWordInputSchema.parse(input);
     const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=${sourceLang}|${targetLang}`;
     
     try {
@@ -55,5 +45,4 @@ const translateWordFlow = ai.defineFlow(
         // Re-throw the error to ensure the server action fails clearly
         throw error;
     }
-  }
-);
+}

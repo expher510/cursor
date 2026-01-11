@@ -68,23 +68,24 @@ export async function generateQuizFromTranscript(input: GenerateQuizInput): Prom
             "temperature": 0.7,
             "max_tokens": 1024,
             "top_p": 1,
-            "stream": false,
+            "stream": false, // Use direct response for reliability
             "response_format": {
-                "type": "json_object"
+                "type": "json_object" // Ensure the output is a valid JSON object
             },
             "stop": null
         });
-
-        const responseContent = chatCompletion.choices[0]?.message?.content;
         
+        const responseContent = chatCompletion.choices[0]?.message?.content;
+
         console.log("--- GROQ API RESPONSE ---");
         console.log(responseContent);
         console.log("-------------------------");
-
+        
         if (!responseContent) {
             throw new Error("Received an empty response from the AI model.");
         }
         
+        // No need to clean the response, as we requested a JSON object directly
         const parsedJson = JSON.parse(responseContent);
         
         const validatedOutput = GenerateQuizOutputSchema.parse(parsedJson);

@@ -9,7 +9,6 @@
  * - ProcessVideoOutput - The return type for the processVideo function.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getVideoDetails, type Subtitle } from 'youtube-caption-extractor';
 
@@ -37,19 +36,8 @@ export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
 
 // This is the public wrapper function that components will call.
 export async function processVideo(input: ProcessVideoInput): Promise<ProcessVideoOutput> {
-  return processVideoFlow(input);
-}
-
-
-// The Main Flow
-const processVideoFlow = ai.defineFlow(
-  {
-    name: 'processVideoFlow',
-    inputSchema: ProcessVideoInputSchema,
-    outputSchema: ProcessVideoOutputSchema,
-  },
-  async ({ videoId, lang }) => {
     try {
+        const { videoId, lang } = ProcessVideoInputSchema.parse(input);
         const videoDetails = await getVideoDetails({ videoID: videoId, lang });
 
         const formattedTranscript: TranscriptItem[] = (videoDetails.subtitles || []).map((item: Subtitle) => {
@@ -64,11 +52,13 @@ const processVideoFlow = ai.defineFlow(
              console.warn(`[LinguaStream] No transcript found for video ${videoId}, but returning details anyway.`);
         }
         
-        return {
+        const result = {
             title: videoDetails.title || `Video: ${videoId}`,
             description: videoDetails.description || 'No description available.',
             transcript: formattedTranscript,
         };
+
+        return ProcessVideoOutputSchema.parse(result);
 
     } catch (e: any) {
          console.error("Failed to fetch video details:", e.message);
@@ -76,9 +66,8 @@ const processVideoFlow = ai.defineFlow(
              throw new Error(`This video does not have captions enabled, so a transcript cannot be created. Please try a different video.`);
          }
          if (e.message.includes('Could not find transcript for this video')) {
-             throw new Error(`No transcript available for the requested language (${lang}). Please try another video.`);
+             throw new Error(`No transcript available for the requested language (${input.lang}). Please try another video.`);
          }
          throw new Error(`Could not process video. Please check the video ID and try again. Original error: ${e.message}`);
     }
-  }
-);
+}

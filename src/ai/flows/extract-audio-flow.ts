@@ -1,88 +1,47 @@
 
 'use server';
 /**
- * @fileOverview A flow for extracting the audio URL from a YouTube video using the YouTube MP3 API.
- * - extractAudio - A function that takes a YouTube video ID and returns a direct link to the audio.
+ * @fileOverview A flow for extracting audio from a YouTube video.
+ * This is a placeholder implementation and may need to be connected to a real service.
+ *
+ * - extractAudio - A function that takes a YouTube video ID and returns a mock audio URL.
  * - ExtractAudioInput - The input type for the extractAudio function.
  * - ExtractAudioOutput - The return type for the extractAudio function.
  */
 
-import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import 'dotenv/config';
 
-// Schema Definitions
 const ExtractAudioInputSchema = z.object({
   videoId: z.string().describe('The ID of the YouTube video to process.'),
 });
 export type ExtractAudioInput = z.infer<typeof ExtractAudioInputSchema>;
 
+
 const ExtractAudioOutputSchema = z.object({
-  audioUrl: z.string().describe('A direct link to the downloadable MP3 audio file.'),
+  audioUrl: z.string().url().describe('The URL of the extracted audio file.'),
 });
 export type ExtractAudioOutput = z.infer<typeof ExtractAudioOutputSchema>;
 
 
 // This is the public wrapper function that components will call.
 export async function extractAudio(input: ExtractAudioInput): Promise<ExtractAudioOutput> {
-  return extractAudioFlow(input);
-}
-
-// Function to poll the API until the link is ready
-const pollForLink = async (videoId: string, apiKey: string): Promise<any> => {
-    const url = `https://youtube-mp36.p.rapidapi.com/dl?id=${videoId}`;
-    const options = {
-        method: 'GET',
-        headers: {
-            'x-rapidapi-key': apiKey,
-            'x-rapidapi-host': 'youtube-mp36.p.rapidapi.com'
-        }
-    };
-    const response = await fetch(url, options);
-    if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`API request failed with status ${response.status}: ${errorBody}`);
-    }
-    const result = await response.json();
-    if (!result || typeof result !== 'object') {
-        throw new Error('Invalid JSON response from API');
-    }
-    return result;
-}
-
-
-// The Main Flow
-const extractAudioFlow = ai.defineFlow(
-  {
-    name: 'extractAudioFlow',
-    inputSchema: ExtractAudioInputSchema,
-    outputSchema: ExtractAudioOutputSchema,
-  },
-  async ({ videoId }) => {
-    const apiKey = process.env.RAPIDAPI_KEY;
-    if (!apiKey) {
-      throw new Error("RAPIDAPI_KEY is not defined in environment variables.");
-    }
+    const { videoId } = ExtractAudioInputSchema.parse(input);
     
+    // In a real implementation, you would use a service like AssemblyAI or a custom backend
+    // to download the YouTube video, extract the audio, and upload it to a storage bucket.
+    // For now, we'll just point directly to the YouTube video URL, which works for ReactPlayer
+    // but might not be ideal for direct audio processing.
+    
+    const mockAudioUrl = `https://www.youtube.com/watch?v=${videoId}`;
+
     try {
-        let result = await pollForLink(videoId, apiKey);
+        const result = {
+            audioUrl: mockAudioUrl,
+        };
+        return ExtractAudioOutputSchema.parse(result);
 
-        // If the API returns a processing status, wait and poll again.
-        if (result.status === 'processing') {
-            console.log(`Audio for ${videoId} is processing, waiting 5 seconds...`);
-            await new Promise(resolve => setTimeout(resolve, 5000)); // Wait for 5 seconds
-            result = await pollForLink(videoId, apiKey);
-        }
-
-        if (result.status === 'ok' && result.link) {
-             return { audioUrl: result.link };
-        } else {
-            // Handle other statuses like 'fail' or unexpected responses after retry
-            throw new Error(`Failed to extract audio. Final status: ${result.status}, Message: ${result.msg}`);
-        }
     } catch (e: any) {
-        console.error("Failed to extract audio from video:", e.message);
-        throw new Error(`Could not extract audio. Original error: ${e.message}`);
+         console.error("Failed to 'extract' audio:", e.message);
+         throw new Error(`Could not get audio for video. Please check the video ID and try again.`);
     }
-  }
-);
+}
