@@ -193,12 +193,16 @@ function PageWithProvider() {
                     <ReadingPracticePageContent />
 
                     {!isLoading && videoData && (
-                         <div className="group fixed right-4 md:right-8 bottom-8 z-50 h-10 w-10 rounded-full transition-transform duration-300 ease-in-out origin-bottom-right hover:scale-[4]">
-                            <CircularProgressControl 
-                                progress={played * 100}
-                                onSeek={handleSeek}
-                            />
-                            <div className="absolute inset-0.5 rounded-full overflow-hidden">
+                         <div className="group fixed right-8 bottom-8 z-50 flex items-center justify-center">
+                            <div className="absolute inset-0 scale-0 group-hover:scale-100 transition-transform duration-300">
+                                <CircularProgressControl 
+                                    progress={played * 100}
+                                    onSeek={handleSeek}
+                                    size={160}
+                                    strokeWidth={4}
+                                />
+                            </div>
+                            <div className="relative h-10 w-10 rounded-full overflow-hidden shadow-lg">
                                 <ReactPlayer
                                     ref={playerRef}
                                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
@@ -224,13 +228,9 @@ function PageWithProvider() {
                                         }
                                     }}
                                 />
-                            </div>
-                             <div className={cn("absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity", isPlaying ? 'opacity-0 group-hover:opacity-100' : 'opacity-100')}>
-                                {isPlaying ? (
-                                    <Pause className="h-1/2 w-1/2 text-white/70" />
-                                ) : (
+                                 <div className={cn("absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity", isPlaying ? 'opacity-0' : 'opacity-100')}>
                                     <Play className="h-1/2 w-1/2 text-white/70" />
-                                )}
+                                </div>
                             </div>
                         </div>
                     )}
