@@ -38,7 +38,7 @@ function buildPrompt(input: GenerateQuizInput): string {
       You are an expert language teacher. Your task is to create a quick comprehension quiz based on a snippet from a video transcript.
       The user is a ${input.proficiencyLevel} learner of ${input.targetLanguage}.
       
-      Generate an appropriate number of questions (between 3 and 5) to thoroughly test the student's comprehension of the provided transcript snippet.
+      Generate an appropriate number of questions (between 7 and 10) to thoroughly test the student's comprehension of the provided transcript snippet.
       The questions should be appropriate for a ${input.proficiencyLevel} level.
       
       Here are the rules for the output:
