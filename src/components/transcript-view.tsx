@@ -33,7 +33,8 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
   const fullText = useMemo(() => transcript.map(line => line.text).join(' '), [transcript]);
   const isRtl = useMemo(() => /[\u0600-\u06FF]/.test(fullText), [fullText]);
 
-  const handleWordClick = (word: string, originalText: string, context: string, key: string) => {
+  const handleWordClick = (e: React.MouseEvent, word: string, originalText: string, context: string, key: string) => {
+    e.stopPropagation(); // Prevent the line's onClick from firing
     const isSaved = savedWordsSet.has(word);
     
     if (!isSaved) {
@@ -114,7 +115,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                                 const isCurrentlyTranslating = isTranslatingWord[key];
 
                                 return (
-                                    <span key={key} className="inline-block relative group/word" onPointerDown={(e) => e.stopPropagation()} onClick={(e) => e.stopPropagation()}>
+                                    <span key={key} className="inline-block relative group/word" onPointerDown={(e) => e.stopPropagation()}>
                                     <Button
                                         variant="ghost"
                                         size="sm"
@@ -124,7 +125,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                                         translation && "bg-blue-100 text-blue-900"
                                         )}
                                         disabled={isCurrentlyTranslating || !cleanedWord}
-                                        onClick={() => handleWordClick(cleanedWord, originalText, line.text, key)}
+                                        onClick={(e) => handleWordClick(e, cleanedWord, originalText, line.text, key)}
                                     >
                                         {isCurrentlyTranslating ? '...' : displayedText}
                                     </Button>
@@ -139,3 +140,4 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
     </div>
   );
 }
+
