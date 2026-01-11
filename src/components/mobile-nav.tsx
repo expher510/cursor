@@ -56,9 +56,9 @@ export function MobileNav({ setOpen }: { setOpen: (open: boolean) => void }) {
   return (
     <div className="flex flex-col h-full mt-4">
       <div className="flex flex-col gap-1 p-4 border-b">
-         <MobileLink href="/listening" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
+         <MobileLink href="/watch" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
           <Headphones className="w-5 h-5" />
-          <span>Listening Practice</span>
+          <span>Watch & Listen</span>
         </MobileLink>
         <MobileLink href="/reading" onOpenChange={setOpen} className="flex items-center gap-2 p-2 rounded-md hover:bg-muted">
           <BookOpen className="w-5 h-5" />
@@ -90,5 +90,3 @@ export function MobileNav({ setOpen }: { setOpen: (open: boolean) => void }) {
     </div>
   );
 }
-
-    

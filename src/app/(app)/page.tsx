@@ -1,4 +1,3 @@
-
 'use client';
 import { useState, useRef } from "react";
 import { YoutubeUrlForm } from "@/components/youtube-url-form";
@@ -71,18 +70,12 @@ function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivi
   return (
     <div className="w-full max-w-4xl pt-10 text-left">
        <h2 className="text-2xl font-bold font-headline mb-6 text-center">Choose Your Practice</h2>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
         <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleClick('watch')}>
             {isProcessing && pendingActivity === 'watch' && <Loader2 className="mr-2 animate-spin" />}
             <Youtube className="mr-2" />
-            Listen & Watch
-        </Button>
-
-        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleClick('listening')}>
-            {isProcessing && pendingActivity === 'listening' && <Loader2 className="mr-2 animate-spin" />}
-            <Headphones className="mr-2" />
-            Listening Practice
+            Watch & Listen
         </Button>
         
         <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleClick('reading')}>
@@ -310,5 +303,3 @@ export default function HomePage() {
     </>
   );
 }
-
-    

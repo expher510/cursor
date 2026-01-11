@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Edit, Loader2, Circle } from "lucide-react";
+import { AlertTriangle, Edit, Loader2, Circle, Play, Pause } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Logo } from "@/components/logo";
 import { useState, useMemo, Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { QuizPlayer } from "@/components/quiz-player";
+import ReactPlayer from 'react-player/youtube';
 
 
 function ReadingQuiz() {
@@ -93,6 +94,26 @@ function ReadingQuiz() {
 
 function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentTime, setCurrentTime] = useState(0);
+    const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
+    const playerRef = useRef<ReactPlayer>(null);
+    
+    useEffect(() => {
+      if (!videoData?.transcript) return;
+      
+      let activeIndex = -1;
+      // Find the currently active segment
+      for (let i = 0; i < videoData.transcript.length; i++) {
+          if (videoData.transcript[i].offset <= currentTime) {
+              activeIndex = i;
+          } else {
+              break;
+          }
+      }
+      setActiveSegmentIndex(activeIndex);
+
+    }, [currentTime, videoData?.transcript]);
     
     if (isLoading) {
         return (
@@ -134,10 +155,40 @@ function ReadingPracticePageContent() {
         ...item,
         text: item.text,
     }));
+    
+    const handlePlayPause = () => {
+        setIsPlaying(!isPlaying);
+    }
+    
+    const playSegment = (offset: number) => {
+        if (playerRef.current) {
+            playerRef.current.seekTo(offset / 1000);
+            setIsPlaying(true);
+        }
+    };
 
 
     return (
-        <div className="w-full max-w-4xl mx-auto space-y-6">
+        <div className="w-full max-w-4xl mx-auto space-y-6 relative">
+            <div style={{ display: 'none' }}>
+                <ReactPlayer
+                    ref={playerRef}
+                    url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                    playing={isPlaying}
+                    onProgress={(progress) => setCurrentTime(progress.playedSeconds * 1000)}
+                    onEnded={() => setIsPlaying(false)}
+                    controls={false}
+                    width="0"
+                    height="0"
+                    volume={1}
+                />
+            </div>
+
+            <div className="fixed right-4 md:right-8 bottom-8 z-50">
+                 <Button onClick={handlePlayPause} size="lg" className="h-16 w-16 rounded-full shadow-lg">
+                    {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
+                 </Button>
+            </div>
             
              <div className="mb-4 text-center">
                 <div className="flex justify-center">
@@ -156,7 +207,8 @@ function ReadingPracticePageContent() {
                     <TranscriptView 
                        transcript={formattedTranscript} 
                        videoId={videoData.videoId}
-                       onPlaySegment={null}
+                       onPlaySegment={playSegment}
+                       activeSegmentIndex={activeSegmentIndex}
                     />
                 </Card>
                  <ReadingQuiz />
