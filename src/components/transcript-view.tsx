@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useTranslationStore } from "@/hooks/use-translation-store";
 import { useMemo } from "react";
 import { Volume2, VolumeX } from "lucide-react";
+import { useUserProfile } from "@/hooks/use-user-profile";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
@@ -20,6 +21,7 @@ type TranscriptViewProps = {
 export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegmentIndex = -1 }: TranscriptViewProps) {
   const { addVocabularyItem, savedWordsSet } = useWatchPage();
   const { translations, toggleTranslation, isTranslating } = useTranslationStore();
+  const { userProfile } = useUserProfile();
 
   const fullText = useMemo(() => transcript.map(line => line.text).join(' '), [transcript]);
   const isRtl = useMemo(() => /[\u0600-\u06FF]/.test(fullText), [fullText]);
@@ -31,7 +33,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
         addVocabularyItem(word);
     }
 
-    toggleTranslation(word, originalText, context, key);
+    toggleTranslation(word, originalText, context, key, userProfile?.targetLanguage || 'ar');
   };
   
   return (
