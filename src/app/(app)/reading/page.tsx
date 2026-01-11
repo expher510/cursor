@@ -182,28 +182,29 @@ function PageWithProvider() {
         <WatchPageProvider key={key}>
             {({ isLoading, videoData }) => (
                 <>
-                    {videoData?.videoId && (
-                         <div style={{ display: 'none' }}>
-                            <ReactPlayer
-                                ref={playerRef}
-                                url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                                playing={isPlaying}
-                                onEnded={() => setIsPlaying(false)}
-                                controls={false}
-                                width="0"
-                                height="0"
-                                volume={1}
-                            />
-                        </div>
-                    )}
-                    
-                    {!isLoading && videoData && (
-                        <div className="fixed right-4 md:right-8 bottom-8 z-50">
+                    <div className="fixed right-4 md:right-8 bottom-8 z-50 flex flex-col items-center gap-2">
+                        {videoData?.videoId && (
+                             <div className="w-20 h-auto aspect-video rounded-md overflow-hidden shadow-lg border">
+                                <ReactPlayer
+                                    ref={playerRef}
+                                    url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                                    playing={isPlaying}
+                                    onEnded={() => setIsPlaying(false)}
+                                    controls={true}
+                                    width="100%"
+                                    height="100%"
+                                    volume={1}
+                                    muted={false}
+                                />
+                            </div>
+                        )}
+                        
+                        {!isLoading && videoData && (
                             <Button onClick={handlePlayPause} size="lg" className="h-16 w-16 rounded-full shadow-lg">
                                 {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
                             </Button>
-                        </div>
-                    )}
+                        )}
+                    </div>
 
                     <ReadingPracticePageContent />
                 </>
