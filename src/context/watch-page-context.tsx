@@ -24,7 +24,7 @@ type VocabularyItem = {
   userId: string;
 };
 
-type VideoData = ProcessVideoOutput & { videoId?: string; audioUrl?: string; };
+type VideoData = ProcessVideoOutput & { videoId?: string };
 
 
 type WatchPageContextType = {
@@ -130,8 +130,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           setIsLoading(false);
           return;
       }
-      
-      const videoUrl = `https://www.youtube.com/watch?v=${cleanVideoId}`;
 
       try {
         const videoDocRef = doc(firestore, `users/${user!.uid}/videos`, cleanVideoId);
@@ -146,7 +144,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           const combinedData: VideoData = {
             title: videoDocData.title,
             description: videoDocData.description,
-            audioUrl: videoUrl,
             transcript: transcriptDocData.content,
             sourceLang: transcriptDocData.sourceLang || 'en',
             videoId: cleanVideoId
@@ -187,7 +184,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               sourceLang: result.sourceLang,
           }, { merge: true });
 
-          setVideoData({ ...result, videoId: cleanVideoId, audioUrl: videoUrl });
+          setVideoData({ ...result, videoId: cleanVideoId });
         } else {
             setError("Video data not found. Please process it from the homepage first.");
             toast({ variant: "destructive", title: "Data Not Found", description: "This video hasn't been processed yet. Please add it from the homepage." });

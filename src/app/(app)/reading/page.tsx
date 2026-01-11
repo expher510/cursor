@@ -170,11 +170,11 @@ function ReadingPracticePageContent() {
             </>
 
             {/* Hidden Audio Player */}
-            {videoData.audioUrl && (
+            {videoData.videoId && (
                 <div className="hidden">
                     <ReactPlayer
                         ref={playerRef}
-                        url={videoData.audioUrl}
+                        url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                         playing={isPlaying}
                         onProgress={(state) => {
                             setCurrentTime(state.playedSeconds * 1000);
