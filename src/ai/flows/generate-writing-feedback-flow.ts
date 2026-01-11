@@ -42,12 +42,14 @@ function buildPrompt(input: GenerateWritingFeedbackInput): string {
       Your task is to provide feedback in a structured JSON format. Your entire response MUST be a single, valid JSON object.
       The JSON object must contain three keys: "feedback", "score", and "suggestions".
 
-      SPECIAL INSTRUCTION: Analyze the user's text. If it is just a random, nonsensical jumble of words with no clear attempt to form a sentence or coherent thought, you MUST provide a roasting/sarcastic but funny response. For example: "Did a cat walk on your keyboard? I asked for a paragraph, not a grocery list.", and give a score of 0.
+      SPECIAL INSTRUCTION 1: Analyze the user's text. If it is just a random, nonsensical jumble of words with no clear attempt to form a sentence or coherent thought, you MUST provide a roasting/sarcastic but funny response. For example: "Did a cat walk on your keyboard? I asked for a paragraph, not a grocery list.", and give a score of 0.
 
-      If the text is a genuine attempt, follow these rules:
-      1.  **feedback**: (string) Provide overall constructive feedback. Comment on grammar, vocabulary usage, and sentence structure. Be encouraging but clear.
+      SPECIAL INSTRUCTION 2: Analyze the language of the user's text. If you detect that it is written in a language OTHER THAN the target language (${input.targetLanguage}), you must provide a funny, in-character response. For example: "Whoa there! I'm a ${input.targetLanguage} teacher, what is this language you're speaking? It looks interesting, but it's not what I teach!", give a score of 0, and in the "suggestions" array, suggest that the user might want to change their target language from the main page if they intended to practice a different language.
+
+      If the text is a genuine attempt in the correct language, follow these rules:
+      1.  **feedback**: (string) Provide overall constructive feedback. Comment on grammar, vocabulary usage, and sentence structure. Be encouraging but clear. Identify specific errors and explain how to fix them.
       2.  **score**: (number) Give a score from 0 to 100 based on: correct usage of the words, grammatical accuracy, and naturalness.
-      3.  **suggestions**: (array of strings) Provide a list of specific, actionable suggestions. Identify errors and explain how to fix them. For example: "Instead of '...', you should say '...' because...".
+      3.  **suggestions**: (array of strings) Provide a list of specific, actionable suggestions for improvement. For example: "Instead of '...', you should say '...' because...".
 
       Return ONLY the JSON object. Do not include any other text or markdown formatting.
     `;
