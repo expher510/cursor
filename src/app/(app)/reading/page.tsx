@@ -193,7 +193,8 @@ function PageWithProvider() {
                     <ReadingPracticePageContent />
 
                     {!isLoading && videoData && (
-                         <div className="group fixed right-8 bottom-8 z-50 h-40 w-40">
+                         <div className="group fixed right-4 bottom-8 z-50 h-40 w-40 flex items-center justify-center">
+                            
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300">
                                 <CircularProgressControl 
                                     progress={played * 100}
@@ -202,36 +203,41 @@ function PageWithProvider() {
                                     strokeWidth={4}
                                 />
                             </div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div className="relative h-10 w-10 rounded-full overflow-hidden shadow-lg">
-                                    <ReactPlayer
-                                        ref={playerRef}
-                                        url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                                        volume={1}
-                                        muted={false}
-                                        width="100%"
-                                        height="100%"
-                                        playing={isPlaying}
-                                        onPlay={() => setIsPlaying(true)}
-                                        onPause={() => setIsPlaying(false)}
-                                        onProgress={(state) => setPlayed(state.played)}
-                                        controls={true}
-                                        config={{
-                                            youtube: {
-                                                playerVars: {
-                                                    controls: 1,
-                                                    disablekb: 1,
-                                                    fs: 0,
-                                                    iv_load_policy: 3,
-                                                    modestbranding: 1,
-                                                    playsinline: 1,
-                                                }
+
+                            <div className="relative h-10 w-10 rounded-full overflow-hidden shadow-lg flex-shrink-0">
+                                <ReactPlayer
+                                    ref={playerRef}
+                                    url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                                    volume={1}
+                                    muted={false}
+                                    width="100%"
+                                    height="100%"
+                                    playing={isPlaying}
+                                    onPlay={() => setIsPlaying(true)}
+                                    onPause={() => setIsPlaying(false)}
+                                    onProgress={(state) => setPlayed(state.played)}
+                                    controls={false}
+                                    config={{
+                                        youtube: {
+                                            playerVars: {
+                                                controls: 0,
+                                                disablekb: 1,
+                                                fs: 0,
+                                                iv_load_policy: 3,
+                                                modestbranding: 1,
+                                                playsinline: 1,
                                             }
-                                        }}
-                                    />
-                                     <div className={cn("absolute inset-0 flex items-center justify-center pointer-events-none transition-opacity", isPlaying ? 'opacity-0' : 'opacity-100')}>
-                                        <Play className="h-1/2 w-1/2 text-white/70" />
-                                    </div>
+                                        }
+                                    }}
+                                />
+                                <div 
+                                    className={cn(
+                                        "absolute inset-0 flex items-center justify-center transition-opacity bg-black/20 cursor-pointer",
+                                        isPlaying ? 'opacity-0 hover:opacity-100' : 'opacity-100'
+                                    )}
+                                    onClick={() => setIsPlaying(!isPlaying)}
+                                >
+                                    {isPlaying ? <Pause className="h-1/2 w-1/2 text-white/70" /> : <Play className="h-1/2 w-1/2 text-white/70" />}
                                 </div>
                             </div>
                         </div>
