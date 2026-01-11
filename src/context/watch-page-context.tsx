@@ -14,7 +14,6 @@ import { useToast } from '@/hooks/use-toast';
 import { extractYouTubeVideoId } from '@/lib/utils';
 import { generateQuizFromTranscript, GenerateQuizExtendedOutput } from '@/ai/flows/generate-quiz-from-transcript-flow';
 import { useUserProfile } from '@/hooks/use-user-profile';
-import { extractAudio } from '@/ai/flows/extract-audio-flow';
 
 
 type VocabularyItem = {
@@ -25,7 +24,7 @@ type VocabularyItem = {
   userId: string;
 };
 
-type VideoData = ProcessVideoOutput & { videoId?: string, audioUrl?: string };
+type VideoData = ProcessVideoOutput & { videoId?: string };
 
 
 type WatchPageContextType = {
@@ -148,7 +147,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             transcript: transcriptDocData.content,
             sourceLang: transcriptDocData.sourceLang || 'en',
             videoId: cleanVideoId,
-            audioUrl: videoDocData.audioUrl
           };
           setVideoData(combinedData);
         } else if (shouldGenerate) {
@@ -188,18 +186,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           }, { merge: true });
 
           setVideoData({ ...result, videoId: cleanVideoId });
-
-          // Now, extract audio and update the doc
-          try {
-            toast({ variant: 'subtle', title: "Extracting audio..."});
-            const { audioUrl } = await extractAudio({ videoId: cleanVideoId });
-            await updateDoc(videoDocRef, { audioUrl });
-            setVideoData(prev => prev ? { ...prev, audioUrl } : null);
-            toast({ variant: 'subtle', title: "Audio ready!"});
-          } catch (audioError: any) {
-             console.error("Failed to extract audio:", audioError);
-             toast({ variant: "destructive", title: "Audio Extraction Failed", description: "Could not get audio. Some features may be unavailable." });
-          }
 
         } else {
             setError("Video data not found. Please process it from the homepage first.");

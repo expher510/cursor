@@ -198,36 +198,6 @@
       },
       "required": ["id", "videoId", "userId", "questions"]
     },
-    "SpeakingExerciseAttempt": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Speaking Exercise Attempt",
-      "description": "Represents a user's attempt at a speaking exercise.",
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the speaking exercise attempt."
-        },
-        "userId": {
-          "type": "string",
-          "description": "The ID of the user who took the exercise."
-        },
-         "videoId": {
-          "type": "string",
-          "description": "The ID of the video associated with this attempt."
-        },
-        "audioUrl": {
-          "type": "string",
-          "description": "The Data URI of the recorded audio.",
-          "format": "uri"
-        },
-        "timestamp": {
-          "type": "number",
-          "description": "The timestamp when the exercise was completed."
-        }
-      },
-      "required": ["id", "userId", "videoId", "audioUrl", "timestamp"]
-    },
     "WritingFeedback": {
         "$schema": "http://json-schema.org/draft-07/schema#",
         "title": "Writing Feedback",
@@ -367,26 +337,6 @@
             {
               "name": "vocabularyId",
               "description": "The unique identifier of the vocabulary list."
-            }
-          ]
-        }
-      },
-       {
-        "path": "/users/{userId}/speakingAttempts/{attemptId}",
-        "definition": {
-          "entityName": "SpeakingExerciseAttempt",
-          "schema": {
-            "$ref": "#/entities/SpeakingExerciseAttempt"
-          },
-          "description": "Stores a user's speaking exercise attempts. Path-based ownership ensures data isolation.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The unique identifier of the user."
-            },
-            {
-              "name": "attemptId",
-              "description": "The unique identifier of the exercise attempt."
             }
           ]
         }
