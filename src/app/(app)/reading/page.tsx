@@ -96,17 +96,6 @@ function ReadingQuiz() {
 function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
     const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
-    
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [hasStarted, setHasStarted] = useState(false);
-    const playerRef = useRef<ReactPlayer>(null);
-
-    const handlePlayPause = () => {
-        if (!hasStarted) {
-            setHasStarted(true);
-        }
-        setIsPlaying(prev => !prev);
-    }
 
     if (isLoading) {
         return (
@@ -149,26 +138,6 @@ function ReadingPracticePageContent() {
         text: item.text,
     }));
     
-    const handleProgress = (progress: { playedSeconds: number }) => {
-        if (!hasStarted) return;
-        const currentTime = progress.playedSeconds * 1000;
-        const activeIndex = formattedTranscript.findIndex(
-            (item, index) =>
-                currentTime >= item.offset &&
-                (index === formattedTranscript.length - 1 || currentTime < formattedTranscript[index + 1].offset)
-        );
-        setActiveSegmentIndex(activeIndex);
-    };
-    
-    const handleLineClick = (offset: number) => {
-        if (playerRef.current) {
-            playerRef.current.seekTo(offset / 1000, 'seconds');
-            if (!isPlaying) {
-                setIsPlaying(true);
-                setHasStarted(true);
-            }
-        }
-    }
 
     return (
         <>
@@ -187,55 +156,15 @@ function ReadingPracticePageContent() {
             <>
                 <VocabularyList layout="scroll" />
                 <Card>
-                   {!hasStarted ? (
-                        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
-                            <Button size="lg" onClick={handlePlayPause}>
-                                <Headphones className="mr-2" />
-                                Start Listening
-                            </Button>
-                        </div>
-                    ) : (
-                        <div className="fixed right-4 md:right-8 bottom-8 z-50">
-                            <Button onClick={handlePlayPause} size="lg" className="h-16 w-16 rounded-full shadow-lg">
-                                {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
-                            </Button>
-                        </div>
-                    )}
                     <TranscriptView 
                        transcript={formattedTranscript} 
                        videoId={videoData.videoId}
                        activeSegmentIndex={activeSegmentIndex}
-                       onPlaySegment={(offset) => handleLineClick(offset)}
+                       onPlaySegment={null}
                     />
                 </Card>
                  <ReadingQuiz />
             </>
-        </div>
-        
-         <div className="absolute top-[-1000px] left-[-1000px]">
-            <ReactPlayer
-                ref={playerRef}
-                url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                playing={isPlaying && hasStarted}
-                onProgress={handleProgress}
-                onEnded={() => setIsPlaying(false)}
-                volume={1}
-                muted={false}
-                width="1px"
-                height="1px"
-                config={{
-                    youtube: {
-                        playerVars: {
-                            controls: 0,
-                            disablekb: 1,
-                            fs: 0,
-                            iv_load_policy: 3,
-                            modestbranding: 1,
-                            playsinline: 1,
-                        }
-                    }
-                }}
-            />
         </div>
         </>
     )
@@ -249,12 +178,41 @@ function PageWithProvider() {
 
     return (
         <WatchPageProvider key={key}>
-            {() => (
-                <ReadingPracticePageContent />
+            {({ isLoading, videoData }) => (
+                <>
+                    <ReadingPracticePageContent />
+
+                    {!isLoading && videoData && (
+                         <div className="fixed right-4 md:right-8 bottom-8 z-50 h-16 w-16 rounded-full overflow-hidden shadow-lg border-2 border-primary bg-black">
+                            <ReactPlayer
+                                url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                                playing={false}
+                                volume={1}
+                                muted={false}
+                                width="100%"
+                                height="100%"
+                                controls={true}
+                                config={{
+                                    youtube: {
+                                        playerVars: {
+                                            controls: 1, // Show minimal controls
+                                            disablekb: 1,
+                                            fs: 0,
+                                            iv_load_policy: 3,
+                                            modestbranding: 1,
+                                            playsinline: 1,
+                                        }
+                                    }
+                                }}
+                            />
+                        </div>
+                    )}
+                </>
             )}
         </WatchPageProvider>
     );
 }
+
 
 export default function ReadingPage() {
   return (
