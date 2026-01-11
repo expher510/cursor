@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useTranslationStore } from "@/hooks/use-translation-store";
 import { useMemo, useRef } from "react";
 import { useUserProfile } from "@/hooks/use-user-profile";
+import { useToast } from "@/hooks/use-toast";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
@@ -21,6 +22,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
   const { translations, toggleTranslation, isTranslating } = useTranslationStore();
   const { userProfile } = useUserProfile();
   const longPressTimeout = useRef<NodeJS.Timeout | null>(null);
+  const { toast } = useToast();
 
   const fullText = useMemo(() => transcript.map(line => line.text).join(' '), [transcript]);
   const isRtl = useMemo(() => /[\u0600-\u06FF]/.test(fullText), [fullText]);
@@ -37,11 +39,10 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
     }
   };
   
-  const speak = (text: string, lang: string = 'en-US') => {
+  const speak = (text: string) => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
         window.speechSynthesis.cancel(); // Stop any previous speech
         const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = lang;
         window.speechSynthesis.speak(utterance);
     }
   };
