@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 
-type ActivityType = 'watch' | 'reading' | 'writing';
+type ActivityType = 'watch' | 'reading' | 'writing' | 'listening';
 type SourceType = 'youtube' | 'cards';
 
 const LANGUAGE_MAP: Record<string, string> = {
@@ -71,24 +71,30 @@ function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivi
   return (
     <div className="w-full max-w-4xl pt-10 text-left">
        <h2 className="text-2xl font-bold font-headline mb-6 text-center">Choose Your Practice</h2>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         
         <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleClick('watch')}>
             {isProcessing && pendingActivity === 'watch' && <Loader2 className="mr-2 animate-spin" />}
+            <Youtube className="mr-2" />
+            Listen & Watch
+        </Button>
+
+        <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleClick('listening')}>
+            {isProcessing && pendingActivity === 'listening' && <Loader2 className="mr-2 animate-spin" />}
             <Headphones className="mr-2" />
-            Start Watching
+            Listening Practice
         </Button>
         
         <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleClick('reading')}>
             {isProcessing && pendingActivity === 'reading' && <Loader2 className="mr-2 animate-spin" />}
             <BookOpen className="mr-2" />
-            Start Reading
+            Reading Practice
         </Button>
 
         <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleClick('writing')}>
             {isProcessing && pendingActivity === 'writing' && <Loader2 className="mr-2 animate-spin" />}
             <Edit className="mr-2" />
-            Start Writing
+            Writing Practice
         </Button>
 
       </div>
@@ -304,3 +310,5 @@ export default function HomePage() {
     </>
   );
 }
+
+    
