@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useFirebase } from '@/firebase';
@@ -9,7 +8,7 @@ import { useMemoFirebase } from '@/firebase/provider';
 import { processVideo, type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 import { translateWord } from '@/ai/flows/translate-word-flow';
 import { useSearchParams } from 'next/navigation';
-import { type QuizData } from '@/lib/quiz-data';
+import { type QuizData, MOCK_QUIZ_QUESTIONS } from '@/lib/quiz-data';
 import { useToast } from '@/hooks/use-toast';
 import { extractYouTubeVideoId } from '@/lib/utils';
 import { generateQuizFromTranscript, GenerateQuizExtendedOutput } from '@/ai/flows/generate-quiz-from-transcript-flow';
@@ -135,16 +134,18 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
       try {
         const videoDocRef = doc(firestore, `users/${user!.uid}/videos`, cleanVideoId);
         const transcriptDocRef = doc(firestore, `users/${user!.uid}/videos/${cleanVideoId}/transcripts`, cleanVideoId);
+        const quizDocRef = doc(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`, 'comprehensive-test');
         
         const videoDocSnap = await getDoc(videoDocRef);
         const transcriptDocSnap = await getDoc(transcriptDocRef);
 
         if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
+           toast({ variant: 'subtle', title: "Loading Existing Lesson"});
           const videoDocData = videoDocSnap.data();
           const combinedData: VideoData = {
             title: videoDocData.title,
             description: videoDocData.description,
-            audioUrl: videoDocData.audioUrl,
+            audioUrl: videoDocData.audioUrl || videoUrl,
             transcript: transcriptDocSnap.data().content,
             videoId: cleanVideoId
           };
@@ -166,6 +167,13 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               id: cleanVideoId,
               videoId: cleanVideoId,
               content: result.transcript,
+          }, { merge: true });
+          
+          await setDoc(quizDocRef, {
+            id: 'comprehensive-test',
+            videoId: cleanVideoId,
+            userId: user.uid,
+            questions: MOCK_QUIZ_QUESTIONS,
           }, { merge: true });
 
           setVideoData({ ...result, videoId: cleanVideoId, audioUrl: videoUrl });
@@ -207,12 +215,13 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const quizData = useMemo(() => (quizzes && quizzes.length > 0 ? quizzes[0] : null), [quizzes]);
 
   const handleQuizGeneration = useCallback(async () => {
-    if (!videoData?.transcript || videoData.transcript.length === 0 || !userProfile || !firestore || !user || !videoData?.videoId) {
+    if (!videoData?.transcript || !userProfile || !firestore || !user || !videoData?.videoId) {
         toast({ variant: "destructive", title: "Cannot Generate Quiz", description: "A transcript is required to create a quiz. This video may not have one."});
         return;
     }
     
-    if (quizData) { // Quiz already exists, no need to generate
+    // Do not re-generate if the quiz is not the mock one
+    if (quizData && quizData.questions[0].questionText !== MOCK_QUIZ_QUESTIONS[0].questionText) {
         return;
     }
     
