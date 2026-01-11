@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Edit, Loader2, Circle, Play, Pause, Headphones } from "lucide-react";
+import { AlertTriangle, Edit, Loader2, Circle } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -96,6 +96,9 @@ function ReadingQuiz() {
 function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
     const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [currentTime, setCurrentTime] = useState(0);
+    const playerRef = useRef<ReactPlayer>(null);
 
     if (isLoading) {
         return (
@@ -138,7 +141,17 @@ function ReadingPracticePageContent() {
         text: item.text,
     }));
     
+    const handlePlayPause = () => {
+        setIsPlaying(!isPlaying);
+    };
 
+    const handleSeek = (offset: number) => {
+        if (playerRef.current) {
+            playerRef.current.seekTo(offset / 1000);
+            setIsPlaying(true);
+        }
+    }
+    
     return (
         <>
         <div className="w-full max-w-4xl mx-auto space-y-6 relative">
@@ -160,7 +173,7 @@ function ReadingPracticePageContent() {
                        transcript={formattedTranscript} 
                        videoId={videoData.videoId}
                        activeSegmentIndex={activeSegmentIndex}
-                       onPlaySegment={null}
+                       onPlaySegment={handleSeek}
                     />
                 </Card>
                  <ReadingQuiz />
@@ -183,30 +196,28 @@ function PageWithProvider() {
                     <ReadingPracticePageContent />
 
                     {!isLoading && videoData && (
-                        <div className="group fixed right-4 md:right-8 bottom-8 z-50 h-16 w-16 transition-all duration-300 ease-in-out hover:scale-125">
-                            <div className="h-full w-full rounded-full overflow-hidden shadow-lg border-2 border-primary bg-black opacity-50 group-hover:opacity-100 transition-opacity">
-                                <ReactPlayer
-                                    url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                                    playing={false}
-                                    volume={1}
-                                    muted={false}
-                                    width="100%"
-                                    height="100%"
-                                    controls={true}
-                                    config={{
-                                        youtube: {
-                                            playerVars: {
-                                                controls: 1,
-                                                disablekb: 1,
-                                                fs: 0,
-                                                iv_load_policy: 3,
-                                                modestbranding: 1,
-                                                playsinline: 1,
-                                            }
+                        <div className="group fixed right-4 md:right-8 bottom-8 z-50 h-14 w-14 rounded-full overflow-hidden shadow-lg border-2 border-primary bg-black transition-all duration-300 ease-in-out hover:h-24 hover:w-40 hover:rounded-lg opacity-50 hover:opacity-100">
+                            <ReactPlayer
+                                url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                                playing={false}
+                                volume={1}
+                                muted={false}
+                                width="100%"
+                                height="100%"
+                                controls={true}
+                                config={{
+                                    youtube: {
+                                        playerVars: {
+                                            controls: 1,
+                                            disablekb: 1,
+                                            fs: 0,
+                                            iv_load_policy: 3,
+                                            modestbranding: 1,
+                                            playsinline: 1,
                                         }
-                                    }}
-                                />
-                            </div>
+                                    }
+                                }}
+                            />
                         </div>
                     )}
                 </>
