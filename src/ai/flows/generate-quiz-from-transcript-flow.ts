@@ -60,51 +60,41 @@ function buildPrompt(input: GenerateQuizInput): string {
 
 // This is the public wrapper function that components will call.
 export async function generateQuizFromTranscript(input: GenerateQuizInput): Promise<GenerateQuizExtendedOutput> {
-    try {
-        const prompt = buildPrompt(input);
+    const prompt = buildPrompt(input);
 
-        const chatCompletion = await groq.chat.completions.create({
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                }
-            ],
-            "model": "llama-3.1-70b-versatile",
-            "temperature": 0.7,
-            "max_tokens": 1024,
-            "top_p": 1,
-            "stream": false, // Use direct response for reliability
-            "response_format": {
-                "type": "json_object" // Ensure the output is a valid JSON object
-            },
-            "stop": null
-        });
-        
-        const responseContent = chatCompletion.choices[0]?.message?.content;
+    const chatCompletion = await groq.chat.completions.create({
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ],
+        "model": "llama-3.1-70b-versatile",
+        "temperature": 0.7,
+        "max_tokens": 1024,
+        "top_p": 1,
+        "stream": false, // Use direct response for reliability
+        "response_format": {
+            "type": "json_object" // Ensure the output is a valid JSON object
+        },
+        "stop": null
+    });
+    
+    const responseContent = chatCompletion.choices[0]?.message?.content;
 
-        console.log("--- GROQ API RESPONSE ---");
-        console.log(responseContent);
-        
-        if (!responseContent) {
-            throw new Error("Received an empty response from the AI model.");
-        }
-        
-        const parsedJson = JSON.parse(responseContent);
-        
-        const validatedOutput = GenerateQuizOutputSchema.parse(parsedJson);
-        
-        return {
-          ...validatedOutput,
-          rawResponse: responseContent,
-        };
-
-    } catch (error) {
-        console.error("Error generating quiz with Groq:", error);
-        if (error instanceof z.ZodError) {
-             throw new Error(`AI returned data in an unexpected format. Details: ${error.message}`);
-        }
-        // Throw a generic error to be caught by the UI
-        throw new Error("Failed to generate quiz. Please try again later.");
+    console.log("--- GROQ API RESPONSE ---");
+    console.log(responseContent);
+    
+    if (!responseContent) {
+        throw new Error("Received an empty response from the AI model.");
     }
+    
+    const parsedJson = JSON.parse(responseContent);
+    
+    const validatedOutput = GenerateQuizOutputSchema.parse(parsedJson);
+    
+    return {
+      ...validatedOutput,
+      rawResponse: responseContent,
+    };
 }
