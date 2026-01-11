@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Edit, Loader2, Circle, Play, Pause } from "lucide-react";
+import { AlertTriangle, Edit, Loader2, Circle, Play, Pause, Move } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -169,15 +169,15 @@ function ReadingPracticePageContent() {
     )
 }
 
-function PageWithProvider() {
-    const searchParams = useSearchParams();
-    const videoId = searchParams.get('v');
-    const shouldGenerate = searchParams.get('shouldGenerate');
-    const key = `${videoId}-${shouldGenerate}`;
-    
+function DraggableVideoPlayer({ videoData }: { videoData: NonNullable<ReturnType<typeof useWatchPage>['videoData']> }) {
     const playerRef = useRef<ReactPlayer>(null);
+    const dragRef = useRef<HTMLDivElement>(null);
     const [played, setPlayed] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
+    
+    const [position, setPosition] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const dragStartPos = useRef({ x: 0, y: 0 });
 
     const handleSeek = (progress: number) => {
         if (playerRef.current) {
@@ -185,6 +185,118 @@ function PageWithProvider() {
             setPlayed(progress);
         }
     };
+
+    const onDragStart = (e: React.MouseEvent | React.TouchEvent) => {
+        setIsDragging(true);
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        dragStartPos.current = {
+            x: clientX - position.x,
+            y: clientY - position.y
+        };
+        if (dragRef.current) {
+            dragRef.current.style.cursor = 'grabbing';
+        }
+    };
+
+    const onDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+        
+        setPosition({
+            x: clientX - dragStartPos.current.x,
+            y: clientY - dragStartPos.current.y
+        });
+    };
+
+    const onDragEnd = () => {
+        setIsDragging(false);
+         if (dragRef.current) {
+            dragRef.current.style.cursor = 'grab';
+        }
+    };
+    
+     useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => onDragMove(e as unknown as React.MouseEvent);
+        const handleTouchMove = (e: TouchEvent) => onDragMove(e as unknown as React.TouchEvent);
+
+        if (isDragging) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', onDragEnd);
+            window.addEventListener('touchmove', handleTouchMove, { passive: false });
+            window.addEventListener('touchend', onDragEnd);
+        }
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', onDragEnd);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchend', onDragEnd);
+        };
+    }, [isDragging]);
+
+
+    return (
+        <div
+            ref={dragRef}
+            className="fixed bottom-8 right-4 z-50 h-36 w-36 cursor-grab"
+            style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
+            onMouseDown={onDragStart}
+            onTouchStart={onDragStart}
+        >
+            <div className="absolute inset-0">
+                <CircularProgressControl
+                    progress={played * 100}
+                    onSeek={handleSeek}
+                    size={140}
+                    strokeWidth={6}
+                />
+            </div>
+
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                 <div className="relative h-[112px] w-[112px] rounded-full overflow-hidden shadow-lg flex-shrink-0">
+                    <ReactPlayer
+                        ref={playerRef}
+                        url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                        volume={1}
+                        muted={false}
+                        width="100%"
+                        height="100%"
+                        playing={isPlaying}
+                        onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
+                        onProgress={(state) => setPlayed(state.played)}
+                        controls={true}
+                        light={false}
+                        config={{
+                            youtube: {
+                                playerVars: {
+                                    disablekb: 1,
+                                    fs: 0,
+                                    iv_load_policy: 3,
+                                    modestbranding: 1,
+                                    playsinline: 1,
+                                }
+                            }
+                        }}
+                    />
+                </div>
+            </div>
+             <div className="absolute top-0 right-0 p-1 bg-muted/50 rounded-full">
+                <Move className="h-4 w-4 text-white/50" />
+            </div>
+        </div>
+    );
+}
+
+
+function PageWithProvider() {
+    const searchParams = useSearchParams();
+    const videoId = searchParams.get('v');
+    const shouldGenerate = searchParams.get('shouldGenerate');
+    const key = `${videoId}-${shouldGenerate}`;
     
     return (
         <WatchPageProvider key={key}>
@@ -193,44 +305,7 @@ function PageWithProvider() {
                     <ReadingPracticePageContent />
 
                     {!isLoading && videoData && (
-                        <div className="fixed right-4 bottom-8 z-50 group">
-                            <div className="relative h-36 w-36 flex items-center justify-center">
-                                <CircularProgressControl
-                                    progress={played * 100}
-                                    onSeek={handleSeek}
-                                    size={140}
-                                    strokeWidth={6}
-                                />
-                                <div className="relative h-[112px] w-[112px] rounded-full overflow-hidden shadow-lg flex-shrink-0">
-                                    <ReactPlayer
-                                        ref={playerRef}
-                                        url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                                        volume={1}
-                                        muted={false}
-                                        width="100%"
-                                        height="100%"
-                                        playing={isPlaying}
-                                        onPlay={() => setIsPlaying(true)}
-                                        onPause={() => setIsPlaying(false)}
-                                        onProgress={(state) => setPlayed(state.played)}
-                                        controls={true}
-                                        light={false} // Important for click-to-play
-                                        config={{
-                                            youtube: {
-                                                playerVars: {
-                                                    // controls: 0, // We want youtube controls now
-                                                    disablekb: 1,
-                                                    fs: 0,
-                                                    iv_load_policy: 3,
-                                                    modestbranding: 1,
-                                                    playsinline: 1,
-                                                }
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                        <DraggableVideoPlayer videoData={videoData} />
                     )}
                 </>
             )}
