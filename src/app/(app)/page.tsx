@@ -12,8 +12,10 @@ import { useToast } from "@/hooks/use-toast";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 import { FlashcardGrid } from "@/components/flashcard-grid";
-import { useUserProfile } from "@/hooks/use-user-profile";
+import { useUserProfile, type UserProfile } from "@/hooks/use-user-profile";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OnboardingModal } from "@/components/onboarding-modal";
+import { doc, setDoc } from "firebase/firestore";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,13 +97,32 @@ function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivi
 
 function MainContent() {
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
-  const { user } = useFirebase();
-  const { userProfile, isLoading: isProfileLoading, updateTargetLanguage, setIsEditing } = useUserProfile();
+  const { user, firestore } = useFirebase();
+  const { userProfile, isLoading: isProfileLoading, updateTargetLanguage, isEditing, setIsEditing, refetch } = useUserProfile();
   const router = useRouter();
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [sourceType, setSourceType] = useState<SourceType>('youtube');
   const cardsContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleOnboardingSave = async (data: { displayName: string; nativeLanguage: string; targetLanguage: string; proficiencyLevel: string; learningGoal?: string; }) => {
+    if (!user || !firestore) return;
+    const userDocRef = doc(firestore, `users/${user.uid}`);
+    try {
+        await setDoc(userDocRef, {
+            ...data,
+            onboardingCompleted: true,
+        }, { merge: true });
+        refetch(); // Refetch the user profile to hide the modal
+        setIsEditing(false); // Close modal if it was in edit mode
+    } catch (error) {
+        console.error("Failed to save onboarding data:", error);
+        // Optionally, show a toast to the user
+    }
+  };
+  
+  const showOnboarding = userProfile && !userProfile.onboardingCompleted;
+  const showEditModal = isEditing && userProfile;
 
 
   const handleUrlChange = (newUrl: string) => {
@@ -166,6 +187,20 @@ function MainContent() {
 
   return (
     <>
+      {(showOnboarding || showEditModal) && (
+        <OnboardingModal
+            open={showOnboarding || showEditModal}
+            onSave={handleOnboardingSave}
+            isEditMode={showEditModal}
+            initialData={userProfile || undefined}
+            onOpenChange={(open) => {
+                if (!open) {
+                    setIsEditing(false);
+                }
+            }}
+        />
+       )}
+
       <div className="flex flex-col items-center gap-2 max-w-2xl">
           <Logo />
         <p className="text-muted-foreground md:text-xl h-8">
