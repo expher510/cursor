@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import { useTranslationStore } from "@/hooks/use-translation-store";
 import { useMemo, useRef } from "react";
 import { useUserProfile } from "@/hooks/use-user-profile";
-import { Languages, Loader2 } from "lucide-react";
+import { Languages, Loader2, Dot } from "lucide-react";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
@@ -29,30 +29,56 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
       isTranslatingSentence,
   } = useTranslationStore();
   const { userProfile } = useUserProfile();
+  const pressTimer = useRef<NodeJS.Timeout | null>(null);
 
   const fullText = useMemo(() => transcript.map(line => line.text).join(' '), [transcript]);
   const isRtl = useMemo(() => /[\u0600-\u06FF]/.test(fullText), [fullText]);
 
-  const handleWordClick = (e: React.MouseEvent, word: string, originalText: string, context: string, key: string) => {
-    e.stopPropagation(); 
-    const isSaved = savedWordsSet.has(word);
-    
-    if (!isSaved) {
-        addVocabularyItem(word, context);
+  const handlePointerDown = (lineIndex: number, lineText: string) => {
+    if (!isLongPressEnabled || !userProfile || !videoData) return;
+    pressTimer.current = setTimeout(() => {
+      toggleSentenceTranslation(lineIndex, lineText, userProfile.nativeLanguage, videoData.sourceLang);
+    }, 500); // 500ms for long press
+  };
+
+  const handlePointerUp = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+  };
+
+  const handleWordClick = (e: React.MouseEvent, word: string, originalText: string, context: string, key: string, lineIndex: number) => {
+    // If a long press is happening, don't trigger word translation
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
     }
 
+    // Prevents line play if enabled
+    e.stopPropagation();
+
+    const isSaved = savedWordsSet.has(word);
+    
+    // Always allow translation toggle, but only add to vocab if not saved
+    if (!isSaved) {
+      addVocabularyItem(word, context);
+    }
+    
     if (userProfile && videoData) {
       toggleWordTranslation(word, originalText, context, key, userProfile.nativeLanguage, videoData.sourceLang);
     }
   };
-
-  const handleTranslateSentenceClick = (e: React.MouseEvent, lineIndex: number, lineText: string) => {
-    e.stopPropagation();
-    if (userProfile && videoData) {
-        toggleSentenceTranslation(lineIndex, lineText, userProfile.nativeLanguage, videoData.sourceLang);
+  
+  const handleLineClick = (e: React.MouseEvent, offset: number, duration: number, text: string, lineIndex: number) => {
+    if (onPlaySegment) {
+       // Check if the click was on a word button; if so, the word handler already stopped propagation.
+       // This check ensures clicks on the line padding still work.
+       if (e.target === e.currentTarget) {
+          onPlaySegment(offset, duration, text);
+       }
     }
-  }
-
+  };
 
   return (
     <div className={cn("p-4 leading-relaxed text-lg space-y-2", isRtl && "text-right")} dir={isRtl ? "rtl" : "ltr"}>
@@ -71,23 +97,25 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                     onPlaySegment && "cursor-pointer",
                     isActive ? "bg-primary/10" : "hover:bg-muted/50",
                     isNext && "bg-muted/70",
-                    translatedSentence && "bg-blue-100/50"
                   )}
-                  onClick={() => onPlaySegment && onPlaySegment(line.offset, line.duration, line.text)}
+                  onClick={(e) => handleLineClick(e, line.offset, line.duration, line.text, lineIndex)}
+                  onPointerUp={handlePointerUp}
+                  onPointerLeave={handlePointerUp} // Also clear timer if pointer leaves
                 >
-                    <div className={cn(
-                        "absolute left-0 top-0 bottom-0 w-1 bg-transparent rounded-l-md transition-all",
-                        isActive && "bg-primary"
-                    )} />
+                    <div className={cn("absolute left-0 top-0 bottom-0 w-1 bg-transparent rounded-l-md transition-all", isActive && "bg-primary")} />
                     
-                    <p className="flex-1 py-2 pl-4 pr-2">
+                     <div className="pt-2.5 pl-1">
+                        <Dot className={cn("h-6 w-6 text-muted-foreground/30", (translatedSentence || isSentenceCurrentlyTranslating) && "text-primary")} />
+                    </div>
+                    
+                    <p className="flex-1 py-2 pl-1 pr-2" onPointerUp={handlePointerUp}>
                          {isSentenceCurrentlyTranslating ? (
                             <span className="flex items-center gap-2 text-muted-foreground">
                                 <Loader2 className="h-4 w-4 animate-spin"/>
                                 Translating sentence...
                             </span>
                          ) : translatedSentence ? (
-                            <span className="text-blue-900">{translatedSentence}</span>
+                            <span className="text-blue-900" onPointerDown={() => handlePointerDown(lineIndex, line.text)}>{translatedSentence}</span>
                          ) : (
                             line.text.split(/(\s+)/).map((word, wordIndex) => {
                                 const originalText = word;
@@ -107,7 +135,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                                 const isCurrentlyTranslating = isTranslatingWord[key];
 
                                 return (
-                                    <span key={key} className="inline-block relative group/word">
+                                    <span key={key} className="inline-block relative group/word" onPointerDown={() => handlePointerDown(lineIndex, line.text)}>
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -117,7 +145,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                                             translation && "bg-blue-100 text-blue-900"
                                             )}
                                             disabled={isCurrentlyTranslating || !cleanedWord}
-                                            onClick={(e) => handleWordClick(e, cleanedWord, originalText, line.text, key)}
+                                            onClick={(e) => handleWordClick(e, cleanedWord, originalText, line.text, key, lineIndex)}
                                         >
                                             {isCurrentlyTranslating ? '...' : displayedText}
                                         </Button>
@@ -126,19 +154,6 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                             })
                          )}
                     </p>
-                    <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-8 w-8 mt-1 mr-1 opacity-20 group-hover/line:opacity-100 transition-opacity"
-                        onClick={(e) => handleTranslateSentenceClick(e, lineIndex, line.text)}
-                    >
-                         {isSentenceCurrentlyTranslating ? (
-                           <Loader2 className="h-4 w-4 animate-spin" />
-                         ) : (
-                           <Languages className="h-4 w-4" />
-                         )}
-                        <span className="sr-only">Translate sentence</span>
-                    </Button>
                 </div>
             )
         })}
