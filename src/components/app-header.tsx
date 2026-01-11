@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/mobile-nav";
-import { Menu, Copy, ArrowLeft, LogOut, LogIn, User } from "lucide-react";
+import { Menu, Copy, ArrowLeft, LogOut, LogIn, User, Edit } from "lucide-react";
 import Link from "next/link";
 import {
   Sheet,
@@ -23,11 +23,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFirebase } from "@/firebase";
+import { useUserProfile } from "@/hooks/use-user-profile";
 
 export function AppHeader({ children, showBackButton = false }: { children?: React.ReactNode, showBackButton?: boolean }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const { auth, user } = useFirebase();
+  const { setIsEditing } = useUserProfile();
 
   const handleLogout = () => {
     if (auth) {
@@ -68,6 +70,10 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
                           </div>
                         </DropdownMenuLabel>
                         <DropdownMenuSeparator />
+                        <DropdownMenuItem onSelect={() => setIsEditing(true)} className="cursor-pointer">
+                          <Edit className="mr-2 h-4 w-4" />
+                          <span>Edit Profile</span>
+                        </DropdownMenuItem>
                         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                           <LogOut className="mr-2 h-4 w-4" />
                           <span>Log out</span>
