@@ -168,9 +168,9 @@ function WritingWorkspace() {
 
             setFeedbackResult(feedback);
 
+            // Save only the original text, not the feedback
             const feedbackCollectionRef = collection(firestore, `users/${user.uid}/writingFeedback`);
             await addDoc(feedbackCollectionRef, {
-                ...feedback,
                 userId: user.uid,
                 videoId: videoData?.videoId || 'unknown',
                 originalText: writingText,
@@ -178,11 +178,11 @@ function WritingWorkspace() {
                 createdAt: Date.now()
             });
 
-            toast({ title: "Feedback Saved", description: "Your writing exercise and feedback have been saved."});
+            toast({ title: "Writing Saved", description: "Your writing exercise has been saved."});
 
         } catch(e: any) {
             console.error("Failed to get or save feedback:", e);
-            toast({ variant: "destructive", title: "Feedback Failed", description: e.message || "An error occurred while generating feedback." });
+            toast({ variant: "destructive", title: "Action Failed", description: e.message || "An error occurred while generating feedback or saving the text." });
         } finally {
             setIsGettingFeedback(false);
         }
