@@ -49,6 +49,10 @@ export async function extractAudio(input: ExtractAudioInput): Promise<ExtractAud
         const response = await fetch(url, options);
         const responseText = await response.text();
 
+        // DEBUG: Forcefully throw the raw response to see what the API is returning
+        throw new Error(`DEBUG - Raw API Response: ${responseText}`);
+
+        /*
         if (!response.ok) {
             // Throw the actual response text for better debugging
             throw new Error(`RapidAPI request failed with status ${response.status}: ${responseText}`);
@@ -65,6 +69,7 @@ export async function extractAudio(input: ExtractAudioInput): Promise<ExtractAud
             console.error("Unexpected API response structure:", result);
             throw new Error(`Failed to extract audio URL from API response. Response: ${responseText}`);
         }
+        */
 
     } catch (error: any) {
         console.error('Error extracting audio:', error);
