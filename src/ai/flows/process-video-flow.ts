@@ -85,6 +85,9 @@ export async function processVideo(input: ProcessVideoInput): Promise<ProcessVid
          if (e.message.includes('Could not find transcript for this video')) {
              throw new Error(`No transcript available for the requested language (${lang}). Please try another video.`);
          }
+         if (e.message.includes('No transcript available')) {
+             throw new Error("No transcript available. Please try another link or video.");
+         }
          // Re-throw the original error if it's not one of the specific cases above
          throw e;
     }
