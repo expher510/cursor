@@ -4,7 +4,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Edit, Loader2 } from "lucide-react";
+import { AlertTriangle, Edit, Loader2, Circle } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -146,7 +146,7 @@ function ReadingPracticePageContent() {
                 </div>
                 <div className="mt-2 space-y-4">
                     <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                        Read the text and save new words to your vocabulary list. Click the dot next to a sentence to translate it.
+                        Read the text and save new words to your vocabulary list. Click the dot <Circle className="inline-block h-4 w-4 border rounded-full p-0.5 align-middle" /> next to a sentence to translate it.
                     </p>
                 </div>
             </div>

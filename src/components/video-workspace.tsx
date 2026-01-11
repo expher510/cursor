@@ -3,7 +3,7 @@
 
 import { Skeleton } from "./ui/skeleton";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { AlertTriangle, Edit, Eye, EyeOff, Loader2 } from "lucide-react";
+import { AlertTriangle, Edit, Eye, EyeOff, Loader2, Circle } from "lucide-react";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
 import ReactPlayer from 'react-player/youtube';
@@ -117,7 +117,7 @@ export function VideoWorkspace() {
                {isLoading && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
             </div>
             <p className="text-base text-muted-foreground max-w-3xl mx-auto">
-                Listen to the video and follow along with the synchronized transcript. Click any word to save it. Click the dot next to a sentence to translate it.
+                Listen to the video and follow along with the synchronized transcript. Click any word to save it. Click the dot <Circle className="inline-block h-4 w-4 border rounded-full p-0.5 align-middle" /> next to a sentence to translate it.
             </p>
         </div>
 
