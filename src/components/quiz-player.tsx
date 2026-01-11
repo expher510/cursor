@@ -99,7 +99,7 @@ function useQuiz(questions: QuizQuestion[]) {
 }
 
 
-export function QuizView({ questions, onQuizComplete, onRetry, title = "Quiz" }: { questions: QuizQuestion[], onQuizComplete: (results: { score: number, userAnswers: UserAnswer[] }) => void, onRetry: () => void, title?: string }) {
+export function QuizView({ questions, onQuizComplete, onRetry, title = "Quiz" }: { questions: QuizQuestion[], onQuizComplete?: (results: { score: number, userAnswers: UserAnswer[] }) => void, onRetry: () => void, title?: string }) {
 
     const { 
         currentQuestionIndex,
@@ -119,7 +119,9 @@ export function QuizView({ questions, onQuizComplete, onRetry, title = "Quiz" }:
 
     const handleFinish = () => {
         finishQuiz();
-        onQuizComplete({ score, userAnswers: userAnswersWithCorrect });
+        if (onQuizComplete) {
+            onQuizComplete({ score, userAnswers: userAnswersWithCorrect });
+        }
     }
     
     if (isFinished) {

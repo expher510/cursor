@@ -52,7 +52,11 @@ function QuickQuizGenerator() {
     if (quiz) {
         return (
             <div className="w-full max-w-3xl mx-auto flex flex-col items-center gap-4">
-                 <QuizView questions={quiz.questions} onRetry={() => setQuiz(null)} />
+                 <QuizView 
+                    questions={quiz.questions} 
+                    onRetry={() => setQuiz(null)}
+                    onQuizComplete={() => {}}
+                 />
             </div>
         )
     }

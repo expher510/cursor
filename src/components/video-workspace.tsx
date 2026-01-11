@@ -57,13 +57,10 @@ export function VideoWorkspace() {
   const quizContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isQuizVisible) {
-      window.scrollTo({
-        top: document.body.scrollHeight,
-        behavior: 'smooth'
-      });
+    if (isQuizVisible && quizContainerRef.current) {
+        quizContainerRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [isQuizVisible]);
+  }, [isQuizVisible, quizContainerRef]);
 
   const combinedQuizData = useMemo(() => {
     if (!isQuizVisible) return null;
