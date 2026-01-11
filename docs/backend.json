@@ -163,7 +163,7 @@
         },
         "questions": {
           "type": "array",
-          "description": "A list of questions in the quiz.",
+          "description": "A list of questions in the quiz. Not persisted.",
           "items": {
             "type": "object",
             "properties": {
@@ -186,17 +186,23 @@
         },
         "score": {
           "type": "number",
-          "description": "The user's score (number of correct answers) for this quiz attempt. Optional."
+          "description": "The user's score (number of correct answers) for this quiz attempt."
         },
         "userAnswers": {
           "type": "array",
-          "description": "The user's selected answers for each question. The index corresponds to the questions array. Optional.",
+          "description": "The user's selected answers for each question. The index corresponds to the questions array.",
           "items": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+                "questionText": {"type": "string"},
+                "userAnswer": {"type": "string"},
+                "correctAnswer": {"type": "string"}
+            },
+             "required": ["questionText", "correctAnswer"]
           }
         }
       },
-      "required": ["id", "videoId", "userId", "questions"]
+      "required": ["id", "videoId", "userId"]
     },
     "WritingFeedback": {
         "$schema": "http://json-schema.org/draft-07/schema#",
@@ -304,7 +310,7 @@
           "schema": {
             "$ref": "#/entities/Quiz"
           },
-          "description": "Stores quizzes for videos owned by a specific user. Path-based ownership ensures data isolation.",
+          "description": "Stores quiz attempts for videos owned by a specific user. Path-based ownership ensures data isolation.",
           "params": [
             {
               "name": "userId",
@@ -316,7 +322,7 @@
             },
             {
               "name": "quizId",
-              "description": "The unique identifier of the quiz."
+              "description": "The unique identifier of the quiz attempt."
             }
           ]
         }

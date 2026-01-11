@@ -16,7 +16,7 @@ export type QuizData = {
   id?: string;
   videoId?: string;
   userId?: string;
-  questions: QuizQuestion[];
+  questions?: QuizQuestion[];
   score?: number;
   userAnswers?: UserAnswer[];
 };
