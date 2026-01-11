@@ -136,6 +136,7 @@ function ReadingPracticePageContent() {
                        transcript={formattedTranscript} 
                        videoId={videoData.videoId}
                        onPlaySegment={null}
+                       isLongPressEnabled={true}
                     />
                 </Card>
             </>
