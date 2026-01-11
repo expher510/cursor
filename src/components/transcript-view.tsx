@@ -19,7 +19,7 @@ type TranscriptViewProps = {
 
 
 export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegmentIndex = -1 }: TranscriptViewProps) {
-  const { addVocabularyItem, savedWordsSet } = useWatchPage();
+  const { addVocabularyItem, savedWordsSet, videoData } = useWatchPage();
   const { translations, toggleTranslation, isTranslating } = useTranslationStore();
   const { userProfile } = useUserProfile();
 
@@ -30,10 +30,12 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
     const isSaved = savedWordsSet.has(word);
     
     if (!isSaved) {
-        addVocabularyItem(word);
+        addVocabularyItem(word, context);
     }
 
-    toggleTranslation(word, originalText, context, key, userProfile?.targetLanguage || 'ar');
+    if (userProfile && videoData) {
+      toggleTranslation(word, originalText, context, key, userProfile.targetLanguage, videoData.sourceLang);
+    }
   };
   
   return (

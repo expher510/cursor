@@ -30,7 +30,7 @@ type VideoData = ProcessVideoOutput & { videoId?: string; audioUrl?: string; };
 type WatchPageContextType = {
   vocabulary: VocabularyItem[];
   savedWordsSet: Set<string>;
-  addVocabularyItem: (word: string) => void;
+  addVocabularyItem: (word: string, context: string) => void;
   removeVocabularyItem: (id: string) => void;
   videoData: VideoData | null;
   quizData: QuizData | null;
@@ -142,21 +142,34 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
         if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
           const videoDocData = videoDocSnap.data();
+          const transcriptDocData = transcriptDocSnap.data();
           const combinedData: VideoData = {
             title: videoDocData.title,
             description: videoDocData.description,
             audioUrl: videoDocData.audioUrl || videoUrl,
-            transcript: transcriptDocSnap.data().content,
+            transcript: transcriptDocData.content,
+            sourceLang: transcriptDocData.sourceLang || 'en',
             videoId: cleanVideoId
           };
           setVideoData(combinedData);
         } else if (shouldGenerate) {
           toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
-          const result = await processVideo({ videoId: cleanVideoId });
           
-          if (!result.transcript || result.transcript.length === 0) {
-            console.warn(`[LinguaStream] No transcript found for video ${cleanVideoId}, but saving details anyway.`);
-            toast({ variant: 'subtle', title: "No transcript available", description: "You can still watch the video, but learning features are disabled." });
+          let result: ProcessVideoOutput;
+          try {
+            // First, try fetching with the user's target language
+            result = await processVideo({ videoId: cleanVideoId, lang: userProfile.targetLanguage });
+            toast({ variant: 'subtle', title: `Transcript found in ${userProfile.targetLanguage}!`});
+          } catch (e: any) {
+             // If target language fails, fall back to English
+             if (e.message.includes('No transcript available')) {
+                 console.warn(`Transcript not found in ${userProfile.targetLanguage}, falling back to English.`);
+                 toast({ variant: 'subtle', title: 'Falling back to English transcript'});
+                 result = await processVideo({ videoId: cleanVideoId, lang: 'en' });
+             } else {
+                 // Re-throw other errors (e.g., video not found, captions disabled)
+                 throw e;
+             }
           }
 
           await setDoc(videoDocRef, {
@@ -172,11 +185,11 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               id: cleanVideoId,
               videoId: cleanVideoId,
               content: result.transcript,
+              sourceLang: result.sourceLang,
           }, { merge: true });
 
           setVideoData({ ...result, videoId: cleanVideoId, audioUrl: videoUrl });
         } else {
-            // Data doesn't exist and we should not generate it
             setError("Video data not found. Please process it from the homepage first.");
             toast({ variant: "destructive", title: "Data Not Found", description: "This video hasn't been processed yet. Please add it from the homepage." });
         }
@@ -218,7 +231,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         return;
     }
     
-    // Do not re-generate if a real quiz already exists (i.e. has more than 0 questions)
     if (quizData && quizData.questions.length > 0) {
         return;
     }
@@ -293,8 +305,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   }, [videoVocabulary]);
 
 
-  const addVocabularyItem = useCallback(async (word: string) => {
-    if (!user || !firestore || !activeVideoId || !userProfile) return;
+  const addVocabularyItem = useCallback(async (word: string, context: string) => {
+    if (!user || !firestore || !activeVideoId || !userProfile || !videoData) return;
     const cleanVideoId = extractYouTubeVideoId(activeVideoId);
     if (!cleanVideoId) return;
 
@@ -313,8 +325,12 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     setAllVocabulary(prev => [optimisticItem, ...(prev || [])]);
 
     try {
-        // We pass an empty context for now, this could be improved
-        const { translation } = await translateWord({ word: cleanedWord, sourceLang: 'en', targetLang: userProfile.targetLanguage, context: '' });
+        const { translation } = await translateWord({ 
+            word: cleanedWord, 
+            sourceLang: videoData.sourceLang, 
+            targetLang: userProfile.targetLanguage, 
+            context: context 
+        });
 
         const vocabCollectionRef = collection(firestore, `users/${user.uid}/vocabularies`);
         const docRef = await addDoc(vocabCollectionRef, {
@@ -331,7 +347,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         setAllVocabulary(prev => prev?.filter(item => item.id !== tempId) || null);
     }
 
-  }, [user, firestore, activeVideoId, savedWordsSet, setAllVocabulary, userProfile]);
+  }, [user, firestore, activeVideoId, savedWordsSet, setAllVocabulary, userProfile, videoData]);
 
   const removeVocabularyItem = useCallback(async (id: string) => {
       if (!firestore || !user) return;
@@ -372,5 +388,3 @@ export function useWatchPage() {
   }
   return context;
 }
-
-    

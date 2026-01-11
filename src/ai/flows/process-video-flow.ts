@@ -31,6 +31,7 @@ const ProcessVideoOutputSchema = z.object({
   title: z.string().describe('The title of the YouTube video.'),
   description: z.string().describe('The description of the YouTube video.'),
   transcript: z.array(TranscriptItemSchema).describe('The transcript of the video with timestamps.'),
+  sourceLang: z.string().describe('The language code of the fetched transcript.'),
 });
 export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
 
@@ -62,13 +63,16 @@ export async function processVideo(input: ProcessVideoInput): Promise<ProcessVid
         });
 
         if (formattedTranscript.length === 0) {
-             console.warn(`[LinguaStream] No transcript found for video ${videoId}, but returning details anyway.`);
+             console.warn(`[LinguaStream] No transcript found for video ${videoId} in language ${lang}.`);
+             // We throw here to allow fallback logic to trigger
+             throw new Error(`No transcript available for the requested language (${lang}).`);
         }
         
         const result = {
             title: videoDetails.title || `Video: ${videoId}`,
             description: videoDetails.description || 'No description available.',
             transcript: formattedTranscript,
+            sourceLang: lang,
         };
 
         return ProcessVideoOutputSchema.parse(result);
@@ -81,6 +85,7 @@ export async function processVideo(input: ProcessVideoInput): Promise<ProcessVid
          if (e.message.includes('Could not find transcript for this video')) {
              throw new Error(`No transcript available for the requested language (${lang}). Please try another video.`);
          }
-         throw new Error(`Could not process video. Please check the video ID and try again. Original error: ${e.message}`);
+         // Re-throw the original error if it's not one of the specific cases above
+         throw e;
     }
 }
