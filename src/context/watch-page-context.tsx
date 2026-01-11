@@ -11,7 +11,6 @@ import { translateWord } from '@/ai/flows/translate-word-flow';
 import { useSearchParams } from 'next/navigation';
 import { type QuizData } from '@/lib/quiz-data';
 import { useToast } from '@/hooks/use-toast';
-import { extractAudio } from '@/ai/flows/extract-audio-flow';
 import { extractYouTubeVideoId } from '@/lib/utils';
 import { generateQuizFromTranscript, GenerateQuizExtendedOutput } from '@/ai/flows/generate-quiz-from-transcript-flow';
 import { useUserProfile } from '@/hooks/use-user-profile';
@@ -130,6 +129,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           setIsLoading(false);
           return;
       }
+      
+      const videoUrl = `https://www.youtube.com/watch?v=${cleanVideoId}`;
 
       try {
         const videoDocRef = doc(firestore, `users/${user!.uid}/videos`, cleanVideoId);
@@ -150,11 +151,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           setVideoData(combinedData);
         } else if (shouldGenerate) {
           toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
-          const [result, audioResult] = await Promise.all([
-             processVideo({ videoId: cleanVideoId }),
-             extractAudio({ videoId: cleanVideoId })
-          ]);
-          const { audioUrl } = audioResult;
+          const result = await processVideo({ videoId: cleanVideoId });
           
           await setDoc(videoDocRef, {
               id: cleanVideoId,
@@ -162,7 +159,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               description: result.description,
               userId: user.uid,
               timestamp: Date.now(),
-              audioUrl: audioUrl,
+              audioUrl: videoUrl,
           }, { merge: true });
 
           await setDoc(transcriptDocRef, {
@@ -171,7 +168,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               content: result.transcript,
           }, { merge: true });
 
-          setVideoData({ ...result, videoId: cleanVideoId, audioUrl: audioUrl });
+          setVideoData({ ...result, videoId: cleanVideoId, audioUrl: videoUrl });
         } else {
             // Data doesn't exist and we should not generate it
             setError("Video data not found. Please process it from the homepage first.");
@@ -210,8 +207,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const quizData = useMemo(() => (quizzes && quizzes.length > 0 ? quizzes[0] : null), [quizzes]);
 
   const handleQuizGeneration = useCallback(async () => {
-    if (!videoData || !userProfile || !firestore || !user) {
-        toast({ variant: "destructive", title: "Cannot Generate Quiz", description: "Missing necessary data to create a quiz."});
+    if (!videoData?.transcript || videoData.transcript.length === 0 || !userProfile || !firestore || !user || !videoData?.videoId) {
+        toast({ variant: "destructive", title: "Cannot Generate Quiz", description: "A transcript is required to create a quiz. This video may not have one."});
         return;
     }
     
