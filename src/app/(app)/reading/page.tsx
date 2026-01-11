@@ -9,8 +9,7 @@ import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
-import { useState, useCallback, useMemo, useRef } from "react";
-import ReactPlayer from "react-player";
+import { useState } from "react";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useUserProfile } from "@/hooks/use-user-profile";
@@ -72,34 +71,7 @@ function QuickQuizGenerator() {
 
 function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
-    const [isPlaying, setIsPlaying] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0);
-    const playerRef = useRef<ReactPlayer>(null);
     
-    const handlePlaySegment = useCallback((offset: number) => {
-        if (playerRef.current) {
-            playerRef.current.seekTo(offset / 1000, 'seconds');
-            setIsPlaying(true);
-        }
-    }, []);
-
-    const activeSegmentIndex = useMemo(() => {
-        const transcript = videoData?.transcript;
-        if (!transcript || transcript.length === 0) {
-            return -1;
-        }
-        let lastPassedIndex = -1;
-        for (let i = 0; i < transcript.length; i++) {
-            if (transcript[i].offset <= currentTime) {
-                lastPassedIndex = i;
-            } else {
-                break; 
-            }
-        }
-        return lastPassedIndex;
-    }, [videoData?.transcript, currentTime]);
-
-
     if (isLoading) {
         return (
              <div className="w-full max-w-4xl mx-auto space-y-8">
@@ -151,7 +123,7 @@ function ReadingPracticePageContent() {
                 </div>
                 <div className="mt-2 space-y-4">
                     <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                        Read the text, save new words, and click any line to play its audio.
+                        Read the text and save new words to your vocabulary list.
                     </p>
                     <QuickQuizGenerator />
                 </div>
@@ -163,31 +135,10 @@ function ReadingPracticePageContent() {
                     <TranscriptView 
                        transcript={formattedTranscript} 
                        videoId={videoData.videoId}
-                       onPlaySegment={handlePlaySegment}
-                       activeSegmentIndex={activeSegmentIndex}
+                       onPlaySegment={null}
                     />
                 </Card>
             </>
-
-            {/* Hidden Audio Player */}
-            {videoData.videoId && (
-                <div className="hidden">
-                    <ReactPlayer
-                        ref={playerRef}
-                        url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                        playing={isPlaying}
-                        onProgress={(state) => {
-                            setCurrentTime(state.playedSeconds * 1000);
-                        }}
-                        onPlay={() => setIsPlaying(true)}
-                        onPause={() => setIsPlaying(false)}
-                        onEnded={() => setIsPlaying(false)}
-                        width="0"
-                        height="0"
-                        controls={false}
-                    />
-                </div>
-            )}
         </div>
     )
 }
