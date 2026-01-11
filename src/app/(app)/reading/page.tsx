@@ -194,7 +194,7 @@ function PageWithProvider() {
 
                     {!isLoading && videoData && (
                          <div className="group fixed right-4 bottom-8 z-50 h-40 w-40 flex items-center justify-center">
-                             {/* Progress circle container - invisible to clicks */}
+                             {/* Progress circle container - invisible to clicks but hoverable */}
                              <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-0 scale-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300">
                                  <CircularProgressControl
                                      progress={played * 100}
@@ -219,6 +219,8 @@ function PageWithProvider() {
                                          onPause={() => setIsPlaying(false)}
                                          onProgress={(state) => setPlayed(state.played)}
                                          controls={false}
+                                         light={false}
+                                         onClickPreview={() => setIsPlaying(true)}
                                          config={{
                                              youtube: {
                                                  playerVars: {
@@ -234,10 +236,9 @@ function PageWithProvider() {
                                      />
                                      <div
                                          className={cn(
-                                             "absolute inset-0 flex items-center justify-center transition-opacity bg-black/20 cursor-pointer",
-                                             isPlaying ? 'opacity-0 hover:opacity-100' : 'opacity-100'
+                                             "absolute inset-0 flex items-center justify-center transition-opacity bg-black/20 pointer-events-none",
+                                             isPlaying ? 'opacity-0' : 'opacity-100'
                                          )}
-                                         onClick={() => setIsPlaying(!isPlaying)}
                                      >
                                          {isPlaying ? <Pause className="h-1/2 w-1/2 text-white/70" /> : <Play className="h-1/2 w-1/2 text-white/70" />}
                                      </div>
