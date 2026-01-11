@@ -85,31 +85,18 @@ export async function generateQuizFromTranscript(input: GenerateQuizInput): Prom
             temperature: 0.7,
             max_tokens: 2048,
             top_p: 1,
-            stream: true, // Enable streaming
+            stream: false, // Disabled streaming for more reliable JSON parsing
+            response_format: { type: "json_object" }, // Request a JSON object directly
         });
         
-        let fullContent = '';
-        for await (const chunk of chatCompletion) {
-            fullContent += chunk.choices[0]?.delta?.content || '';
-        }
+        const content = chatCompletion.choices[0]?.message?.content;
 
-        if (!fullContent) {
-            throw new Error("Groq API returned an empty streamed response.");
+        if (!content) {
+            throw new Error("Groq API returned an empty response.");
         }
         
-        // Find the start and end of the JSON object
-        const jsonStart = fullContent.indexOf('{');
-        const jsonEnd = fullContent.lastIndexOf('}');
-
-        if (jsonStart === -1 || jsonEnd === -1) {
-            console.error("Invalid response from AI, no JSON found:", fullContent);
-            throw new Error("AI response did not contain a valid JSON object.");
-        }
-        
-        const jsonString = fullContent.substring(jsonStart, jsonEnd + 1);
-
         // The response should be a JSON object string, so we parse it.
-        const parsedJson = JSON.parse(jsonString);
+        const parsedJson = JSON.parse(content);
 
         // Validate the parsed JSON against our Zod schema
         const validatedOutput = GenerateQuizOutputSchema.parse(parsedJson);
