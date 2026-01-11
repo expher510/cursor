@@ -49,17 +49,17 @@ export function CircularProgressControl({
     handleInteraction(e);
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = useCallback((e: MouseEvent) => {
     if (isSeeking) {
         e.preventDefault();
-        handleInteraction(e);
+        handleInteraction(e as unknown as React.MouseEvent);
     }
-  };
+  }, [isSeeking]);
 
-  const handleMouseUp = (e: React.MouseEvent) => {
+  const handleMouseUp = useCallback((e: MouseEvent) => {
     e.preventDefault();
     setIsSeeking(false);
-  };
+  }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     e.preventDefault();
@@ -67,29 +67,44 @@ export function CircularProgressControl({
     handleInteraction(e);
   };
 
-  const handleTouchMove = (e: React.TouchEvent) => {
+  const handleTouchMove = useCallback((e: TouchEvent) => {
     if (isSeeking) {
         e.preventDefault();
-        handleInteraction(e);
+        handleInteraction(e as unknown as React.TouchEvent);
     }
-  };
+  }, [isSeeking]);
 
-  const handleTouchEnd = (e: React.TouchEvent) => {
+  const handleTouchEnd = useCallback((e: TouchEvent) => {
     e.preventDefault();
     setIsSeeking(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    if (isSeeking) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove);
+      window.addEventListener('touchend', handleTouchEnd);
+    } else {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+    }
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isSeeking, handleMouseMove, handleMouseUp, handleTouchMove, handleTouchEnd]);
 
 
   return (
     <div
       className="absolute inset-0 cursor-pointer"
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
       onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
     >
       <svg
         ref={svgRef}
