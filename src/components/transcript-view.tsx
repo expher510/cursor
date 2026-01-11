@@ -14,10 +14,9 @@ type TranscriptViewProps = {
   videoId: string;
   onPlaySegment?: ((offset: number, duration: number, text: string) => void) | null;
   activeSegmentIndex?: number;
-  isLongPressEnabled?: boolean;
 };
 
-export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegmentIndex = -1, isLongPressEnabled = false }: TranscriptViewProps) {
+export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegmentIndex = -1 }: TranscriptViewProps) {
   const { addVocabularyItem, savedWordsSet, videoData } = useWatchPage();
   const { 
       wordTranslations, 
@@ -28,25 +27,14 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
       isTranslatingSentence,
   } = useTranslationStore();
   const { userProfile } = useUserProfile();
-  const pressTimer = useRef<NodeJS.Timeout | null>(null);
 
   const fullText = useMemo(() => transcript.map(line => line.text).join(' '), [transcript]);
   const isRtl = useMemo(() => /[\u0600-\u06FF]/.test(fullText), [fullText]);
 
-  const handlePointerDown = (e: React.PointerEvent, lineIndex: number, lineText: string) => {
+  const handleSentenceTranslateClick = (e: React.MouseEvent, lineIndex: number, lineText: string) => {
     e.stopPropagation(); // Prevent line click
     if (!userProfile || !videoData) return;
-    pressTimer.current = setTimeout(() => {
-      toggleSentenceTranslation(lineIndex, lineText, userProfile.nativeLanguage, videoData.sourceLang);
-    }, 500); // 500ms for long press
-  };
-
-  const handlePointerUp = (e: React.PointerEvent) => {
-    e.stopPropagation();
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
+    toggleSentenceTranslation(lineIndex, lineText, userProfile.nativeLanguage, videoData.sourceLang);
   };
 
   const handleWordClick = (e: React.MouseEvent, word: string, originalText: string, context: string, key: string, lineIndex: number) => {
@@ -99,12 +87,10 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                     
                      <div 
                         className="pt-2 pl-1 cursor-pointer"
-                        onPointerDown={(e) => handlePointerDown(e, lineIndex, line.text)}
-                        onPointerUp={handlePointerUp}
-                        onPointerLeave={handlePointerUp}
+                        onClick={(e) => handleSentenceTranslateClick(e, lineIndex, line.text)}
                     >
                        <Circle className={cn(
-                        "h-8 w-8 text-muted-foreground/30 border-2 border-muted-foreground/30 rounded-full p-1 fill-current",
+                        "h-6 w-6 text-muted-foreground/30 border-2 border-muted-foreground/30 rounded-full p-0.5 fill-current",
                         (translatedSentence || isSentenceCurrentlyTranslating) && "text-primary border-primary"
                         )} />
                     </div>

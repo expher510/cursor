@@ -146,7 +146,7 @@ function ReadingPracticePageContent() {
                 </div>
                 <div className="mt-2 space-y-4">
                     <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                        Read the text and save new words to your vocabulary list. Long-press the dot next to a sentence to translate it.
+                        Read the text and save new words to your vocabulary list. Click the dot next to a sentence to translate it.
                     </p>
                 </div>
             </div>
@@ -158,7 +158,6 @@ function ReadingPracticePageContent() {
                        transcript={formattedTranscript} 
                        videoId={videoData.videoId}
                        onPlaySegment={null}
-                       isLongPressEnabled={true}
                     />
                 </Card>
                  <ReadingQuiz />
