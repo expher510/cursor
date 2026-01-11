@@ -7,7 +7,7 @@ import { AlertTriangle, Edit, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
 import ReactPlayer from 'react-player/youtube';
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { CaptionView } from "./caption-view";
 import { VocabularyList } from "./vocabulary-list";
 import { Logo } from "./logo";
@@ -54,6 +54,17 @@ export function VideoWorkspace() {
   const [isBuffering, setIsBuffering] = useState(false);
   const [duration, setDuration] = useState(0);
   const playerRef = useRef<ReactPlayer>(null);
+  const quizContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isQuizVisible) {
+      // Use a short timeout to ensure the element is in the DOM and rendered
+      setTimeout(() => {
+        quizContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [isQuizVisible]);
+
 
   if (isLoading && !videoData) {
     return <LoadingState />;
@@ -148,7 +159,7 @@ export function VideoWorkspace() {
                  <VocabularyList layout="scroll" />
             </div>
         
-            <div className="mt-4 w-full flex flex-col items-center gap-6">
+            <div ref={quizContainerRef} className="mt-4 w-full flex flex-col items-center gap-6 pt-4">
                 <Button onClick={toggleQuizVisibility} size="lg" disabled={isGeneratingQuiz}>
                     {isGeneratingQuiz && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                     {!isGeneratingQuiz && <Edit className="mr-2 h-5 w-5" />}
