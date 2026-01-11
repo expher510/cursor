@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Edit, Loader2, Circle } from "lucide-react";
+import { AlertTriangle, Edit, Loader2, Circle, Play, Pause } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -97,7 +97,6 @@ function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
     const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
     const [isPlaying, setIsPlaying] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0);
     const playerRef = useRef<ReactPlayer>(null);
 
     if (isLoading) {
@@ -140,18 +139,7 @@ function ReadingPracticePageContent() {
         ...item,
         text: item.text,
     }));
-    
-    const handlePlayPause = () => {
-        setIsPlaying(!isPlaying);
-    };
 
-    const handleSeek = (offset: number) => {
-        if (playerRef.current) {
-            playerRef.current.seekTo(offset / 1000);
-            setIsPlaying(true);
-        }
-    }
-    
     return (
         <>
         <div className="w-full max-w-4xl mx-auto space-y-6 relative">
@@ -173,7 +161,7 @@ function ReadingPracticePageContent() {
                        transcript={formattedTranscript} 
                        videoId={videoData.videoId}
                        activeSegmentIndex={activeSegmentIndex}
-                       onPlaySegment={handleSeek}
+                       onPlaySegment={null}
                     />
                 </Card>
                  <ReadingQuiz />
@@ -188,6 +176,8 @@ function PageWithProvider() {
     const videoId = searchParams.get('v');
     const shouldGenerate = searchParams.get('shouldGenerate');
     const key = `${videoId}-${shouldGenerate}`;
+    
+    const [isPlaying, setIsPlaying] = useState(false);
 
     return (
         <WatchPageProvider key={key}>
@@ -196,15 +186,17 @@ function PageWithProvider() {
                     <ReadingPracticePageContent />
 
                     {!isLoading && videoData && (
-                        <div className="group fixed right-4 md:right-8 bottom-8 z-50 h-14 w-14 rounded-full overflow-hidden shadow-lg border-2 border-primary bg-black transition-all duration-300 ease-in-out hover:h-24 hover:w-40 hover:rounded-lg opacity-50 hover:opacity-100">
+                         <div className="group fixed right-4 md:right-8 bottom-8 z-50 h-2 w-2 rounded-full overflow-hidden shadow-lg border-2 border-primary bg-black transition-all duration-300 ease-in-out hover:h-24 hover:w-40 hover:rounded-lg opacity-50 hover:opacity-100">
                             <ReactPlayer
                                 url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                                playing={false}
+                                playing={isPlaying}
                                 volume={1}
                                 muted={false}
                                 width="100%"
                                 height="100%"
                                 controls={true}
+                                onPlay={() => setIsPlaying(true)}
+                                onPause={() => setIsPlaying(false)}
                                 config={{
                                     youtube: {
                                         playerVars: {
