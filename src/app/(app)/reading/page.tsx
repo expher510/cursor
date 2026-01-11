@@ -19,9 +19,7 @@ import { CircularProgressControl } from "@/components/circular-progress-control"
 
 function ReadingQuiz() {
     const { 
-        videoData,
-        quizData, 
-        hardcodedQuizData, 
+        combinedQuizData,
         isLoading, 
         handleQuizGeneration, 
         isGeneratingQuiz, 
@@ -37,35 +35,14 @@ function ReadingQuiz() {
     }, [isQuizVisible]);
 
 
-    const combinedQuizData = useMemo(() => {
-        if (!isQuizVisible) return null;
-
-        const allQuestions = [
-            ...(hardcodedQuizData?.questions || []),
-            ...(quizData?.questions || [])
-        ];
-
-        if (allQuestions.length === 0) return null;
-
-        return {
-            id: quizData?.id || hardcodedQuizData?.id || `combined-quiz-${Date.now()}`,
-            videoId: videoData?.videoId,
-            questions: allQuestions,
-        };
-    }, [quizData, hardcodedQuizData, isQuizVisible, videoData]);
-
     const toggleQuizVisibility = () => {
         const newVisibility = !isQuizVisible;
         setIsQuizVisible(newVisibility);
-        if (newVisibility && !quizData) {
+        if (newVisibility) {
             handleQuizGeneration();
         }
     }
     
-    if (!videoData?.transcript) {
-        return null; // Don't show the button if there's no transcript
-    }
-
     return (
         <div ref={quizContainerRef} className="mt-4 w-full flex flex-col items-center gap-6 pt-4">
             <Button onClick={toggleQuizVisibility} size="lg" disabled={isGeneratingQuiz}>
@@ -249,7 +226,7 @@ function DraggableVideoPlayer() {
             onMouseDown={onDragStart}
             onTouchStart={onDragStart}
         >
-            <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0">
                 <CircularProgressControl
                     progress={played * 100}
                     onSeek={handleSeek}
@@ -296,11 +273,6 @@ function DraggableVideoPlayer() {
 
 
 function PageWithProvider() {
-    const searchParams = useSearchParams();
-    const videoId = searchParams.get('v');
-    const shouldGenerate = searchParams.get('shouldGenerate');
-    const key = `${videoId}-${shouldGenerate}`;
-    
     return (
         <WatchPageProvider>
             <PageContent />

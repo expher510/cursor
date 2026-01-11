@@ -7,7 +7,7 @@ import { AlertTriangle, Edit, Eye, EyeOff, Loader2, Circle } from "lucide-react"
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
 import ReactPlayer from 'react-player/youtube';
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect } from "react";
 import { CaptionView } from "./caption-view";
 import { VocabularyList } from "./vocabulary-list";
 import { Logo } from "./logo";
@@ -47,7 +47,7 @@ function ErrorState({ message, title = "Processing Error" }: { message: string, 
 }
 
 export function VideoWorkspace() {
-  const { videoData, quizData, hardcodedQuizData, isLoading, error, handleQuizGeneration, isGeneratingQuiz, saveQuizResults } = useWatchPage();
+  const { videoData, combinedQuizData, isLoading, error, handleQuizGeneration, isGeneratingQuiz, saveQuizResults } = useWatchPage();
   const [currentTime, setCurrentTime] = useState(0);
   const [showTranscript, setShowTranscript] = useState(true);
   const [isQuizVisible, setIsQuizVisible] = useState(false);
@@ -61,24 +61,6 @@ export function VideoWorkspace() {
         quizContainerRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [isQuizVisible, quizContainerRef]);
-
-  const combinedQuizData = useMemo(() => {
-    if (!isQuizVisible) return null;
-
-    const allQuestions = [
-        ...(hardcodedQuizData?.questions || []),
-        ...(quizData?.questions || [])
-    ];
-
-    if (allQuestions.length === 0) return null;
-
-    // Return a QuizData object structure
-    return {
-        id: quizData?.id || hardcodedQuizData?.id || `combined-quiz-${Date.now()}`,
-        videoId: videoData?.videoId,
-        questions: allQuestions,
-    };
-  }, [quizData, hardcodedQuizData, isQuizVisible, videoData]);
 
 
   if (isLoading && !videoData) {
@@ -103,7 +85,7 @@ export function VideoWorkspace() {
   const toggleQuizVisibility = () => {
       const newVisibility = !isQuizVisible;
       setIsQuizVisible(newVisibility);
-      if (newVisibility && !quizData) {
+      if (newVisibility) {
           handleQuizGeneration();
       }
   }

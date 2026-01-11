@@ -35,6 +35,7 @@ type WatchPageContextType = {
   videoData: VideoData | null;
   quizData: QuizData | null;
   hardcodedQuizData: QuizData | null;
+  combinedQuizData: QuizData | null;
   isLoading: boolean;
   error: string | null;
   handleQuizGeneration: () => void;
@@ -332,6 +333,9 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
         toast({ variant: "destructive", title: "Cannot Generate Quiz", description: "A transcript is required to create a quiz. This video may not have one."});
         return;
     }
+
+    // Don't re-generate if we already have AI questions for this session
+    if (quizData) return;
     
     setIsGeneratingQuiz(true);
 
@@ -343,9 +347,8 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
             proficiencyLevel: userProfile.proficiencyLevel
         });
 
-        // Set the generated quiz to the local state WITHOUT saving to Firestore
         const newQuizData: QuizData = {
-          id: `session_${Date.now()}`, // Temporary session ID
+          id: `session_${Date.now()}`,
           videoId: videoData.videoId,
           userId: user.uid,
           questions: quizResult.questions,
@@ -361,7 +364,29 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
     } finally {
         setIsGeneratingQuiz(false);
     }
-  }, [videoData, userProfile, firestore, user, toast]);
+  }, [videoData, userProfile, firestore, user, toast, quizData]);
+
+  const combinedQuizData = useMemo(() => {
+    // Wait until AI generation is finished before combining
+    if (isGeneratingQuiz) {
+        return null;
+    }
+
+    const allQuestions = [
+        ...(hardcodedQuizData?.questions || []),
+        ...(quizData?.questions || [])
+    ];
+
+    if (allQuestions.length === 0) return null;
+
+    return {
+        id: quizData?.id || hardcodedQuizData?.id || `combined-quiz-${Date.now()}`,
+        videoId: videoData?.videoId,
+        questions: allQuestions,
+        userId: user?.uid
+    };
+  }, [quizData, hardcodedQuizData, videoData, isGeneratingQuiz, user]);
+
 
 
   const saveQuizResults = useCallback(async (results: { score: number, userAnswers: UserAnswer[] }) => {
@@ -372,7 +397,6 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
     const cleanVideoId = extractYouTubeVideoId(activeVideoId);
     if (!cleanVideoId) return;
 
-    // Create a new document for this quiz attempt, only saving answers and score.
     const quizCollectionRef = collection(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`);
     
     try {
@@ -458,6 +482,7 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
     videoData,
     quizData,
     hardcodedQuizData,
+    combinedQuizData,
     isLoading,
     error,
     handleQuizGeneration,
