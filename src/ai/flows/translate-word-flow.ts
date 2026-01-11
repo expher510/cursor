@@ -30,9 +30,22 @@ export type TranslateWordOutput = z.infer<typeof TranslateWordOutputSchema>;
 
 function buildPrompt(input: TranslateWordInput): string {
     return `
-      Translate the single word "${input.word}" from ${input.sourceLang} to ${input.targetLang}.
-      The word appears in the following context: "${input.context}".
-      Return ONLY the single best translation for the word in the given context. Do not provide explanations or alternative translations.
+      You are a hyper-efficient translator. Your task is to translate a single word based on its context.
+
+      - Word to translate: "${input.word}"
+      - Source Language: ${input.sourceLang}
+      - Target Language: ${input.targetLang}
+      - Context sentence: "${input.context}"
+
+      Your entire response MUST be a single, valid JSON object with one key: "translation".
+      The value of "translation" should be the single best translation of the word in the given context.
+      
+      Example response:
+      {
+        "translation": "الكلمة المترجمة"
+      }
+
+      Return ONLY the JSON object. Do not provide explanations or alternative translations.
     `;
 }
 
@@ -50,7 +63,7 @@ export async function translateWord(input: TranslateWordInput): Promise<Translat
             "messages": [
                 {
                     "role": "system",
-                    "content": "You are a highly skilled polyglot translator. Your only task is to provide a single, context-aware translation."
+                    "content": "You are a highly skilled polyglot translator. Your only task is to provide a single, context-aware translation in a valid JSON format."
                 },
                 {
                     "role": "user",
@@ -59,20 +72,33 @@ export async function translateWord(input: TranslateWordInput): Promise<Translat
             ],
             "model": "llama-3.1-8b-instant",
             "temperature": 0.1,
-            "max_tokens": 60,
+            "max_tokens": 1024,
             "top_p": 1,
             "stream": false,
+             "response_format": {
+                "type": "json_object"
+            },
             "stop": null
         });
 
-        const translation = chatCompletion.choices[0]?.message?.content?.replace(/["'.]/g, '').trim() || 'Translation failed';
+        const responseContent = chatCompletion.choices[0]?.message?.content;
+        
+        if (!responseContent) {
+            throw new Error("Received an empty response from the AI model.");
+        }
+
+        const parsedJson = JSON.parse(responseContent);
+        const validatedOutput = TranslateWordOutputSchema.parse(parsedJson);
 
         return {
-          translation: translation,
+          translation: validatedOutput.translation.replace(/["'.]/g, '').trim(),
         };
 
     } catch (error: any) {
         console.error("Groq translation flow failed:", error);
+         if (error instanceof z.ZodError) {
+             throw new Error(`AI returned data in an unexpected format. Details: ${error.message}`);
+        }
         throw new Error("Failed to get translation from AI service.");
     }
 }
