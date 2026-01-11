@@ -39,8 +39,6 @@ type WatchPageContextType = {
   error: string | null;
   handleQuizGeneration: () => void;
   isGeneratingQuiz: boolean;
-  rawQuizResponse: string | null;
-  quizGenerationError: string | null;
 };
 
 const WatchPageContext = createContext<WatchPageContextType | undefined>(undefined);
@@ -57,8 +55,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
-  const [rawQuizResponse, setRawQuizResponse] = useState<string | null>(null);
-  const [quizGenerationError, setQuizGenerationError] = useState<string | null>(null);
   
   const [activeVideoId, setActiveVideoId] = useState<string | null>(urlVideoId);
 
@@ -224,8 +220,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     }
     
     setIsGeneratingQuiz(true);
-    setRawQuizResponse(null);
-    setQuizGenerationError(null);
 
     try {
         const fullTranscript = videoData.transcript.map(t => t.text).join(' ');
@@ -234,8 +228,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             targetLanguage: userProfile.targetLanguage,
             proficiencyLevel: userProfile.proficiencyLevel
         });
-        
-        setRawQuizResponse(quizResult.rawResponse);
 
         const newQuizData: QuizData = {
           id: 'comprehensive-test',
@@ -255,8 +247,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
     } catch (e: any) {
         console.error("Failed to generate quiz on demand:", e);
-        const errorMessage = e.message || "An unexpected error occurred while generating the quiz.";
-        setQuizGenerationError(errorMessage);
+        toast({ variant: "destructive", title: "Quiz Generation Failed", description: e.message || "An unexpected error occurred." });
     } finally {
         setIsGeneratingQuiz(false);
     }
@@ -336,8 +327,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     error,
     handleQuizGeneration,
     isGeneratingQuiz,
-    rawQuizResponse,
-    quizGenerationError,
   };
 
   return (
@@ -354,5 +343,3 @@ export function useWatchPage() {
   }
   return context;
 }
-
-    

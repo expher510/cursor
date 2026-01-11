@@ -47,7 +47,7 @@ function ErrorState({ message, title = "Processing Error" }: { message: string, 
 }
 
 export function VideoWorkspace() {
-  const { videoData, quizData, isLoading, error, handleQuizGeneration, isGeneratingQuiz, rawQuizResponse, quizGenerationError } = useWatchPage();
+  const { videoData, quizData, isLoading, error, handleQuizGeneration, isGeneratingQuiz } = useWatchPage();
   const [currentTime, setCurrentTime] = useState(0);
   const [showTranscript, setShowTranscript] = useState(true);
   const [isQuizVisible, setIsQuizVisible] = useState(false);
@@ -157,10 +157,6 @@ export function VideoWorkspace() {
                         : 'Take a Quiz'
                     }
                 </Button>
-                
-                {quizGenerationError && !isQuizVisible && (
-                   <ErrorState title="Quiz Generation Failed" message={quizGenerationError} />
-                )}
 
                 {isQuizVisible && quizData && quizData.id && (
                     <div className="w-full">
