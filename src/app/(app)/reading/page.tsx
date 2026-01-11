@@ -4,70 +4,89 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, BrainCircuit, Loader2 } from "lucide-react";
+import { AlertTriangle, Edit, Loader2 } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
-import { useState } from "react";
-import { Suspense } from "react";
+import { useState, useMemo, Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { useUserProfile } from "@/hooks/use-user-profile";
-import { generateQuizFromTranscript, type GenerateQuizOutput } from "@/ai/flows/generate-quiz-from-transcript-flow";
-import { QuizView } from "@/components/quiz-player";
+import { QuizPlayer } from "@/components/quiz-player";
 
 
-function QuickQuizGenerator() {
-    const { videoData } = useWatchPage();
-    const { userProfile } = useUserProfile();
-    const [quiz, setQuiz] = useState<GenerateQuizOutput | null>(null);
-    const [isLoading, setIsLoading] = useState(false);
+function ReadingQuiz() {
+    const { 
+        videoData,
+        quizData, 
+        hardcodedQuizData, 
+        isLoading, 
+        handleQuizGeneration, 
+        isGeneratingQuiz, 
+        saveQuizResults 
+    } = useWatchPage();
+    const [isQuizVisible, setIsQuizVisible] = useState(false);
+    const quizContainerRef = useRef<HTMLDivElement>(null);
 
-    const handleGenerateQuiz = async () => {
-        if (!videoData?.transcript || !userProfile) {
-            return;
+    useEffect(() => {
+        if (isQuizVisible && quizContainerRef.current) {
+            quizContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-        setIsLoading(true);
-        setQuiz(null);
+    }, [isQuizVisible]);
 
-        try {
-            const fullTranscript = videoData.transcript.map(t => t.text).join(' ');
-            // Take a random snippet of the transcript
-            const start = Math.floor(Math.random() * (fullTranscript.length - 1000));
-            const snippet = fullTranscript.substring(start, start + 1000);
 
-            const result = await generateQuizFromTranscript({
-                transcript: snippet,
-                targetLanguage: userProfile.targetLanguage,
-                proficiencyLevel: userProfile.proficiencyLevel,
-            });
-            setQuiz(result);
-        } catch (e) {
-            console.error("Failed to generate quick quiz", e);
-        } finally {
-            setIsLoading(false);
+    const combinedQuizData = useMemo(() => {
+        if (!isQuizVisible) return null;
+
+        const allQuestions = [
+            ...(hardcodedQuizData?.questions || []),
+            ...(quizData?.questions || [])
+        ];
+
+        if (allQuestions.length === 0) return null;
+
+        return {
+            id: quizData?.id || hardcodedQuizData?.id || `combined-quiz-${Date.now()}`,
+            videoId: videoData?.videoId,
+            questions: allQuestions,
+        };
+    }, [quizData, hardcodedQuizData, isQuizVisible, videoData]);
+
+    const toggleQuizVisibility = () => {
+        const newVisibility = !isQuizVisible;
+        setIsQuizVisible(newVisibility);
+        if (newVisibility && !quizData) {
+            handleQuizGeneration();
         }
-    };
+    }
     
-    if (quiz) {
-        return (
-            <div className="w-full max-w-3xl mx-auto flex flex-col items-center gap-4">
-                 <QuizView 
-                    questions={quiz.questions} 
-                    onRetry={() => setQuiz(null)}
-                    onQuizComplete={() => {}}
-                 />
-            </div>
-        )
+    if (!videoData?.transcript) {
+        return null; // Don't show the button if there's no transcript
     }
 
     return (
-        <div className="flex flex-col items-center gap-4">
-            <Button variant="outline" onClick={handleGenerateQuiz} size="lg" disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <BrainCircuit className="mr-2" />}
-                Generate Quick Quiz
+        <div ref={quizContainerRef} className="mt-4 w-full flex flex-col items-center gap-6 pt-4">
+            <Button onClick={toggleQuizVisibility} size="lg" disabled={isGeneratingQuiz}>
+                {isGeneratingQuiz && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                {!isGeneratingQuiz && <Edit className="mr-2 h-5 w-5" />}
+                {isQuizVisible ? 'Close Quiz' : 'Take a Quiz'}
             </Button>
-            {isLoading && <p className="text-sm text-muted-foreground">AI is creating questions...</p>}
+            
+            {isQuizVisible && (isGeneratingQuiz || isLoading) && !combinedQuizData && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                    <Loader2 className="animate-spin" />
+                    <p>Loading questions...</p>
+                </div>
+            )}
+            
+            {isQuizVisible && !isGeneratingQuiz && !isLoading && !combinedQuizData && (
+                <p className="text-muted-foreground">No questions could be generated for this video.</p>
+            )}
+            
+            {isQuizVisible && combinedQuizData && combinedQuizData.questions && combinedQuizData.questions.length > 0 && (
+                <div className="w-full">
+                    <QuizPlayer quizData={combinedQuizData} onQuizComplete={saveQuizResults} />
+                </div>
+            )}
         </div>
     );
 }
@@ -129,7 +148,6 @@ function ReadingPracticePageContent() {
                     <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
                         Read the text and save new words to your vocabulary list.
                     </p>
-                    <QuickQuizGenerator />
                 </div>
             </div>
             
@@ -143,6 +161,7 @@ function ReadingPracticePageContent() {
                        isLongPressEnabled={true}
                     />
                 </Card>
+                 <ReadingQuiz />
             </>
         </div>
     )
