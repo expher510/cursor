@@ -10,7 +10,8 @@
  */
 
 import { z } from 'zod';
-import { getVideoDetails, type Subtitle } from 'youtube-caption-extractor';
+import { getVideoDetails, getSubtitles, type Subtitle } from 'youtube-caption-extractor';
+
 
 // Schema Definitions
 const ProcessVideoInputSchema = z.object({
@@ -38,9 +39,14 @@ export type ProcessVideoOutput = z.infer<typeof ProcessVideoOutputSchema>;
 export async function processVideo(input: ProcessVideoInput): Promise<ProcessVideoOutput> {
     try {
         const { videoId, lang } = ProcessVideoInputSchema.parse(input);
-        const videoDetails = await getVideoDetails({ videoID: videoId, lang });
+        
+        // Fetch subtitles and video details in parallel for efficiency
+        const [subtitles, videoDetails] = await Promise.all([
+            getSubtitles({ videoID: videoId, lang }),
+            getVideoDetails({ videoID: videoId, lang })
+        ]);
 
-        const formattedTranscript: TranscriptItem[] = (videoDetails.subtitles || []).map((item: Subtitle) => {
+        const formattedTranscript: TranscriptItem[] = (subtitles || []).map((item: Subtitle) => {
             return {
                 text: item.text,
                 offset: parseFloat(item.start) * 1000,
