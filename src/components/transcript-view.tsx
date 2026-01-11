@@ -33,7 +33,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
     }
 
     if (userProfile && videoData) {
-      toggleTranslation(word, originalText, context, key, userProfile.targetLanguage, videoData.sourceLang);
+      toggleTranslation(word, originalText, context, key, userProfile.nativeLanguage, videoData.sourceLang);
     }
   };
   

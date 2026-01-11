@@ -17,7 +17,7 @@ const groq = new Groq();
 const TranslateWordInputSchema = z.object({
   word: z.string().describe('The word to translate.'),
   sourceLang: z.string().default('en').describe('The source language.'),
-  targetLang: z.string().default('ar').describe('The target language.'),
+  nativeLanguage: z.string().default('ar').describe('The user\'s native language.'),
   context: z.string().optional().describe('The sentence or context in which the word appears.'),
 });
 export type TranslateWordInput = z.infer<typeof TranslateWordInputSchema>;
@@ -34,7 +34,7 @@ function buildPrompt(input: TranslateWordInput): string {
 
       - Word to translate: "${input.word}"
       - Source Language: ${input.sourceLang}
-      - Target Language: ${input.targetLang}
+      - Target Language: ${input.nativeLanguage}
       - Context sentence: "${input.context}"
 
       Your entire response MUST be a single, valid JSON object with one key: "translation".
@@ -51,7 +51,7 @@ function buildPrompt(input: TranslateWordInput): string {
 
 
 export async function translateWord(input: TranslateWordInput): Promise<TranslateWordOutput> {
-    const { word, sourceLang, targetLang } = TranslateWordInputSchema.parse(input);
+    const { word } = TranslateWordInputSchema.parse(input);
     if (!word) {
         return { translation: '' };
     }

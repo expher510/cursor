@@ -324,7 +324,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         const { translation } = await translateWord({ 
             word: cleanedWord, 
             sourceLang: videoData.sourceLang, 
-            targetLang: userProfile.targetLanguage, 
+            nativeLanguage: userProfile.nativeLanguage, 
             context: context 
         });
 

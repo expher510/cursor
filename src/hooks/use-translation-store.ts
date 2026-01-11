@@ -11,14 +11,14 @@ type Translation = {
 type TranslationState = {
   translations: Record<string, Translation>;
   isTranslating: Record<string, boolean>;
-  toggleTranslation: (word: string, originalText: string, context: string, key: string, targetLanguage: string, sourceLang: string) => void;
+  toggleTranslation: (word: string, originalText: string, context: string, key: string, nativeLanguage: string, sourceLang: string) => void;
 };
 
 export const useTranslationStore = create<TranslationState>((set, get) => ({
   translations: {},
   isTranslating: {},
 
-  toggleTranslation: async (word, originalText, context, key, targetLanguage, sourceLang) => {
+  toggleTranslation: async (word, originalText, context, key, nativeLanguage, sourceLang) => {
     const { translations, isTranslating } = get();
 
     // If it's already translated, revert it
@@ -41,7 +41,7 @@ export const useTranslationStore = create<TranslationState>((set, get) => ({
         const { translation } = await translateWord({ 
             word: word, 
             sourceLang: sourceLang, 
-            targetLang: targetLanguage,
+            nativeLanguage: nativeLanguage,
             context: context,
         });
         
