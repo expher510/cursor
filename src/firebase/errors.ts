@@ -47,22 +47,20 @@ function buildAuthObject(currentUser: User | null): FirebaseAuthObject | null {
     }
   });
 
-  const token: FirebaseAuthToken = {
-    name: currentUser.displayName,
-    email: currentUser.email,
-    email_verified: currentUser.emailVerified,
-    phone_number: currentUser.phoneNumber,
-    sub: currentUser.uid,
-    firebase: {
-      identities,
-      sign_in_provider: currentUser.providerId,
-      tenant: currentUser.tenantId,
-    },
-  };
-
   return {
     uid: currentUser.uid,
-    token: token,
+    token: {
+      name: currentUser.displayName,
+      email: currentUser.email,
+      email_verified: currentUser.emailVerified,
+      phone_number: currentUser.phoneNumber,
+      sub: currentUser.uid,
+      firebase: {
+        identities,
+        sign_in_provider: currentUser.providerId,
+        tenant: currentUser.tenantId,
+      },
+    },
   };
 }
 
@@ -91,7 +89,8 @@ export class FirestorePermissionError extends Error {
 
   constructor(context: SecurityRuleContext, auth: Auth) {
     const requestObject = buildRequestObject(context, auth);
-    super(buildErrorMessage(requestObject));
+    const message = buildErrorMessage(requestObject);
+    super(message);
     this.name = 'FirebaseError';
     this.request = requestObject;
   }

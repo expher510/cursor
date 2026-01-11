@@ -9,7 +9,7 @@ import { useMemoFirebase } from '@/firebase/provider';
 import { processVideo, type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 import { translateWord } from '@/ai/flows/translate-word-flow';
 import { useSearchParams } from 'next/navigation';
-import { type QuizData, MOCK_QUIZ_QUESTIONS, UserAnswer } from '@/lib/quiz-data';
+import { type QuizData, UserAnswer } from '@/lib/quiz-data';
 import { useToast } from '@/hooks/use-toast';
 import { extractYouTubeVideoId } from '@/lib/utils';
 import { generateQuizFromTranscript, GenerateQuizExtendedOutput } from '@/ai/flows/generate-quiz-from-transcript-flow';
@@ -155,6 +155,11 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
           toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
           const result = await processVideo({ videoId: cleanVideoId });
           
+          if (!result.transcript || result.transcript.length === 0) {
+            console.warn(`[LinguaStream] No transcript found for video ${cleanVideoId}, but saving details anyway.`);
+            toast({ variant: 'subtle', title: "No transcript available", description: "You can still watch the video, but learning features are disabled." });
+          }
+
           await setDoc(videoDocRef, {
               id: cleanVideoId,
               title: result.title,
@@ -214,8 +219,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         return;
     }
     
-    // Do not re-generate if a real quiz already exists
-    if (quizData && quizData.questions[0].questionText !== MOCK_QUIZ_QUESTIONS[0].questionText) {
+    // Do not re-generate if a real quiz already exists (i.e. has more than 0 questions)
+    if (quizData && quizData.questions.length > 0) {
         return;
     }
     
