@@ -27,14 +27,32 @@ type SourceType = 'youtube' | 'cards';
 
 const LANGUAGE_MAP: Record<string, string> = {
   ar: 'Arabic',
+  zh: 'Chinese (Mandarin)',
+  de: 'German',
+  en: 'English',
   es: 'Spanish',
   fr: 'French',
+  hi: 'Hindi',
+  it: 'Italian',
+  ja: 'Japanese',
+  ko: 'Korean',
+  pt: 'Portuguese',
+  ru: 'Russian',
 };
 
 const AVAILABLE_LANGUAGES = [
     { code: 'ar', name: 'Arabic' },
+    { code: 'zh', name: 'Chinese (Mandarin)' },
+    { code: 'de', name: 'German' },
+    { code: 'en', name: 'English' },
     { code: 'es', name: 'Spanish' },
     { code: 'fr', name: 'French' },
+    { code: 'hi', name: 'Hindi' },
+    { code: 'it', name: 'Italian' },
+    { code: 'ja', name: 'Japanese' },
+    { code: 'ko', name: 'Korean' },
+    { code: 'pt', name: 'Portuguese' },
+    { code: 'ru', name: 'Russian' },
 ];
 
 

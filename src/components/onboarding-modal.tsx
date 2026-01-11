@@ -122,10 +122,18 @@ export function OnboardingModal({ open, onSave, isEditMode = false, initialData,
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
                         <SelectItem value="ar">Arabic</SelectItem>
+                        <SelectItem value="zh">Chinese (Mandarin)</SelectItem>
+                        <SelectItem value="de">German</SelectItem>
+                        <SelectItem value="en">English</SelectItem>
                         <SelectItem value="es">Spanish</SelectItem>
                         <SelectItem value="fr">French</SelectItem>
+                        <SelectItem value="hi">Hindi</SelectItem>
+                        <SelectItem value="it">Italian</SelectItem>
+                        <SelectItem value="ja">Japanese</SelectItem>
+                        <SelectItem value="ko">Korean</SelectItem>
+                        <SelectItem value="pt">Portuguese</SelectItem>
+                        <SelectItem value="ru">Russian</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -148,8 +156,17 @@ export function OnboardingModal({ open, onSave, isEditMode = false, initialData,
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="ar">Arabic</SelectItem>
+                        <SelectItem value="zh">Chinese (Mandarin)</SelectItem>
+                        <SelectItem value="de">German</SelectItem>
+                        <SelectItem value="en">English</SelectItem>
                         <SelectItem value="es">Spanish</SelectItem>
                         <SelectItem value="fr">French</SelectItem>
+                        <SelectItem value="hi">Hindi</SelectItem>
+                        <SelectItem value="it">Italian</SelectItem>
+                        <SelectItem value="ja">Japanese</SelectItem>
+                        <SelectItem value="ko">Korean</SelectItem>
+                        <SelectItem value="pt">Portuguese</SelectItem>
+                        <SelectItem value="ru">Russian</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
