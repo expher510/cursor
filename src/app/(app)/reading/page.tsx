@@ -146,7 +146,7 @@ function ReadingPracticePageContent() {
                 </div>
                 <div className="mt-2 space-y-4">
                     <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                        Read the text and save new words to your vocabulary list.
+                        Read the text and save new words to your vocabulary list. Long-press the dot next to a sentence to translate it.
                     </p>
                 </div>
             </div>

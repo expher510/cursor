@@ -1,4 +1,3 @@
-
 "use client";
 
 import { type TranscriptItem } from "@/ai/flows/process-video-flow";
@@ -34,14 +33,16 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
   const fullText = useMemo(() => transcript.map(line => line.text).join(' '), [transcript]);
   const isRtl = useMemo(() => /[\u0600-\u06FF]/.test(fullText), [fullText]);
 
-  const handlePointerDown = (lineIndex: number, lineText: string) => {
-    if (!isLongPressEnabled || !userProfile || !videoData) return;
+  const handlePointerDown = (e: React.PointerEvent, lineIndex: number, lineText: string) => {
+    e.stopPropagation(); // Prevent line click
+    if (!userProfile || !videoData) return;
     pressTimer.current = setTimeout(() => {
       toggleSentenceTranslation(lineIndex, lineText, userProfile.nativeLanguage, videoData.sourceLang);
     }, 500); // 500ms for long press
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
+    e.stopPropagation();
     if (pressTimer.current) {
       clearTimeout(pressTimer.current);
       pressTimer.current = null;
@@ -49,13 +50,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
   };
 
   const handleWordClick = (e: React.MouseEvent, word: string, originalText: string, context: string, key: string, lineIndex: number) => {
-    // If a long press is happening, don't trigger word translation
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
-
-    // Prevents line play if enabled
+    // Prevents line play if enabled and also the pointer down event on the parent paragraph.
     e.stopPropagation();
 
     const isSaved = savedWordsSet.has(word);
@@ -99,23 +94,26 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                     isNext && "bg-muted/70",
                   )}
                   onClick={(e) => handleLineClick(e, line.offset, line.duration, line.text, lineIndex)}
-                  onPointerUp={handlePointerUp}
-                  onPointerLeave={handlePointerUp} // Also clear timer if pointer leaves
                 >
                     <div className={cn("absolute left-0 top-0 bottom-0 w-1 bg-transparent rounded-l-md transition-all", isActive && "bg-primary")} />
                     
-                     <div className="pt-2.5 pl-1">
-                        <Dot className={cn("h-6 w-6 text-muted-foreground/30", (translatedSentence || isSentenceCurrentlyTranslating) && "text-primary")} />
+                     <div 
+                        className="pt-2 pl-1 cursor-pointer"
+                        onPointerDown={(e) => handlePointerDown(e, lineIndex, line.text)}
+                        onPointerUp={handlePointerUp}
+                        onPointerLeave={handlePointerUp}
+                    >
+                        <Dot className={cn("h-8 w-8 text-muted-foreground/30", (translatedSentence || isSentenceCurrentlyTranslating) && "text-primary")} />
                     </div>
                     
-                    <p className="flex-1 py-2 pl-1 pr-2" onPointerUp={handlePointerUp}>
+                    <p className="flex-1 py-2 pl-1 pr-2">
                          {isSentenceCurrentlyTranslating ? (
                             <span className="flex items-center gap-2 text-muted-foreground">
                                 <Loader2 className="h-4 w-4 animate-spin"/>
                                 Translating sentence...
                             </span>
                          ) : translatedSentence ? (
-                            <span className="text-blue-900" onPointerDown={() => handlePointerDown(lineIndex, line.text)}>{translatedSentence}</span>
+                            <span className="text-blue-900">{translatedSentence}</span>
                          ) : (
                             line.text.split(/(\s+)/).map((word, wordIndex) => {
                                 const originalText = word;
@@ -135,7 +133,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                                 const isCurrentlyTranslating = isTranslatingWord[key];
 
                                 return (
-                                    <span key={key} className="inline-block relative group/word" onPointerDown={() => handlePointerDown(lineIndex, line.text)}>
+                                    <span key={key} className="inline-block relative group/word">
                                         <Button
                                             variant="ghost"
                                             size="sm"
