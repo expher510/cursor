@@ -1,3 +1,4 @@
+
 "use client";
 
 import { VideoWorkspace } from "@/components/video-workspace";
@@ -15,7 +16,7 @@ function WatchPageContent() {
   const key = `${videoId}-${shouldGenerate}`;
 
   return (
-    <WatchPageProvider key={key}>
+    <WatchPageProvider>
       <VideoWorkspace />
     </WatchPageProvider>
   );

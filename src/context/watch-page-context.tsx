@@ -55,7 +55,7 @@ const shuffleArray = (array: any[]) => {
 };
 
 type WatchPageProviderProps = {
-    children: (state: { isLoading: boolean, videoData: VideoData | null }) => ReactNode;
+    children: ReactNode;
 };
 
 
@@ -467,7 +467,7 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
 
   return (
     <WatchPageContext.Provider value={value}>
-      {children({ isLoading, videoData })}
+      {children}
     </WatchPageContext.Provider>
   );
 }

@@ -1,3 +1,4 @@
+
 'use client';
 import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
@@ -8,7 +9,7 @@ import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
-import { useState, useMemo, Suspense, useEffect, useRef } from "react";
+import { useState, useMemo, Suspense, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { QuizPlayer } from "@/components/quiz-player";
 import ReactPlayer from 'react-player/youtube';
@@ -169,7 +170,8 @@ function ReadingPracticePageContent() {
     )
 }
 
-function DraggableVideoPlayer({ videoData }: { videoData: NonNullable<ReturnType<typeof useWatchPage>['videoData']> }) {
+function DraggableVideoPlayer() {
+    const { videoData } = useWatchPage();
     const playerRef = useRef<ReactPlayer>(null);
     const dragRef = useRef<HTMLDivElement>(null);
     const [played, setPlayed] = useState(0);
@@ -199,10 +201,9 @@ function DraggableVideoPlayer({ videoData }: { videoData: NonNullable<ReturnType
         }
     };
 
-    const onDragMove = (e: React.MouseEvent | React.TouchEvent) => {
+    const onDragMove = useCallback((e: MouseEvent | TouchEvent) => {
         if (!isDragging) return;
         if ('touches' in e) {
-            // Prevent scrolling page on touch devices
             e.preventDefault();
         }
         const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
@@ -212,7 +213,7 @@ function DraggableVideoPlayer({ videoData }: { videoData: NonNullable<ReturnType
             x: clientX - dragStartPos.current.x,
             y: clientY - dragStartPos.current.y
         });
-    };
+    }, [isDragging]);
 
     const onDragEnd = () => {
         setIsDragging(false);
@@ -222,24 +223,23 @@ function DraggableVideoPlayer({ videoData }: { videoData: NonNullable<ReturnType
     };
     
      useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => onDragMove(e as unknown as React.MouseEvent);
-        const handleTouchMove = (e: TouchEvent) => onDragMove(e as unknown as React.TouchEvent);
-
         if (isDragging) {
-            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mousemove', onDragMove);
             window.addEventListener('mouseup', onDragEnd);
-            window.addEventListener('touchmove', handleTouchMove, { passive: false });
+            window.addEventListener('touchmove', onDragMove, { passive: false });
             window.addEventListener('touchend', onDragEnd);
         }
 
         return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mousemove', onDragMove);
             window.removeEventListener('mouseup', onDragEnd);
-            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('touchmove', onDragMove);
             window.removeEventListener('touchend', onDragEnd);
         };
     }, [isDragging, onDragMove]);
 
+
+    if (!videoData) return null;
 
     return (
         <div
@@ -296,21 +296,17 @@ function DraggableVideoPlayer({ videoData }: { videoData: NonNullable<ReturnType
 
 
 function PageWithProvider() {
+    const { isLoading, videoData } = useWatchPage();
     const searchParams = useSearchParams();
     const videoId = searchParams.get('v');
     const shouldGenerate = searchParams.get('shouldGenerate');
     const key = `${videoId}-${shouldGenerate}`;
     
     return (
-        <WatchPageProvider key={key}>
-            {({ isLoading, videoData }) => (
-                <>
-                    <ReadingPracticePageContent />
-
-                    {!isLoading && videoData && (
-                        <DraggableVideoPlayer videoData={videoData} />
-                    )}
-                </>
+        <WatchPageProvider>
+            <ReadingPracticePageContent />
+            {!isLoading && videoData && (
+                <DraggableVideoPlayer />
             )}
         </WatchPageProvider>
     );

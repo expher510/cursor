@@ -298,7 +298,7 @@ export default function WritingPage() {
             Use the selected words to practice your writing skills. When you've used all the words, you can get AI feedback.
         </p>
         <WatchPageProvider>
-            {() => <WritingWorkspace />}
+            <WritingWorkspace />
         </WatchPageProvider>
       </main>
     </>
