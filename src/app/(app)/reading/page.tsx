@@ -94,6 +94,33 @@ function ReadingQuiz() {
 
 function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
+    const playerRef = useRef<ReactPlayer>(null);
+    const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
+    const [isPlaying, setIsPlaying] = useState(false);
+
+    const handlePlayPause = () => {
+        setIsPlaying(prev => !prev);
+    };
+
+    const handleProgress = (progress: { playedSeconds: number }) => {
+        if (!videoData || !videoData.transcript) return;
+        const currentTimeMs = progress.playedSeconds * 1000;
+    
+        const activeIndex = videoData.transcript.findIndex(item => 
+          currentTimeMs >= item.offset && currentTimeMs < (item.offset + item.duration)
+        );
+    
+        if (activeIndex !== -1) {
+          setActiveSegmentIndex(activeIndex);
+        }
+      };
+
+      const handlePlaySegment = (offset: number) => {
+        if (playerRef.current) {
+          playerRef.current.seekTo(offset / 1000, 'seconds');
+          setIsPlaying(true);
+        }
+      };
 
     if (isLoading) {
         return (
@@ -156,7 +183,8 @@ function ReadingPracticePageContent() {
                     <TranscriptView 
                        transcript={formattedTranscript} 
                        videoId={videoData.videoId}
-                       onPlaySegment={null}
+                       onPlaySegment={handlePlaySegment}
+                       activeSegmentIndex={activeSegmentIndex}
                     />
                 </Card>
                  <ReadingQuiz />
@@ -177,19 +205,26 @@ function PageWithProvider() {
     const handlePlayPause = () => {
         setIsPlaying(prev => !prev);
     }
+    
+    const handleVideoEnd = () => {
+        setIsPlaying(false);
+        if (playerRef.current) {
+          playerRef.current.seekTo(0);
+        }
+      };
 
     return (
         <WatchPageProvider key={key}>
             {({ isLoading, videoData }) => (
                 <>
-                    <div className="fixed right-4 md:right-8 bottom-8 z-50 flex flex-col items-center gap-2">
-                        {videoData?.videoId && (
+                    {!isLoading && videoData?.videoId && (
+                         <div className="fixed right-4 md:right-8 bottom-8 z-50 flex flex-col items-center gap-2">
                              <div className="w-20 h-auto aspect-video rounded-md overflow-hidden shadow-lg border">
                                 <ReactPlayer
                                     ref={playerRef}
                                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                                     playing={isPlaying}
-                                    onEnded={() => setIsPlaying(false)}
+                                    onEnded={handleVideoEnd}
                                     controls={true}
                                     width="100%"
                                     height="100%"
@@ -197,14 +232,13 @@ function PageWithProvider() {
                                     muted={false}
                                 />
                             </div>
-                        )}
-                        
-                        {!isLoading && videoData && (
+                            
                             <Button onClick={handlePlayPause} size="lg" className="h-16 w-16 rounded-full shadow-lg">
                                 {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
                             </Button>
-                        )}
-                    </div>
+                        </div>
+                    )}
+                   
 
                     <ReadingPracticePageContent />
                 </>
