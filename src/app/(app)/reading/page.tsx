@@ -194,7 +194,7 @@ function PageWithProvider() {
 
                     {!isLoading && videoData && (
                          <div className="group fixed right-8 bottom-8 z-50 flex items-center justify-center">
-                            <div className="absolute inset-0 scale-0 group-hover:scale-100 transition-transform duration-300">
+                            <div className="absolute inset-0 flex items-center justify-center scale-0 group-hover:scale-100 transition-transform duration-300">
                                 <CircularProgressControl 
                                     progress={played * 100}
                                     onSeek={handleSeek}
