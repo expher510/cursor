@@ -73,7 +73,7 @@ function ActivityButtons({ onActivitySelect, isProcessing, videoId }: { onActivi
         <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleClick('watch')}>
             {isProcessing && pendingActivity === 'watch' && <Loader2 className="mr-2 animate-spin" />}
             <Headphones className="mr-2" />
-            Start Listening
+            Start Watching
         </Button>
         
         <Button size="lg" disabled={!isEnabled || isProcessing} onClick={() => handleClick('reading')}>
