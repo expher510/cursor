@@ -1,4 +1,3 @@
-
 "use client";
 
 import { type TranscriptItem } from "@/ai/flows/process-video-flow";
@@ -7,9 +6,7 @@ import { useWatchPage } from "@/context/watch-page-context";
 import { cn } from "@/lib/utils";
 import { useTranslationStore } from "@/hooks/use-translation-store";
 import { useMemo, useRef } from "react";
-import { Volume2, VolumeX } from "lucide-react";
 import { useUserProfile } from "@/hooks/use-user-profile";
-import { useToast } from "@/hooks/use-toast";
 
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
@@ -19,12 +16,10 @@ type TranscriptViewProps = {
   isLongPressEnabled?: boolean;
 };
 
-
 export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegmentIndex = -1, isLongPressEnabled = false }: TranscriptViewProps) {
   const { addVocabularyItem, savedWordsSet, videoData } = useWatchPage();
   const { translations, toggleTranslation, isTranslating } = useTranslationStore();
   const { userProfile } = useUserProfile();
-  const { toast } = useToast();
   const longPressTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const fullText = useMemo(() => transcript.map(line => line.text).join(' '), [transcript]);
@@ -41,18 +36,20 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
       toggleTranslation(word, originalText, context, key, userProfile.targetLanguage, videoData.sourceLang);
     }
   };
-
-  const handleLongPress = (word: string) => {
-    toast({
-      title: "Long Press Detected!",
-      description: `You long-pressed the word: "${word}"`,
-    });
+  
+  const speak = (text: string, lang: string = 'en-US') => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Stop any previous speech
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang;
+        window.speechSynthesis.speak(utterance);
+    }
   };
 
   const handleMouseDown = (word: string) => {
     if (!isLongPressEnabled) return;
     longPressTimeout.current = setTimeout(() => {
-      handleLongPress(word);
+      speak(word);
       longPressTimeout.current = null; // Prevent click after long press
     }, 500); // 500ms for a long press
   };
