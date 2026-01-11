@@ -9,7 +9,7 @@ import { useMemoFirebase } from '@/firebase/provider';
 import { processVideo, type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 import { translateWord } from '@/ai/flows/translate-word-flow';
 import { useSearchParams } from 'next/navigation';
-import { type QuizData, UserAnswer } from '@/lib/quiz-data';
+import { type QuizData, UserAnswer, QuizQuestion } from '@/lib/quiz-data';
 import { useToast } from '@/hooks/use-toast';
 import { extractYouTubeVideoId } from '@/lib/utils';
 import { generateQuizFromTranscript, GenerateQuizExtendedOutput } from '@/ai/flows/generate-quiz-from-transcript-flow';
@@ -34,6 +34,7 @@ type WatchPageContextType = {
   removeVocabularyItem: (id: string) => void;
   videoData: VideoData | null;
   quizData: QuizData | null;
+  hardcodedQuizData: QuizData | null;
   isLoading: boolean;
   error: string | null;
   handleQuizGeneration: () => void;
@@ -42,6 +43,16 @@ type WatchPageContextType = {
 };
 
 const WatchPageContext = createContext<WatchPageContextType | undefined>(undefined);
+
+// Helper function to shuffle an array
+const shuffleArray = (array: any[]) => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+};
 
 export function WatchPageProvider({ children }: { children: ReactNode }) {
   const { firestore, user } = useFirebase();
@@ -56,6 +67,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
   const [quizData, setQuizData] = useState<QuizData | null>(null);
+  const [hardcodedQuizData, setHardcodedQuizData] = useState<QuizData | null>(null);
   
   const [activeVideoId, setActiveVideoId] = useState<string | null>(urlVideoId);
 
@@ -100,6 +112,96 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     }
   }, [urlVideoId, user, firestore]);
 
+  const vocabQuery = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return query(collection(firestore, `users/${user.uid}/vocabularies`));
+  }, [user, firestore]);
+
+  const { data: allVocabulary, setData: setAllVocabulary } = useCollection<VocabularyItem>(vocabQuery);
+
+  const videoVocabulary = useMemo(() => {
+    if (!allVocabulary || !activeVideoId) return [];
+    const cleanVideoId = extractYouTubeVideoId(activeVideoId);
+    return allVocabulary.filter(item => item.videoId === cleanVideoId);
+  }, [allVocabulary, activeVideoId]);
+
+  const generateAndStoreHardcodedQuestions = useCallback(async (
+    currentVideoData: VideoData,
+    currentVideoVocabulary: VocabularyItem[]
+  ) => {
+    if (!firestore || !user || !currentVideoData.videoId) return;
+  
+    const hardcodedQuestions: QuizQuestion[] = [];
+  
+    // 1. Vocabulary Translation Questions
+    if (currentVideoVocabulary.length >= 4) {
+      const shuffledVocab = shuffleArray(currentVideoVocabulary);
+      for (let i = 0; i < Math.min(5, shuffledVocab.length); i++) {
+        const correctVocab = shuffledVocab[i];
+        const wrongOptions = shuffleArray(shuffledVocab.filter(v => v.id !== correctVocab.id))
+          .slice(0, 3)
+          .map(v => v.translation);
+        
+        const options = shuffleArray([correctVocab.translation, ...wrongOptions]);
+  
+        hardcodedQuestions.push({
+          questionText: `What is the translation of "${correctVocab.word}"?`,
+          options: options,
+          correctAnswer: correctVocab.translation,
+        });
+      }
+    }
+  
+    // 2. Fill-in-the-Blank Questions
+    const transcript = currentVideoData.transcript;
+    if (transcript.length >= 2) {
+      for (let i = 0; i < 5; i++) {
+        // Find a random spot to start
+        const startIndex = Math.floor(Math.random() * (transcript.length - 1));
+        const sentence1 = transcript[startIndex].text;
+        const sentence2 = transcript[startIndex + 1].text;
+        const combined = `${sentence1} ${sentence2}`;
+        const words = combined.split(' ').filter(w => w.length > 2); // Get words longer than 2 chars
+  
+        if (words.length < 5) continue;
+  
+        // Pick a word from the middle to remove
+        const middleIndex = Math.floor(words.length / 2) + Math.floor(Math.random() * 3) - 1;
+        const removedWord = words[middleIndex];
+        words[middleIndex] = '______';
+        const questionText = words.join(' ');
+  
+        // Get 3 other random words from the transcript as wrong options
+        const allWords = transcript.flatMap(t => t.text.split(' ')).filter(w => w.length > 2 && w !== removedWord);
+        const wrongOptions = shuffleArray([...new Set(allWords)]).slice(0, 3);
+  
+        if (wrongOptions.length < 3) continue;
+  
+        const options = shuffleArray([removedWord, ...wrongOptions]);
+  
+        hardcodedQuestions.push({
+          questionText: `Fill in the blank: "${questionText}"`,
+          options: options,
+          correctAnswer: removedWord,
+        });
+      }
+    }
+  
+    if (hardcodedQuestions.length > 0) {
+      const quizDocRef = doc(firestore, `users/${user.uid}/videos/${currentVideoData.videoId}/quizzes`, 'hardcoded-questions');
+      const newQuizData: QuizData = {
+        id: 'hardcoded-questions',
+        videoId: currentVideoData.videoId,
+        userId: user.uid,
+        questions: hardcodedQuestions,
+      };
+      await setDoc(quizDocRef, newQuizData, { merge: true });
+      setHardcodedQuizData(newQuizData);
+    }
+  
+  }, [firestore, user]);
+
+
   // Effect to fetch OR process video data based on activeVideoId
   useEffect(() => {
     if (!activeVideoId) {
@@ -123,7 +225,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     setError(null);
     setVideoData(null);
-    setQuizData(null); // Reset quiz data when video changes
+    setQuizData(null); // Reset AI quiz data when video changes
+    setHardcodedQuizData(null); // Reset hardcoded quiz data
 
     async function fetchAndProcessVideoData() {
       const cleanVideoId = extractYouTubeVideoId(activeVideoId);
@@ -136,9 +239,17 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
       try {
         const videoDocRef = doc(firestore, `users/${user!.uid}/videos`, cleanVideoId);
         const transcriptDocRef = doc(firestore, `users/${user!.uid}/videos/${cleanVideoId}/transcripts`, cleanVideoId);
+        const hardcodedQuizDocRef = doc(firestore, `users/${user!.uid}/videos/${cleanVideoId}/quizzes`, 'hardcoded-questions');
         
-        const videoDocSnap = await getDoc(videoDocRef);
-        const transcriptDocSnap = await getDoc(transcriptDocRef);
+        const [videoDocSnap, transcriptDocSnap, hardcodedQuizSnap] = await Promise.all([
+          getDoc(videoDocRef),
+          getDoc(transcriptDocRef),
+          getDoc(hardcodedQuizDocRef)
+        ]);
+
+        if (hardcodedQuizSnap.exists()) {
+          setHardcodedQuizData(hardcodedQuizSnap.data() as QuizData);
+        }
 
         if (videoDocSnap.exists() && transcriptDocSnap.exists()) {
           const videoDocData = videoDocSnap.data();
@@ -151,6 +262,9 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             videoId: cleanVideoId,
           };
           setVideoData(combinedData);
+          if (!hardcodedQuizSnap.exists()) {
+            generateAndStoreHardcodedQuestions(combinedData, videoVocabulary);
+          }
         } else if (shouldGenerate) {
           toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
           
@@ -186,8 +300,10 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
               content: result.transcript,
               sourceLang: result.sourceLang,
           }, { merge: true });
-
-          setVideoData({ ...result, videoId: cleanVideoId });
+          
+          const newVideoData = { ...result, videoId: cleanVideoId };
+          setVideoData(newVideoData);
+          generateAndStoreHardcodedQuestions(newVideoData, videoVocabulary);
 
         } else {
             setError("Video data not found. Please process it from the homepage first.");
@@ -204,16 +320,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     
     fetchAndProcessVideoData();
 
-  }, [activeVideoId, user, firestore, toast, shouldGenerate, userProfile]);
-
-
-  const vocabQuery = useMemoFirebase(() => {
-    if (!user || !firestore) return null;
-    return query(collection(firestore, `users/${user.uid}/vocabularies`));
-  }, [user, firestore]);
-
-  const { data: allVocabulary, setData: setAllVocabulary } = useCollection<VocabularyItem>(vocabQuery);
-  
+  }, [activeVideoId, user, firestore, toast, shouldGenerate, userProfile, generateAndStoreHardcodedQuestions, videoVocabulary]);
 
   const handleQuizGeneration = useCallback(async () => {
     if (!videoData?.transcript || videoData.transcript.length === 0 || !userProfile || !firestore || !user || !videoData?.videoId) {
@@ -277,14 +384,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         toast({ variant: "destructive", title: "Save Failed", description: "There was a problem saving your quiz results."});
     }
   }, [firestore, user, activeVideoId, toast]);
-
-
-  const videoVocabulary = useMemo(() => {
-    if (!allVocabulary || !activeVideoId) return [];
-    const cleanVideoId = extractYouTubeVideoId(activeVideoId);
-    return allVocabulary.filter(item => item.videoId === cleanVideoId);
-  }, [allVocabulary, activeVideoId]);
-
 
   const savedWordsSet = useMemo(() => {
     return new Set(videoVocabulary?.map(item => item.word) ?? []);
@@ -353,6 +452,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     removeVocabularyItem,
     videoData,
     quizData,
+    hardcodedQuizData,
     isLoading,
     error,
     handleQuizGeneration,
