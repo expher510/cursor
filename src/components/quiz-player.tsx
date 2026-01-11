@@ -8,8 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { type QuizData, type QuizQuestion } from '@/lib/quiz-data';
-import { useFirebase } from '@/firebase';
+import { type QuizData, type QuizQuestion, type UserAnswer } from '@/lib/quiz-data';
 
 
 // Fisher-Yates shuffle algorithm
@@ -61,11 +60,25 @@ function useQuiz(questions: QuizQuestion[]) {
         setIsFinished(false);
     }, [questions]);
 
-    const score = useMemo(() => {
-        return shuffledQuestions.reduce((correctCount, question, index) => {
-            return userAnswers[index] === question.correctAnswer ? correctCount + 1 : correctCount;
-        }, 0);
+    const { score, userAnswersWithCorrect } = useMemo(() => {
+        const answers: UserAnswer[] = [];
+        let correctCount = 0;
+        
+        shuffledQuestions.forEach((question, index) => {
+            const userAnswer = userAnswers[index];
+            if (userAnswer === question.correctAnswer) {
+                correctCount++;
+            }
+            answers.push({
+                questionText: question.questionText,
+                userAnswer: userAnswer,
+                correctAnswer: question.correctAnswer
+            });
+        });
+
+        return { score: correctCount, userAnswersWithCorrect: answers };
     }, [userAnswers, shuffledQuestions]);
+
 
     return {
         currentQuestionIndex,
@@ -81,12 +94,12 @@ function useQuiz(questions: QuizQuestion[]) {
         resetQuiz,
         shuffledQuestions,
         totalQuestions: shuffledQuestions.length,
+        userAnswersWithCorrect,
     };
 }
 
 
-export function QuizView({ questions, onRetry, title = "Quiz" }: { questions: QuizQuestion[], onRetry: () => void, title?: string }) {
-    const { user } = useFirebase();
+export function QuizView({ questions, onQuizComplete, onRetry, title = "Quiz" }: { questions: QuizQuestion[], onQuizComplete: (results: { score: number, userAnswers: UserAnswer[] }) => void, onRetry: () => void, title?: string }) {
 
     const { 
         currentQuestionIndex,
@@ -100,8 +113,14 @@ export function QuizView({ questions, onRetry, title = "Quiz" }: { questions: Qu
         prevQuestion,
         finishQuiz,
         shuffledQuestions,
-        totalQuestions
+        totalQuestions,
+        userAnswersWithCorrect
      } = useQuiz(questions);
+
+    const handleFinish = () => {
+        finishQuiz();
+        onQuizComplete({ score, userAnswers: userAnswersWithCorrect });
+    }
     
     if (isFinished) {
         return (
@@ -179,7 +198,7 @@ export function QuizView({ questions, onRetry, title = "Quiz" }: { questions: Qu
                     {currentQuestionIndex < totalQuestions - 1 ? (
                         <Button onClick={nextQuestion} disabled={userAnswers[currentQuestionIndex] === null}>Next <ChevronRight className="ml-2 h-4 w-4"/></Button>
                     ) : (
-                        <Button onClick={finishQuiz} disabled={userAnswers[currentQuestionIndex] === null}>Finish</Button>
+                        <Button onClick={handleFinish} disabled={userAnswers[currentQuestionIndex] === null}>Finish</Button>
                     )}
                 </div>
             </CardContent>
@@ -188,17 +207,16 @@ export function QuizView({ questions, onRetry, title = "Quiz" }: { questions: Qu
 }
 
 
-export function QuizPlayer({ quizData, onQuizComplete }: { quizData: QuizData, onQuizComplete: (results: any) => void }) {
+export function QuizPlayer({ quizData, onQuizComplete }: { quizData: QuizData, onQuizComplete: (results: { score: number, userAnswers: UserAnswer[] }) => void }) {
     const [quizKey, setQuizKey] = useState(Date.now());
 
     const handleRetry = () => {
         setQuizKey(Date.now());
-        onQuizComplete({ score: 0, answers: []});
     };
     
     if (!quizData?.questions?.length) {
         return <p>No questions available for this quiz.</p>;
     }
 
-    return <QuizView key={quizKey} questions={quizData.questions} onRetry={handleRetry} title={quizData.id}/>;
+    return <QuizView key={quizKey} questions={quizData.questions} onQuizComplete={onQuizComplete} onRetry={handleRetry} title={quizData.id}/>;
 }

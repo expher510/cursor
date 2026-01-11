@@ -1,14 +1,15 @@
+
 'use client';
 
 import { useFirebase } from '@/firebase';
-import { collection, doc, query, addDoc, deleteDoc, getDoc, setDoc, orderBy, limit, getDocs } from 'firebase/firestore';
+import { collection, doc, query, addDoc, deleteDoc, getDoc, setDoc, orderBy, limit, getDocs, updateDoc } from 'firebase/firestore';
 import { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
 import { processVideo, type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 import { translateWord } from '@/ai/flows/translate-word-flow';
 import { useSearchParams } from 'next/navigation';
-import { type QuizData, MOCK_QUIZ_QUESTIONS } from '@/lib/quiz-data';
+import { type QuizData, MOCK_QUIZ_QUESTIONS, UserAnswer } from '@/lib/quiz-data';
 import { useToast } from '@/hooks/use-toast';
 import { extractYouTubeVideoId } from '@/lib/utils';
 import { generateQuizFromTranscript, GenerateQuizExtendedOutput } from '@/ai/flows/generate-quiz-from-transcript-flow';
@@ -37,6 +38,7 @@ type WatchPageContextType = {
   error: string | null;
   handleQuizGeneration: () => void;
   isGeneratingQuiz: boolean;
+  saveQuizResults: (results: { score: number, userAnswers: UserAnswer[] }) => void;
 };
 
 const WatchPageContext = createContext<WatchPageContextType | undefined>(undefined);
@@ -260,6 +262,29 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   }, [videoData, userProfile, firestore, user, toast, quizData, setQuizzes]);
 
 
+  const saveQuizResults = useCallback(async (results: { score: number, userAnswers: UserAnswer[] }) => {
+    if (!firestore || !user || !activeVideoId || !quizData?.id) {
+        toast({ variant: "destructive", title: "Error Saving Results", description: "Could not save quiz results. Please try again."});
+        return;
+    }
+    const cleanVideoId = extractYouTubeVideoId(activeVideoId);
+    if (!cleanVideoId) return;
+
+    const quizDocRef = doc(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`, quizData.id);
+
+    try {
+        await updateDoc(quizDocRef, {
+            score: results.score,
+            userAnswers: results.userAnswers
+        });
+        toast({ title: "Quiz Results Saved!", description: "Your score has been recorded."});
+    } catch (e: any) {
+        console.error("Failed to save quiz results:", e);
+        toast({ variant: "destructive", title: "Save Failed", description: "There was a problem saving your quiz results."});
+    }
+  }, [firestore, user, activeVideoId, quizData, toast]);
+
+
   const videoVocabulary = useMemo(() => {
     if (!allVocabulary || !activeVideoId) return [];
     const cleanVideoId = extractYouTubeVideoId(activeVideoId);
@@ -333,6 +358,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     error,
     handleQuizGeneration,
     isGeneratingQuiz,
+    saveQuizResults,
   };
 
   return (
