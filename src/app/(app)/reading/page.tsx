@@ -105,9 +105,10 @@ function ReadingPracticePageContent() {
       let activeIndex = -1;
       // Find the currently active segment
       for (let i = 0; i < videoData.transcript.length; i++) {
-          if (videoData.transcript[i].offset <= currentTime) {
+          const segment = videoData.transcript[i];
+          const segmentEnd = segment.offset + segment.duration;
+          if (currentTime >= segment.offset && currentTime < segmentEnd) {
               activeIndex = i;
-          } else {
               break;
           }
       }
