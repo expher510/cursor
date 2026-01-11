@@ -12,7 +12,7 @@ import { Languages, Loader2, Circle } from "lucide-react";
 type TranscriptViewProps = {
   transcript: TranscriptItem[];
   videoId: string;
-  onPlaySegment?: ((offset: number, duration: number, text: string) => void) | null;
+  onPlaySegment?: ((offset: number) => void) | null;
   activeSegmentIndex?: number;
 };
 
@@ -53,12 +53,12 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
     }
   };
   
-  const handleLineClick = (e: React.MouseEvent, offset: number, duration: number, text: string, lineIndex: number) => {
+  const handleLineClick = (e: React.MouseEvent, offset: number) => {
     if (onPlaySegment) {
        // Check if the click was on a word button; if so, the word handler already stopped propagation.
        // This check ensures clicks on the line padding still work.
        if (e.target === e.currentTarget) {
-          onPlaySegment(offset, duration, text);
+          onPlaySegment(offset);
        }
     }
   };
@@ -79,7 +79,7 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                     onPlaySegment && "cursor-pointer",
                     isActive ? "bg-primary/10" : "hover:bg-muted/50",
                   )}
-                  onClick={(e) => handleLineClick(e, line.offset, line.duration, line.text, lineIndex)}
+                  onClick={(e) => handleLineClick(e, line.offset)}
                 >
                     <div className={cn("absolute left-0 top-0 bottom-0 w-1 bg-transparent rounded-l-md transition-all", isActive && "bg-primary")} />
                     

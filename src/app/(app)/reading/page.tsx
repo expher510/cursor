@@ -3,7 +3,7 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Edit, Loader2, Circle, Play, Pause } from "lucide-react";
+import { AlertTriangle, Edit, Loader2, Circle, Play, Pause, Headphones } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { useState, useMemo, Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { QuizPlayer } from "@/components/quiz-player";
 import ReactPlayer from 'react-player/youtube';
+import { cn } from "@/lib/utils";
 
 
 function ReadingQuiz() {
@@ -94,8 +95,18 @@ function ReadingQuiz() {
 
 function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
-    const playerRef = useRef<ReactPlayer>(null);
     const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
+    
+    const [isPlaying, setIsPlaying] = useState(false);
+    const [hasStarted, setHasStarted] = useState(false);
+    const playerRef = useRef<ReactPlayer>(null);
+
+    const handlePlayPause = () => {
+        if (!hasStarted) {
+            setHasStarted(true);
+        }
+        setIsPlaying(prev => !prev);
+    }
 
     if (isLoading) {
         return (
@@ -138,8 +149,29 @@ function ReadingPracticePageContent() {
         text: item.text,
     }));
     
+    const handleProgress = (progress: { playedSeconds: number }) => {
+        if (!hasStarted) return;
+        const currentTime = progress.playedSeconds * 1000;
+        const activeIndex = formattedTranscript.findIndex(
+            (item, index) =>
+                currentTime >= item.offset &&
+                (index === formattedTranscript.length - 1 || currentTime < formattedTranscript[index + 1].offset)
+        );
+        setActiveSegmentIndex(activeIndex);
+    };
+    
+    const handleLineClick = (offset: number) => {
+        if (playerRef.current) {
+            playerRef.current.seekTo(offset / 1000, 'seconds');
+            if (!isPlaying) {
+                setIsPlaying(true);
+                setHasStarted(true);
+            }
+        }
+    }
 
     return (
+        <>
         <div className="w-full max-w-4xl mx-auto space-y-6 relative">
              <div className="mb-4 text-center">
                 <div className="flex justify-center">
@@ -155,15 +187,57 @@ function ReadingPracticePageContent() {
             <>
                 <VocabularyList layout="scroll" />
                 <Card>
+                   {!hasStarted ? (
+                        <div className="absolute inset-0 bg-background/80 backdrop-blur-sm z-10 flex items-center justify-center">
+                            <Button size="lg" onClick={handlePlayPause}>
+                                <Headphones className="mr-2" />
+                                Start Listening
+                            </Button>
+                        </div>
+                    ) : (
+                        <div className="fixed right-4 md:right-8 bottom-8 z-50">
+                            <Button onClick={handlePlayPause} size="lg" className="h-16 w-16 rounded-full shadow-lg">
+                                {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
+                            </Button>
+                        </div>
+                    )}
                     <TranscriptView 
                        transcript={formattedTranscript} 
                        videoId={videoData.videoId}
                        activeSegmentIndex={activeSegmentIndex}
+                       onPlaySegment={(offset) => handleLineClick(offset)}
                     />
                 </Card>
                  <ReadingQuiz />
             </>
         </div>
+        
+         <div className="absolute top-[-1000px] left-[-1000px]">
+            <ReactPlayer
+                ref={playerRef}
+                url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                playing={isPlaying && hasStarted}
+                onProgress={handleProgress}
+                onEnded={() => setIsPlaying(false)}
+                volume={1}
+                muted={false}
+                width="1px"
+                height="1px"
+                config={{
+                    youtube: {
+                        playerVars: {
+                            controls: 0,
+                            disablekb: 1,
+                            fs: 0,
+                            iv_load_policy: 3,
+                            modestbranding: 1,
+                            playsinline: 1,
+                        }
+                    }
+                }}
+            />
+        </div>
+        </>
     )
 }
 
@@ -173,50 +247,10 @@ function PageWithProvider() {
     const shouldGenerate = searchParams.get('shouldGenerate');
     const key = `${videoId}-${shouldGenerate}`;
 
-    const [isPlaying, setIsPlaying] = useState(false);
-    const playerRef = useRef<ReactPlayer>(null);
-
-    const handlePlayPause = () => {
-        setIsPlaying(prev => !prev);
-    }
-    
-    const handleVideoEnd = () => {
-        setIsPlaying(false);
-        if (playerRef.current) {
-          playerRef.current.seekTo(0);
-        }
-    };
-
     return (
         <WatchPageProvider key={key}>
-            {({ isLoading, videoData }) => (
-                <>
-                    {!isLoading && videoData?.videoId && (
-                         <div className="fixed right-4 md:right-8 bottom-8 z-50 flex flex-col items-center gap-2">
-                             <div className="w-20 aspect-video rounded-md overflow-hidden shadow-lg border">
-                                <ReactPlayer
-                                    ref={playerRef}
-                                    url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                                    playing={isPlaying}
-                                    onPlay={() => setIsPlaying(true)}
-                                    onPause={() => setIsPlaying(false)}
-                                    onEnded={handleVideoEnd}
-                                    controls={true}
-                                    width="100%"
-                                    height="100%"
-                                    volume={1}
-                                    muted={false}
-                                />
-                            </div>
-                            
-                            <Button onClick={handlePlayPause} size="lg" className="h-16 w-16 rounded-full shadow-lg">
-                                {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
-                            </Button>
-                        </div>
-                    )}
-                   
-                    <ReadingPracticePageContent />
-                </>
+            {() => (
+                <ReadingPracticePageContent />
             )}
         </WatchPageProvider>
     );
