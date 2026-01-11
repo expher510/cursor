@@ -160,6 +160,9 @@ function MainContent() {
       return 'Paste a YouTube link below to turn any video into an interactive language lesson.'
   }
 
+  const openEditModal = () => {
+    setIsEditing(true);
+  }
 
   return (
     <>
@@ -175,7 +178,7 @@ function MainContent() {
             </div>
           ) : userProfile && (
              <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-4 text-sm font-medium text-muted-foreground">
-                <Button variant="ghost" className="flex items-center gap-2" onClick={() => setIsEditing(true)}>
+                <Button variant="ghost" className="flex items-center gap-2" onClick={openEditModal}>
                     <User className="h-4 w-4 text-primary" />
                     <span>Welcome back, {userProfile.displayName}!</span>
                     <Pencil className="h-3 w-3" />
