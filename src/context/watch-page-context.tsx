@@ -257,7 +257,6 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
         console.error("Failed to generate quiz on demand:", e);
         const errorMessage = e.message || "An unexpected error occurred while generating the quiz.";
         setQuizGenerationError(errorMessage);
-        toast({ variant: "destructive", title: "Quiz Generation Failed", description: "See details below the button."});
     } finally {
         setIsGeneratingQuiz(false);
     }
@@ -355,3 +354,5 @@ export function useWatchPage() {
   }
   return context;
 }
+
+    
