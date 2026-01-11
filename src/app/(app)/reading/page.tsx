@@ -175,11 +175,6 @@ function PageWithProvider() {
     const key = `${videoId}-${shouldGenerate}`;
     
     const playerRef = useRef<ReactPlayer>(null);
-    const [isPlaying, setIsPlaying] = useState(false);
-
-    const handlePlayPause = () => {
-        setIsPlaying(!isPlaying);
-    };
 
     return (
         <WatchPageProvider key={key}>
@@ -192,9 +187,6 @@ function PageWithProvider() {
                             <ReactPlayer
                                 ref={playerRef}
                                 url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                                playing={isPlaying}
-                                onPlay={() => setIsPlaying(true)}
-                                onPause={() => setIsPlaying(false)}
                                 volume={1}
                                 muted={false}
                                 width="100%"
