@@ -28,27 +28,28 @@ export type GenerateWritingFeedbackOutput = z.infer<typeof GenerateWritingFeedba
 function buildPrompt(input: GenerateWritingFeedbackInput): string {
     const wordList = input.usedWords.join(', ');
     return `
-      You are an expert language teacher specializing in providing feedback for ${input.targetLanguage} learners.
-      The user's native language is ${input.nativeLanguage} and their proficiency level is ${input.proficiencyLevel}.
+      You are an expert language teacher providing feedback for a ${input.targetLanguage} learner whose native language is ${input.nativeLanguage}. The student's proficiency level is ${input.proficiencyLevel}.
 
-      The user was asked to write a paragraph using the following words: ${wordList}.
+      The user was asked to write a paragraph in ${input.targetLanguage} using the following words: ${wordList}.
       
       Here is the user's writing:
       ---
       ${input.writingText}
       ---
 
+      Your entire response MUST be in the user's native language: ${input.nativeLanguage}.
+
       Your task is to provide feedback in a structured JSON format. Your entire response MUST be a single, valid JSON object.
       The JSON object must contain three keys: "feedback", "score", and "suggestions".
 
-      1.  **feedback**: (string) Provide overall constructive feedback. Comment on grammar, vocabulary usage, and sentence structure. Be encouraging but clear. Keep it concise (2-4 sentences).
-      2.  **score**: (number) Give a score from 0 to 100. Base the score on:
-          - Correct usage of the provided words.
-          - Grammatical accuracy.
-          - Naturalness and fluency of the text for a ${input.proficiencyLevel} learner.
-      3.  **suggestions**: (array of strings) Provide a list of 2-3 specific, actionable suggestions for improvement. For example, "Instead of '...', you could say '...'" or "The word '...' is used correctly, but a more natural choice would be '...'".
+      SPECIAL INSTRUCTION: Analyze the user's text. If it is just a random, nonsensical jumble of words with no clear attempt to form a sentence or coherent thought, you MUST provide a roasting/sarcastic but funny response. For example: "Did a cat walk on your keyboard? I asked for a paragraph, not a grocery list.", and give a score of 0.
 
-      Return ONLY the JSON object. Do not include any other text, explanations, or markdown formatting. The language of the feedback itself should be in English.
+      If the text is a genuine attempt, follow these rules:
+      1.  **feedback**: (string) Provide overall constructive feedback. Comment on grammar, vocabulary usage, and sentence structure. Be encouraging but clear.
+      2.  **score**: (number) Give a score from 0 to 100 based on: correct usage of the words, grammatical accuracy, and naturalness.
+      3.  **suggestions**: (array of strings) Provide a list of specific, actionable suggestions. Identify errors and explain how to fix them. For example: "Instead of '...', you should say '...' because...".
+
+      Return ONLY the JSON object. Do not include any other text or markdown formatting.
     `;
 }
 
