@@ -3,7 +3,7 @@
 
 import { Button } from "@/components/ui/button";
 import { MobileNav } from "@/components/mobile-nav";
-import { Menu, Copy, ArrowLeft, LogOut, LogIn, User, Edit } from "lucide-react";
+import { Menu, Copy, ArrowLeft, LogOut, LogIn, User, Languages } from "lucide-react";
 import Link from "next/link";
 import {
   Sheet,
@@ -25,10 +25,26 @@ import { useRouter } from "next/navigation";
 import { useFirebase } from "@/firebase";
 import { useUserProfile } from "@/hooks/use-user-profile";
 
+const LANGUAGE_MAP: Record<string, string> = {
+  ar: 'Arabic',
+  zh: 'Chinese (Mandarin)',
+  de: 'German',
+  en: 'English',
+  es: 'Spanish',
+  fr: 'French',
+  hi: 'Hindi',
+  it: 'Italian',
+  ja: 'Japanese',
+  ko: 'Korean',
+  pt: 'Portuguese',
+  ru: 'Russian',
+};
+
 export function AppHeader({ children, showBackButton = false }: { children?: React.ReactNode, showBackButton?: boolean }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const { auth, user } = useFirebase();
+  const { userProfile } = useUserProfile();
 
   const handleLogout = () => {
     if (auth) {
@@ -68,6 +84,13 @@ export function AppHeader({ children, showBackButton = false }: { children?: Rea
                             </p>
                           </div>
                         </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                         {userProfile?.nativeLanguage && (
+                          <DropdownMenuItem disabled className="cursor-default">
+                             <Languages className="mr-2 h-4 w-4" />
+                             <span>Native: {LANGUAGE_MAP[userProfile.nativeLanguage] || userProfile.nativeLanguage}</span>
+                          </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                           <LogOut className="mr-2 h-4 w-4" />
