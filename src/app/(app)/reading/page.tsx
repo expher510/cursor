@@ -96,31 +96,6 @@ function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
     const playerRef = useRef<ReactPlayer>(null);
     const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
-    const [isPlaying, setIsPlaying] = useState(false);
-
-    const handlePlayPause = () => {
-        setIsPlaying(prev => !prev);
-    };
-
-    const handleProgress = (progress: { playedSeconds: number }) => {
-        if (!videoData || !videoData.transcript) return;
-        const currentTimeMs = progress.playedSeconds * 1000;
-    
-        const activeIndex = videoData.transcript.findIndex(item => 
-          currentTimeMs >= item.offset && currentTimeMs < (item.offset + item.duration)
-        );
-    
-        if (activeIndex !== -1) {
-          setActiveSegmentIndex(activeIndex);
-        }
-      };
-
-      const handlePlaySegment = (offset: number) => {
-        if (playerRef.current) {
-          playerRef.current.seekTo(offset / 1000, 'seconds');
-          setIsPlaying(true);
-        }
-      };
 
     if (isLoading) {
         return (
@@ -183,7 +158,6 @@ function ReadingPracticePageContent() {
                     <TranscriptView 
                        transcript={formattedTranscript} 
                        videoId={videoData.videoId}
-                       onPlaySegment={handlePlaySegment}
                        activeSegmentIndex={activeSegmentIndex}
                     />
                 </Card>
@@ -199,7 +173,7 @@ function PageWithProvider() {
     const shouldGenerate = searchParams.get('shouldGenerate');
     const key = `${videoId}-${shouldGenerate}`;
 
-    const [isPlaying, setIsPlaying] = useState(false);
+    const [isPlaying, setIsPlaying] = useState(true);
     const playerRef = useRef<ReactPlayer>(null);
 
     const handlePlayPause = () => {
@@ -219,7 +193,7 @@ function PageWithProvider() {
                 <>
                     {!isLoading && videoData?.videoId && (
                          <div className="fixed right-4 md:right-8 bottom-8 z-50 flex flex-col items-center gap-2">
-                             <div className="w-20 h-auto aspect-video rounded-md overflow-hidden shadow-lg border">
+                             <div className="w-20 aspect-video rounded-md overflow-hidden shadow-lg border">
                                 <ReactPlayer
                                     ref={playerRef}
                                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
