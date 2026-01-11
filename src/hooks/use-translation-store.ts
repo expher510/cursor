@@ -1,41 +1,45 @@
 
 'use client';
 import { translateWord } from "@/ai/flows/translate-word-flow";
+import { translateSentence } from "@/ai/flows/translate-sentence-flow";
 import { create } from "zustand";
 
-type Translation = {
+type WordTranslation = {
     originalText: string;
     translatedText: string;
 };
 
 type TranslationState = {
-  translations: Record<string, Translation>;
-  isTranslating: Record<string, boolean>;
-  toggleTranslation: (word: string, originalText: string, context: string, key: string, nativeLanguage: string, sourceLang: string) => void;
+  wordTranslations: Record<string, WordTranslation>;
+  isTranslatingWord: Record<string, boolean>;
+  toggleWordTranslation: (word: string, originalText: string, context: string, key: string, nativeLanguage: string, sourceLang: string) => void;
+
+  sentenceTranslations: Record<number, string>;
+  isTranslatingSentence: Record<number, boolean>;
+  toggleSentenceTranslation: (lineIndex: number, sentence: string, nativeLanguage: string, sourceLang: string) => void;
 };
 
 export const useTranslationStore = create<TranslationState>((set, get) => ({
-  translations: {},
-  isTranslating: {},
+  wordTranslations: {},
+  isTranslatingWord: {},
+  sentenceTranslations: {},
+  isTranslatingSentence: {},
 
-  toggleTranslation: async (word, originalText, context, key, nativeLanguage, sourceLang) => {
-    const { translations, isTranslating } = get();
+  toggleWordTranslation: async (word, originalText, context, key, nativeLanguage, sourceLang) => {
+    const { wordTranslations, isTranslatingWord } = get();
 
-    // If it's already translated, revert it
-    if (translations[key]) {
-      const newTranslations = { ...translations };
+    if (wordTranslations[key]) {
+      const newTranslations = { ...wordTranslations };
       delete newTranslations[key];
-      set({ translations: newTranslations });
+      set({ wordTranslations: newTranslations });
       return;
     }
 
-    // If a request is already in flight, do nothing
-    if (isTranslating[key]) {
+    if (isTranslatingWord[key]) {
       return;
     }
 
-    // Mark as translating
-    set(state => ({ isTranslating: { ...state.isTranslating, [key]: true } }));
+    set(state => ({ isTranslatingWord: { ...state.isTranslatingWord, [key]: true } }));
 
     try {
         const { translation } = await translateWord({ 
@@ -46,18 +50,55 @@ export const useTranslationStore = create<TranslationState>((set, get) => ({
         });
         
         set(state => ({
-            translations: {
-                ...state.translations,
+            wordTranslations: {
+                ...state.wordTranslations,
                 [key]: {
                     originalText: originalText,
                     translatedText: translation
                 }
             },
-            isTranslating: { ...state.isTranslating, [key]: false }
+            isTranslatingWord: { ...state.isTranslatingWord, [key]: false }
         }));
     } catch (error) {
-      console.error("Translation failed:", error);
-      set(state => ({ isTranslating: { ...state.isTranslating, [key]: false } }));
+      console.error("Word translation failed:", error);
+      set(state => ({ isTranslatingWord: { ...state.isTranslatingWord, [key]: false } }));
     }
   },
+
+  toggleSentenceTranslation: async (lineIndex, sentence, nativeLanguage, sourceLang) => {
+    const { sentenceTranslations, isTranslatingSentence } = get();
+
+    if (sentenceTranslations[lineIndex]) {
+        const newTranslations = { ...sentenceTranslations };
+        delete newTranslations[lineIndex];
+        set({ sentenceTranslations: newTranslations });
+        return;
+    }
+
+    if (isTranslatingSentence[lineIndex]) {
+        return;
+    }
+    
+    set(state => ({ isTranslatingSentence: { ...state.isTranslatingSentence, [lineIndex]: true } }));
+    
+    try {
+        const { translation } = await translateSentence({
+            sentence: sentence,
+            sourceLang: sourceLang,
+            nativeLanguage: nativeLanguage
+        });
+
+        set(state => ({
+            sentenceTranslations: {
+                ...state.sentenceTranslations,
+                [lineIndex]: translation
+            },
+            isTranslatingSentence: { ...state.isTranslatingSentence, [lineIndex]: false }
+        }));
+
+    } catch (error) {
+        console.error("Sentence translation failed:", error);
+        set(state => ({ isTranslatingSentence: { ...state.isTranslatingSentence, [lineIndex]: false } }));
+    }
+  }
 }));
