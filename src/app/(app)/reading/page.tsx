@@ -183,28 +183,30 @@ function PageWithProvider() {
                     <ReadingPracticePageContent />
 
                     {!isLoading && videoData && (
-                         <div className="fixed right-4 md:right-8 bottom-8 z-50 h-16 w-16 rounded-full overflow-hidden shadow-lg border-2 border-primary bg-black">
-                            <ReactPlayer
-                                url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                                playing={false}
-                                volume={1}
-                                muted={false}
-                                width="100%"
-                                height="100%"
-                                controls={true}
-                                config={{
-                                    youtube: {
-                                        playerVars: {
-                                            controls: 1, // Show minimal controls
-                                            disablekb: 1,
-                                            fs: 0,
-                                            iv_load_policy: 3,
-                                            modestbranding: 1,
-                                            playsinline: 1,
+                        <div className="group fixed right-4 md:right-8 bottom-8 z-50 h-16 w-16 transition-all duration-300 ease-in-out hover:scale-125">
+                            <div className="h-full w-full rounded-full overflow-hidden shadow-lg border-2 border-primary bg-black opacity-50 group-hover:opacity-100 transition-opacity">
+                                <ReactPlayer
+                                    url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
+                                    playing={false}
+                                    volume={1}
+                                    muted={false}
+                                    width="100%"
+                                    height="100%"
+                                    controls={true}
+                                    config={{
+                                        youtube: {
+                                            playerVars: {
+                                                controls: 1,
+                                                disablekb: 1,
+                                                fs: 0,
+                                                iv_load_policy: 3,
+                                                modestbranding: 1,
+                                                playsinline: 1,
+                                            }
                                         }
-                                    }
-                                }}
-                            />
+                                    }}
+                                />
+                            </div>
                         </div>
                     )}
                 </>
