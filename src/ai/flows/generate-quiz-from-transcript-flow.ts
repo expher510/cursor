@@ -75,30 +75,40 @@ export async function generateQuizFromTranscript(input: GenerateQuizInput): Prom
         const chatCompletion = await groq.chat.completions.create({
             messages: [
                 {
-                    role: "system",
-                    content: "You are a helpful assistant that always responds in valid JSON.",
-                },
-                {
                     role: "user",
                     content: prompt,
                 }
             ],
             model: "llama-3.1-70b-versatile",
-            temperature: 0.7,
+            temperature: 1,
             max_tokens: 2048,
             top_p: 1,
-            stream: false, // Disabled for stable JSON response
-            response_format: { type: "json_object" }, // Ensure the response is a valid JSON object
+            stream: true, 
+            stop: null
         });
         
-        const content = chatCompletion.choices[0]?.message?.content;
+        let fullContent = '';
+        for await (const chunk of chatCompletion) {
+            fullContent += chunk.choices[0]?.delta?.content || '';
+        }
 
-        if (!content) {
-            throw new Error("Groq API returned an empty response.");
+        if (!fullContent) {
+            throw new Error("Groq API returned an empty streamed response.");
+        }
+
+        // Find the start and end of the JSON object
+        const jsonStart = fullContent.indexOf('{');
+        const jsonEnd = fullContent.lastIndexOf('}');
+        
+        if (jsonStart === -1 || jsonEnd === -1) {
+            console.error("Could not find JSON object in Groq response:", fullContent);
+            throw new Error("AI returned a response that was not valid JSON.");
         }
         
+        const jsonString = fullContent.substring(jsonStart, jsonEnd + 1);
+
         // The response should be a JSON object string, so we parse it.
-        const parsedJson = JSON.parse(content);
+        const parsedJson = JSON.parse(jsonString);
 
         // Validate the parsed JSON against our Zod schema
         const validatedOutput = GenerateQuizOutputSchema.parse(parsedJson);
