@@ -2,7 +2,6 @@
 'use server';
 import { z } from 'zod';
 import { Groq } from 'groq-sdk';
-import 'dotenv/config';
 
 const groq = new Groq();
 
