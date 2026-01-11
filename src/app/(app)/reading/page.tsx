@@ -4,218 +4,79 @@ import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, BrainCircuit, Check, Mic, Play, Pause, Trash2, Loader2, Sparkles, CheckCircle, StopCircle, X } from "lucide-react";
+import { AlertTriangle, BrainCircuit, Loader2 } from "lucide-react";
 import { VocabularyList } from "@/components/vocabulary-list";
 import { TranscriptView } from "@/components/transcript-view";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
-import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import ReactPlayer from "react-player";
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { useRecorder } from "@/hooks/use-recorder";
-import { useFirebase } from "@/firebase";
-import { addDoc, collection } from "firebase/firestore";
-import { useToast } from "@/hooks/use-toast";
 import { useUserProfile } from "@/hooks/use-user-profile";
-import { generateSpeechFeedback, type GenerateSpeechFeedbackOutput } from "@/ai/flows/generate-speech-feedback-flow";
+import { generateQuizFromTranscript, type GenerateQuizOutput } from "@/ai/flows/generate-quiz-from-transcript-flow";
+import { QuizView } from "@/components/quiz-player";
 
 
-function RecordingTimer({ isRecording }: { isRecording: boolean }) {
-    const [seconds, setSeconds] = useState(0);
-
-    useEffect(() => {
-        let interval: NodeJS.Timeout | null = null;
-        if (isRecording) {
-            setSeconds(0);
-            interval = setInterval(() => {
-                setSeconds(s => s + 1);
-            }, 1000);
-        } else {
-            if (interval) {
-                clearInterval(interval);
-            }
-        }
-        return () => {
-            if (interval) {
-                clearInterval(interval);
-            }
-        };
-    }, [isRecording]);
-
-    const formatTime = (time: number) => {
-        const minutes = Math.floor(time / 60).toString().padStart(2, '0');
-        const seconds = (time % 60).toString().padStart(2, '0');
-        return `${minutes}:${seconds}`;
-    };
-
-    return (
-        <div className="text-2xl font-mono font-bold text-foreground">
-            {formatTime(seconds)}
-        </div>
-    );
-}
-
-function ReadOutLoudController() {
+function QuickQuizGenerator() {
     const { videoData } = useWatchPage();
-    const { user, firestore } = useFirebase();
     const { userProfile } = useUserProfile();
-    const { toast } = useToast();
-    const { recorderState, startRecording, stopRecording, cancelRecording, audioData } = useRecorder();
+    const [quiz, setQuiz] = useState<GenerateQuizOutput | null>(null);
+    const [isLoading, setIsLoading] = useState(false);
 
-    const [isSaving, setIsSaving] = useState(false);
-    const [feedbackResult, setFeedbackResult] = useState<GenerateSpeechFeedbackOutput | null>(null);
-
-    const handleReadOutLoudClick = () => {
-        setFeedbackResult(null);
-        startRecording();
-    };
-    
-    const handleStopReadingOutLoud = () => {
-        stopRecording();
-    };
-    
-    const confirmReadOutLoud = async () => {
-        if (!audioData?.url || !user || !firestore || !videoData?.videoId || !userProfile || !videoData.transcript) {
-             toast({ variant: 'destructive', title: "Save failed", description: "Missing required data to save."});
-             cancelRecording();
+    const handleGenerateQuiz = async () => {
+        if (!videoData?.transcript || !userProfile) {
             return;
         }
-        
-        setIsSaving(true);
-        setFeedbackResult(null);
-
-        const fullTranscript = videoData.transcript.map(t => t.text).join(' ');
+        setIsLoading(true);
+        setQuiz(null);
 
         try {
-            const feedback = await generateSpeechFeedback({
-                audioDataUri: audioData.url,
-                originalText: fullTranscript,
-                targetLanguage: userProfile.targetLanguage,
-                nativeLanguage: userProfile.nativeLanguage,
-            });
+            const fullTranscript = videoData.transcript.map(t => t.text).join(' ');
+            // Take a random snippet of the transcript
+            const start = Math.floor(Math.random() * (fullTranscript.length - 1000));
+            const snippet = fullTranscript.substring(start, start + 1000);
 
-            setFeedbackResult(feedback);
-            
-            const attemptsCollection = collection(firestore, `users/${user.uid}/speakingAttempts`);
-            await addDoc(attemptsCollection, {
-                userId: user.uid,
-                videoId: videoData.videoId,
-                audioUrl: audioData.url,
-                timestamp: Date.now(),
-                originalText: fullTranscript,
-                transcribedText: feedback.transcribedText,
-                aiFeedback: {
-                    accuracy: feedback.accuracy,
-                    fluency: feedback.fluency,
-                    pronunciation: feedback.pronunciation,
-                },
+            const result = await generateQuizFromTranscript({
+                transcript: snippet,
+                targetLanguage: userProfile.targetLanguage,
+                proficiencyLevel: userProfile.proficiencyLevel,
             });
-            toast({ title: "Recording Saved!", description: "Your speaking practice has been saved with AI feedback." });
-        } catch(e: any) {
-            console.error("Failed to save recording or get feedback", e);
-            toast({ variant: 'destructive', title: "Save Failed", description: e.message || "There was an error saving your recording."});
+            setQuiz(result);
+        } catch (e) {
+            console.error("Failed to generate quick quiz", e);
         } finally {
-            setIsSaving(false);
-            cancelRecording();
+            setIsLoading(false);
         }
     };
     
-    const cancelReadOutLoud = () => {
-        cancelRecording();
-        setFeedbackResult(null);
-    }
-    
-    if (recorderState.status === 'idle' || recorderState.error) {
+    if (quiz) {
         return (
-            <div className="flex flex-col items-center gap-4">
-                <Button variant="outline" onClick={handleReadOutLoudClick} size="lg">
-                    <Mic className="mr-2" />
-                    Read Out Loud
-                </Button>
-                 {recorderState.error && <p className="text-sm text-destructive">{recorderState.error}</p>}
-                 {feedbackResult && (
-                    <Card className="w-full max-w-2xl bg-muted/50">
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-base">
-                                <Sparkles className="h-5 w-5 text-primary" />
-                                AI Feedback (in {userProfile?.nativeLanguage})
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 text-sm">
-                           <div>
-                                <h4 className="font-semibold">Transcribed from your audio:</h4>
-                                <p className="text-muted-foreground italic">"{feedbackResult.transcribedText}"</p>
-                           </div>
-                           <hr />
-                           <div>
-                                <h4 className="font-semibold">Accuracy</h4>
-                                <p className="text-muted-foreground">{feedbackResult.accuracy}</p>
-                           </div>
-                            <div>
-                                <h4 className="font-semibold">Fluency</h4>
-                                <p className="text-muted-foreground">{feedbackResult.fluency}</p>
-                           </div>
-                            <div>
-                                <h4 className="font-semibold">Pronunciation</h4>
-                                <p className="text-muted-foreground">{feedbackResult.pronunciation}</p>
-                           </div>
-                        </CardContent>
-                    </Card>
-                )}
+            <div className="w-full max-w-3xl mx-auto flex flex-col items-center gap-4">
+                 <QuizView questions={quiz.questions} onRetry={() => setQuiz(null)} />
             </div>
         )
     }
 
     return (
-        <Card className="w-full max-w-2xl mx-auto p-4 transition-all">
-            {recorderState.status === 'recording' && (
-                <CardContent className="flex flex-col items-center justify-center gap-4 text-center p-0">
-                    <div className="flex items-center gap-4">
-                        <Mic className="h-8 w-8 text-destructive animate-pulse" />
-                        <RecordingTimer isRecording={recorderState.status === 'recording'} />
-                    </div>
-                    <Button onClick={handleStopReadingOutLoud} size="lg" variant="destructive">
-                        <StopCircle className="mr-2" />
-                        Stop Recording
-                    </Button>
-                </CardContent>
-            )}
-             {recorderState.status === 'stopped' && (
-                 <CardContent className="flex flex-col items-center justify-center gap-4 text-center p-0">
-                     <h3 className="text-lg font-semibold">Recording Finished</h3>
-                     <p className="text-muted-foreground text-sm">Save to get AI feedback or discard.</p>
-                    <div className="flex gap-4 pt-2">
-                         <Button onClick={confirmReadOutLoud} size="lg" disabled={isSaving}>
-                            {isSaving ? <Loader2 className="mr-2 animate-spin" /> : <Check className="mr-2" />}
-                            Confirm
-                        </Button>
-                        <Button onClick={cancelReadOutLoud} size="lg" variant="outline">
-                            <X className="mr-2" />
-                            Cancel
-                        </Button>
-                    </div>
-                </CardContent>
-            )}
-        </Card>
+        <div className="flex flex-col items-center gap-4">
+            <Button variant="outline" onClick={handleGenerateQuiz} size="lg" disabled={isLoading}>
+                {isLoading ? <Loader2 className="mr-2 animate-spin" /> : <BrainCircuit className="mr-2" />}
+                Generate Quick Quiz
+            </Button>
+            {isLoading && <p className="text-sm text-muted-foreground">AI is creating questions...</p>}
+        </div>
     );
-
 }
 
 
 function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
-
     const [isPlaying, setIsPlaying] = useState(false);
     const [currentTime, setCurrentTime] = useState(0);
     const playerRef = useRef<ReactPlayer>(null);
     
-    const handlePlayPause = () => {
-        setIsPlaying(prev => !prev);
-    };
-
-    const handlePlaySegment = useCallback((offset: number, duration: number, text: string) => {
+    const handlePlaySegment = useCallback((offset: number) => {
         if (playerRef.current) {
             playerRef.current.seekTo(offset / 1000, 'seconds');
             setIsPlaying(true);
@@ -290,9 +151,9 @@ function ReadingPracticePageContent() {
                 </div>
                 <div className="mt-2 space-y-4">
                     <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                        Read the text, save new words, and listen along. Click any line to play its audio.
+                        Read the text, save new words, and click any line to play its audio.
                     </p>
-                    <ReadOutLoudController />
+                    <QuickQuizGenerator />
                 </div>
             </div>
             
@@ -318,24 +179,15 @@ function ReadingPracticePageContent() {
                         onProgress={(state) => {
                             setCurrentTime(state.playedSeconds * 1000);
                         }}
-                        onEnded={() => {
-                           setIsPlaying(false);
-                        }}
+                        onPlay={() => setIsPlaying(true)}
+                        onPause={() => setIsPlaying(false)}
+                        onEnded={() => setIsPlaying(false)}
                         width="0"
                         height="0"
                         controls={false}
                     />
                 </div>
             )}
-            
-            {videoData.audioUrl && (
-                 <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
-                     <Button onClick={handlePlayPause} size="lg" className="rounded-full h-16 w-16 shadow-lg">
-                         {isPlaying ? <Pause className="h-8 w-8" /> : <Play className="h-8 w-8" />}
-                     </Button>
-                 </div>
-            )}
-
         </div>
     )
 }

@@ -55,23 +55,22 @@ const generateQuizFlow = ai.defineFlow(
     }
 
     const prompt = `
-      You are an expert language teacher. Your task is to create a comprehension quiz based on a video transcript.
+      You are an expert language teacher. Your task is to create a quick comprehension quiz based on a snippet from a video transcript.
       The user is a ${proficiencyLevel} learner of ${targetLanguage}.
       
-      Create a quiz with exactly 7 questions that are appropriate for a ${proficiencyLevel} level.
-      The questions should be a mix of multiple-choice and true/false to test understanding of the transcript.
+      Create a quiz with exactly 3 questions that are appropriate for a ${proficiencyLevel} level.
+      The questions should test understanding of the provided transcript snippet.
       
       Here are the rules for the output:
       1. Provide the output as a SINGLE, VALID JSON object.
       2. The JSON object must contain a single key "questions".
-      3. The value of "questions" must be an array of question objects.
+      3. The value of "questions" must be an array of 3 question objects.
       4. Each question object must have three properties: "questionText", "options" (an array of 4 choices), and "correctAnswer".
-      5. For true/false questions, the "options" array must be exactly ["True", "False"].
-      6. The language of "questionText", "options", and "correctAnswer" MUST be in ${targetLanguage}.
+      5. The language of "questionText", "options", and "correctAnswer" MUST be in ${targetLanguage}.
 
-      Transcript:
+      Transcript Snippet:
       ---
-      ${transcript.substring(0, 5000)}
+      ${transcript.substring(0, 1000)}
       ---
 
       Return ONLY the JSON object. Do not include any other text, explanations, or markdown formatting like \`\`\`json.
@@ -85,7 +84,7 @@ const generateQuizFlow = ai.defineFlow(
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          model: "google/gemma-3n-e2b-it:free",
+          model: "google/gemma-2-9b-it:free",
           messages: [
             { "role": "user", "content": prompt }
           ],

@@ -1,6 +1,6 @@
 
 'use client';
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, CheckCircle, XCircle, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -8,12 +8,9 @@ import { Progress } from '@/components/ui/progress';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
-import { type QuizData, type QuizQuestion, type UserAnswer } from '@/lib/quiz-data';
+import { type QuizQuestion } from '@/lib/quiz-data';
 import { useFirebase } from '@/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
-import { useWatchPage } from '@/context/watch-page-context';
-import { useToast } from '@/hooks/use-toast';
+
 
 // Fisher-Yates shuffle algorithm
 const shuffleArray = (array: any[]) => {
@@ -88,13 +85,8 @@ function useQuiz(questions: QuizQuestion[]) {
 }
 
 
-function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) {
-    const { videoData, quizData } = useWatchPage();
-    const { firestore, user } = useFirebase();
-    const { toast } = useToast();
-    const router = useRouter();
-
-    const questions = useMemo(() => quizData?.questions || [], [quizData]);
+export function QuizView({ questions, onRetry, title = "Quiz" }: { questions: QuizQuestion[], onRetry: () => void, title?: string }) {
+    const { user } = useFirebase();
 
     const { 
         currentQuestionIndex,
@@ -110,39 +102,12 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
         shuffledQuestions,
         totalQuestions
      } = useQuiz(questions);
-
-     // Effect to save results automatically when quiz is finished
-    useEffect(() => {
-        if (isFinished && firestore && user && videoData?.videoId) {
-            const saveResults = async () => {
-                const quizDocRef = doc(firestore, `users/${user.uid}/videos/${videoData.videoId}/quizzes`, quizId);
-                
-                const detailedUserAnswers: UserAnswer[] = shuffledQuestions.map((question, index) => ({
-                    questionText: question.questionText,
-                    userAnswer: userAnswers[index],
-                    correctAnswer: question.correctAnswer,
-                }));
-
-                try {
-                    await updateDoc(quizDocRef, {
-                        score: score,
-                        userAnswers: detailedUserAnswers,
-                    });
-                     toast({ title: "Results Saved", description: "Your quiz results have been saved automatically." });
-                } catch (error) {
-                    console.error("Failed to save quiz results:", error);
-                    toast({ variant: "destructive", title: "Save Failed", description: "Could not save your quiz results." });
-                }
-            };
-            saveResults();
-        }
-    }, [isFinished, firestore, user, videoData?.videoId, quizId, score, userAnswers, shuffledQuestions, toast]);
     
     if (isFinished) {
         return (
             <Card className="w-full max-w-3xl mx-auto">
                 <CardHeader>
-                    <CardTitle>Quiz Review</CardTitle>
+                    <CardTitle>{title} Review</CardTitle>
                     <CardDescription>Check your answers below.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -171,14 +136,9 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
                         <div className="mx-auto h-24 w-24 rounded-full bg-primary/10 border-4 border-primary flex items-center justify-center">
                             <span className="text-3xl font-bold text-primary">{score} / {totalQuestions}</span>
                         </div>
-                        <div className="text-sm text-muted-foreground pt-2">
-                          <p>A detailed performance evaluation will be sent to:</p>
-                          <p className="text-base font-semibold text-primary">{user?.email}</p>
-                        </div>
                     </div>
                     <div className="flex justify-center gap-4 pt-4">
                         <Button onClick={onRetry}><RefreshCw className="mr-2 h-4 w-4"/> Try Again</Button>
-                        <Button variant="outline" onClick={() => router.push('/')}>Go to Homepage</Button>
                     </div>
                 </CardFooter>
             </Card>
@@ -186,7 +146,6 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
     }
     
     if (!currentQuestion) {
-        // This can happen briefly while shuffling, show a loader or nothing.
         return null;
     }
 
@@ -228,13 +187,17 @@ function QuizView({ quizId, onRetry }: { quizId: string, onRetry: () => void }) 
     );
 }
 
-export function QuizPlayer({ quizId }: { quizId: string }) {
-    // We need a key to force re-mounting of the component on retry
+
+export function QuizPlayer({ quizData, onQuizComplete }: { quizData: any, onQuizComplete: (results: any) => void }) {
     const [quizKey, setQuizKey] = useState(Date.now());
 
     const handleRetry = () => {
         setQuizKey(Date.now());
+    };
+    
+    if (!quizData?.questions?.length) {
+        return <p>No questions available for this quiz.</p>;
     }
 
-    return <QuizView key={quizKey} quizId={quizId} onRetry={handleRetry} />;
+    return <QuizView key={quizKey} questions={quizData.questions} onRetry={handleRetry} title={quizData.id}/>;
 }
