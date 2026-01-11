@@ -173,7 +173,7 @@ function PageWithProvider() {
     const shouldGenerate = searchParams.get('shouldGenerate');
     const key = `${videoId}-${shouldGenerate}`;
 
-    const [isPlaying, setIsPlaying] = useState(true);
+    const [isPlaying, setIsPlaying] = useState(false);
     const playerRef = useRef<ReactPlayer>(null);
 
     const handlePlayPause = () => {
@@ -185,7 +185,7 @@ function PageWithProvider() {
         if (playerRef.current) {
           playerRef.current.seekTo(0);
         }
-      };
+    };
 
     return (
         <WatchPageProvider key={key}>
@@ -198,6 +198,8 @@ function PageWithProvider() {
                                     ref={playerRef}
                                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                                     playing={isPlaying}
+                                    onPlay={() => setIsPlaying(true)}
+                                    onPause={() => setIsPlaying(false)}
                                     onEnded={handleVideoEnd}
                                     controls={true}
                                     width="100%"
@@ -213,7 +215,6 @@ function PageWithProvider() {
                         </div>
                     )}
                    
-
                     <ReadingPracticePageContent />
                 </>
             )}
