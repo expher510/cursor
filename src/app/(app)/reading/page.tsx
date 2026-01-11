@@ -296,7 +296,6 @@ function DraggableVideoPlayer() {
 
 
 function PageWithProvider() {
-    const { isLoading, videoData } = useWatchPage();
     const searchParams = useSearchParams();
     const videoId = searchParams.get('v');
     const shouldGenerate = searchParams.get('shouldGenerate');
@@ -304,12 +303,21 @@ function PageWithProvider() {
     
     return (
         <WatchPageProvider>
+            <PageContent />
+        </WatchPageProvider>
+    );
+}
+
+function PageContent() {
+    const { isLoading, videoData } = useWatchPage();
+    return (
+        <>
             <ReadingPracticePageContent />
             {!isLoading && videoData && (
                 <DraggableVideoPlayer />
             )}
-        </WatchPageProvider>
-    );
+        </>
+    )
 }
 
 
