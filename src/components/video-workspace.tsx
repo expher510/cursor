@@ -39,7 +39,7 @@ function ErrorState({ message, title = "Processing Error" }: { message: string, 
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">{message}</p>
+          <p className="text-muted-foreground break-words">{message}</p>
         </CardContent>
       </Card>
     </div>
@@ -153,7 +153,7 @@ export function VideoWorkspace() {
                     {isGeneratingQuiz && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
                     {!isGeneratingQuiz && <Edit className="mr-2 h-5 w-5" />}
                     {isQuizVisible
-                        ? (rawQuizResponse ? "Close Quiz" : 'Close Quiz')
+                        ? 'Close Quiz'
                         : 'Take a Quiz'
                     }
                 </Button>

@@ -255,8 +255,9 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
 
     } catch (e: any) {
         console.error("Failed to generate quiz on demand:", e);
-        setQuizGenerationError(e.message || "An unexpected error occurred while generating the quiz.");
-        toast({ variant: "destructive", title: "Quiz Generation Failed", description: e.message || "An error occurred."});
+        const errorMessage = e.message || "An unexpected error occurred while generating the quiz.";
+        setQuizGenerationError(errorMessage);
+        toast({ variant: "destructive", title: "Quiz Generation Failed", description: "See details below the button."});
     } finally {
         setIsGeneratingQuiz(false);
     }
