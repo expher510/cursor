@@ -67,7 +67,6 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
     <div className={cn("p-4 leading-relaxed text-lg space-y-2", isRtl && "text-right")} dir={isRtl ? "rtl" : "ltr"}>
         {transcript.map((line, lineIndex) => {
             const isActive = lineIndex === activeSegmentIndex;
-            const isNext = lineIndex === activeSegmentIndex + 1;
             const sentenceKey = lineIndex;
             const translatedSentence = sentenceTranslations[sentenceKey];
             const isSentenceCurrentlyTranslating = isTranslatingSentence[sentenceKey];
@@ -79,7 +78,6 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
                     "group/line flex items-start gap-2 rounded-md transition-colors relative",
                     onPlaySegment && "cursor-pointer",
                     isActive ? "bg-primary/10" : "hover:bg-muted/50",
-                    isNext && "bg-muted/70",
                   )}
                   onClick={(e) => handleLineClick(e, line.offset, line.duration, line.text, lineIndex)}
                 >

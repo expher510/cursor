@@ -95,26 +95,7 @@ function ReadingQuiz() {
 function ReadingPracticePageContent() {
     const { videoData, isLoading, error } = useWatchPage();
     const [isPlaying, setIsPlaying] = useState(false);
-    const [currentTime, setCurrentTime] = useState(0);
-    const [activeSegmentIndex, setActiveSegmentIndex] = useState(-1);
     const playerRef = useRef<ReactPlayer>(null);
-    
-    useEffect(() => {
-      if (!videoData?.transcript) return;
-      
-      let activeIndex = -1;
-      // Find the currently active segment
-      for (let i = 0; i < videoData.transcript.length; i++) {
-          const segment = videoData.transcript[i];
-          const segmentEnd = segment.offset + segment.duration;
-          if (currentTime >= segment.offset && currentTime < segmentEnd) {
-              activeIndex = i;
-              break;
-          }
-      }
-      setActiveSegmentIndex(activeIndex);
-
-    }, [currentTime, videoData?.transcript]);
     
     if (isLoading) {
         return (
@@ -160,13 +141,6 @@ function ReadingPracticePageContent() {
     const handlePlayPause = () => {
         setIsPlaying(!isPlaying);
     }
-    
-    const playSegment = (offset: number) => {
-        if (playerRef.current) {
-            playerRef.current.seekTo(offset / 1000);
-            setIsPlaying(true);
-        }
-    };
 
 
     return (
@@ -176,7 +150,6 @@ function ReadingPracticePageContent() {
                     ref={playerRef}
                     url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                     playing={isPlaying}
-                    onProgress={(progress) => setCurrentTime(progress.playedSeconds * 1000)}
                     onEnded={() => setIsPlaying(false)}
                     controls={false}
                     width="0"
@@ -208,8 +181,7 @@ function ReadingPracticePageContent() {
                     <TranscriptView 
                        transcript={formattedTranscript} 
                        videoId={videoData.videoId}
-                       onPlaySegment={playSegment}
-                       activeSegmentIndex={activeSegmentIndex}
+                       onPlaySegment={null}
                     />
                 </Card>
                  <ReadingQuiz />
