@@ -66,12 +66,7 @@ export async function generateQuizFromTranscript(input: GenerateQuizInput): Prom
 
     try {
         const chatCompletion = await groq.chat.completions.create({
-            messages: [
-                {
-                    role: "user",
-                    content: prompt,
-                }
-            ],
+            messages: [{ role: "user", content: prompt }],
             model: "llama-3.1-70b-versatile",
             temperature: 1,
             max_tokens: 2048,
@@ -86,6 +81,10 @@ export async function generateQuizFromTranscript(input: GenerateQuizInput): Prom
         if (!content) {
             throw new Error("Groq API returned an empty response.");
         }
+
+        console.log("--- GROQ API RESPONSE ---");
+        console.log(content);
+        console.log("--- END GROQ API RESPONSE ---");
 
         const parsedJson = JSON.parse(content);
         const validatedOutput = GenerateQuizOutputSchema.parse(parsedJson);
