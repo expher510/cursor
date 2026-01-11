@@ -47,12 +47,14 @@ export async function extractAudio(input: ExtractAudioInput): Promise<ExtractAud
 
     try {
         const response = await fetch(url, options);
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`RapidAPI request failed with status ${response.status}: ${errorText}`);
-        }
+        const responseText = await response.text();
 
-        const result = await response.json();
+        if (!response.ok) {
+            // Throw the actual response text for better debugging
+            throw new Error(`RapidAPI request failed with status ${response.status}: ${responseText}`);
+        }
+        
+        const result = JSON.parse(responseText);
         
         // The API might return an array of links or a single object with a link
         const link = result.link || (Array.isArray(result) && result[0]?.link);
@@ -61,11 +63,12 @@ export async function extractAudio(input: ExtractAudioInput): Promise<ExtractAud
              return { audioUrl: link };
         } else {
             console.error("Unexpected API response structure:", result);
-            throw new Error('Failed to extract audio URL from API response.');
+            throw new Error(`Failed to extract audio URL from API response. Response: ${responseText}`);
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error extracting audio:', error);
-        throw new Error('Failed to extract audio from video.');
+        // Re-throw the error with its original message for the UI
+        throw new Error(error.message || 'Failed to extract audio from video.');
     }
 }
