@@ -1,4 +1,3 @@
-
 'use client';
 import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
@@ -146,7 +145,7 @@ function ReadingPracticePageContent() {
                 </div>
                 <div className="mt-2 space-y-4">
                     <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                        Read the text and save new words to your vocabulary list. Click the dot <Circle className="inline-block h-4 w-4 border rounded-full p-0.5 align-middle" /> next to a sentence to translate it.
+                        Read the text and save new words to your vocabulary list. Click the dot <Circle className="inline-block h-5 w-5 border-2 rounded-full p-0.5 align-middle" /> next to a sentence to translate it.
                     </p>
                 </div>
             </div>

@@ -117,7 +117,7 @@ export function VideoWorkspace() {
                {isLoading && <Loader2 className="h-6 w-6 animate-spin text-primary" />}
             </div>
             <p className="text-base text-muted-foreground max-w-3xl mx-auto">
-                Listen to the video and follow along with the synchronized transcript. Click any word to save it. Click the dot <Circle className="inline-block h-4 w-4 border rounded-full p-0.5 align-middle" /> next to a sentence to translate it.
+                Listen to the video and follow along with the synchronized transcript. Click any word to save it. Click the dot <Circle className="inline-block h-5 w-5 border-2 rounded-full p-0.5 align-middle" /> next to a sentence to translate it.
             </p>
         </div>
 
