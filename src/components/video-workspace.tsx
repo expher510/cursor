@@ -47,7 +47,7 @@ function ErrorState({ message }: { message: string }) {
 }
 
 export function VideoWorkspace() {
-  const { videoData, quizData, isLoading, error, handleQuizGeneration, isGeneratingQuiz } = useWatchPage();
+  const { videoData, quizData, isLoading, error, handleQuizGeneration, isGeneratingQuiz, rawQuizResponse } = useWatchPage();
   const [currentTime, setCurrentTime] = useState(0);
   const [showTranscript, setShowTranscript] = useState(true);
   const [isQuizVisible, setIsQuizVisible] = useState(false);
@@ -151,12 +151,12 @@ export function VideoWorkspace() {
         
             <div className="mt-4 w-full flex flex-col items-center gap-6">
                 <Button onClick={toggleQuizVisibility} size="lg" disabled={isGeneratingQuiz}>
-                    {isGeneratingQuiz ? (
-                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    ) : (
-                        <Edit className="mr-2 h-5 w-5" />
-                    )}
-                    {isQuizVisible ? 'Close Quiz' : 'Take a Quiz'}
+                    {isGeneratingQuiz && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                    {!isGeneratingQuiz && <Edit className="mr-2 h-5 w-5" />}
+                    {isQuizVisible
+                        ? (rawQuizResponse || 'Close Quiz')
+                        : 'Take a Quiz'
+                    }
                 </Button>
 
                 {isQuizVisible && quizData && quizData.id && (

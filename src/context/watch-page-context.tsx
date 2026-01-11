@@ -39,6 +39,7 @@ type WatchPageContextType = {
   error: string | null;
   handleQuizGeneration: () => void;
   isGeneratingQuiz: boolean;
+  rawQuizResponse: string | null;
 };
 
 const WatchPageContext = createContext<WatchPageContextType | undefined>(undefined);
@@ -55,6 +56,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [rawQuizResponse, setRawQuizResponse] = useState<string | null>(null);
   
   const [activeVideoId, setActiveVideoId] = useState<string | null>(urlVideoId);
 
@@ -220,6 +222,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     }
     
     setIsGeneratingQuiz(true);
+    setRawQuizResponse(null);
 
     try {
         const fullTranscript = videoData.transcript.map(t => t.text).join(' ');
@@ -228,6 +231,8 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
             targetLanguage: userProfile.targetLanguage,
             proficiencyLevel: userProfile.proficiencyLevel
         });
+        
+        setRawQuizResponse(quizResult.rawResponse);
 
         const newQuizData: QuizData = {
           id: 'comprehensive-test',
@@ -331,6 +336,7 @@ export function WatchPageProvider({ children }: { children: ReactNode }) {
     error,
     handleQuizGeneration,
     isGeneratingQuiz,
+    rawQuizResponse,
   };
 
   return (

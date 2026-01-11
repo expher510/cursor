@@ -27,6 +27,12 @@ const GenerateQuizOutputSchema = z.object({
 });
 export type GenerateQuizOutput = z.infer<typeof GenerateQuizOutputSchema>;
 
+// Extended output to include raw response
+export type GenerateQuizExtendedOutput = GenerateQuizOutput & {
+  rawResponse: string;
+};
+
+
 // Helper function to build the prompt
 function buildPrompt(input: GenerateQuizInput): string {
     return `
@@ -53,7 +59,7 @@ function buildPrompt(input: GenerateQuizInput): string {
 }
 
 // This is the public wrapper function that components will call.
-export async function generateQuizFromTranscript(input: GenerateQuizInput): Promise<GenerateQuizOutput> {
+export async function generateQuizFromTranscript(input: GenerateQuizInput): Promise<GenerateQuizExtendedOutput> {
     try {
         const prompt = buildPrompt(input);
 
@@ -79,17 +85,19 @@ export async function generateQuizFromTranscript(input: GenerateQuizInput): Prom
 
         console.log("--- GROQ API RESPONSE ---");
         console.log(responseContent);
-        console.log("-------------------------");
         
         if (!responseContent) {
             throw new Error("Received an empty response from the AI model.");
         }
         
-        // No need to clean the response, as we requested a JSON object directly
         const parsedJson = JSON.parse(responseContent);
         
         const validatedOutput = GenerateQuizOutputSchema.parse(parsedJson);
-        return validatedOutput;
+        
+        return {
+          ...validatedOutput,
+          rawResponse: responseContent,
+        };
 
     } catch (error) {
         console.error("Error generating quiz with Groq:", error);
