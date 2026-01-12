@@ -1,4 +1,3 @@
-
 'use client';
 import { AppHeader } from "@/components/app-header";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
@@ -13,7 +12,6 @@ import { useState, useMemo, Suspense, useEffect, useRef, useCallback } from "rea
 import { useSearchParams } from "next/navigation";
 import { QuizPlayer } from "@/components/quiz-player";
 import { cn } from "@/lib/utils";
-import { CircularProgressControl } from "@/components/circular-progress-control";
 import LiteYouTubeEmbed from 'react-lite-youtube-embed';
 import 'react-lite-youtube-embed/dist/LiteYouTubeEmbed.css';
 
@@ -151,6 +149,11 @@ function ReadingPracticePageContent() {
 function DraggableVideoPlayer() {
     const { videoData } = useWatchPage();
     const dragRef = useRef<HTMLDivElement>(null);
+    const [isClient, setIsClient] = useState(false);
+
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
     
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
@@ -208,7 +211,7 @@ function DraggableVideoPlayer() {
     }, [isDragging, onDragMove]);
 
 
-    if (!videoData || !videoData.videoId) return null;
+    if (!videoData || !videoData.videoId || !isClient) return null;
 
     return (
         <div

@@ -52,6 +52,11 @@ export function VideoWorkspace() {
   const [showTranscript, setShowTranscript] = useState(true);
   const [isQuizVisible, setIsQuizVisible] = useState(false);
   const quizContainerRef = useRef<HTMLDivElement>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+      setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (isQuizVisible && quizContainerRef.current) {
@@ -96,12 +101,14 @@ export function VideoWorkspace() {
         <div className="w-full flex flex-col gap-4 items-center">
              <div className="w-full">
                 <div className="aspect-video w-full overflow-hidden rounded-lg bg-black/75 border">
-                    <LiteYouTubeEmbed
-                        id={videoData.videoId}
-                        title={videoData.title}
-                        params="modestbranding=1&rel=0&autoplay=1"
-                        noCookie={true}
-                    />
+                    {isClient && (
+                      <LiteYouTubeEmbed
+                          id={videoData.videoId}
+                          title={videoData.title}
+                          params="modestbranding=1&rel=0&autoplay=1"
+                          noCookie={true}
+                      />
+                    )}
                 </div>
              </div>
 
