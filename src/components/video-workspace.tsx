@@ -12,8 +12,9 @@ import { CaptionView } from "./caption-view";
 import { VocabularyList } from "./vocabulary-list";
 import { Logo } from "./logo";
 import { QuizPlayer } from "./quiz-player";
+import type Player from 'react-player';
 
-const ReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false });
+const DynamicReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false });
 
 
 function LoadingState() {
@@ -55,7 +56,7 @@ export function VideoWorkspace() {
   const [isQuizVisible, setIsQuizVisible] = useState(false);
   const [isBuffering, setIsBuffering] = useState(false);
   const [duration, setDuration] = useState(0);
-  const playerRef = useRef<ReactPlayer>(null);
+  const playerRef = useRef<Player>(null);
   const quizContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -113,7 +114,7 @@ export function VideoWorkspace() {
                             <Loader2 className="h-12 w-12 animate-spin text-white" />
                         </div>
                     )}
-                    <ReactPlayer
+                    <DynamicReactPlayer
                         ref={playerRef}
                         url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                         width="100%"

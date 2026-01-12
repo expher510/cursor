@@ -1,7 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card";
 import dynamic from 'next/dynamic';
+import type Player from 'react-player';
 
-const ReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false });
+const DynamicReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false });
 
 type VideoPlayerProps = {
   videoId: string;
@@ -13,7 +14,7 @@ export function VideoPlayer({ videoId, title }: VideoPlayerProps) {
     <Card>
       <CardContent className="p-4 md:p-6">
         <div className="aspect-video w-full overflow-hidden rounded-lg border">
-            <ReactPlayer
+            <DynamicReactPlayer
                 url={`https://www.youtube.com/watch?v=${videoId}`}
                 width="100%"
                 height="100%"

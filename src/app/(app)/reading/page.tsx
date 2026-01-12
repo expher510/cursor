@@ -15,8 +15,9 @@ import { QuizPlayer } from "@/components/quiz-player";
 import dynamic from 'next/dynamic';
 import { cn } from "@/lib/utils";
 import { CircularProgressControl } from "@/components/circular-progress-control";
+import type Player from 'react-player';
 
-const ReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false });
+const DynamicReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false });
 
 
 function ReadingQuiz() {
@@ -151,7 +152,7 @@ function ReadingPracticePageContent() {
 
 function DraggableVideoPlayer() {
     const { videoData } = useWatchPage();
-    const playerRef = useRef<ReactPlayer>(null);
+    const playerRef = useRef<Player>(null);
     const dragRef = useRef<HTMLDivElement>(null);
     const [played, setPlayed] = useState(0);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -239,7 +240,7 @@ function DraggableVideoPlayer() {
 
             <div className="absolute inset-0 flex items-center justify-center">
                  <div className="relative h-[112px] w-[112px] rounded-full overflow-hidden shadow-lg flex-shrink-0">
-                    <ReactPlayer
+                    <DynamicReactPlayer
                         ref={playerRef}
                         url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
                         volume={1}
