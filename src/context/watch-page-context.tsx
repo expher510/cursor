@@ -283,6 +283,11 @@ export function WatchPageProvider({ children, activeVideoId: passedVideoId, shou
             generateAndStoreHardcodedQuestions(combinedData, videoVocabulary);
           }
         } else if (shouldGenerate) {
+          if (!userProfile) {
+              setError("User profile not loaded, cannot process new video.");
+              setIsLoading(false);
+              return;
+          }
           toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
           
           let result: ProcessVideoOutput;
