@@ -223,7 +223,7 @@ export function WatchPageProvider({ children, activeVideoId: passedVideoId, shou
       return;
     }
 
-    if (!user || !firestore || !userProfile) {
+    if (!user || !firestore) {
       setError("Authentication, database, or user profile service is not available.");
       setIsLoading(false);
       return;
@@ -307,6 +307,10 @@ export function WatchPageProvider({ children, activeVideoId: passedVideoId, shou
              }
           }
 
+          if (!user) {
+            setError("User not available to save video data.");
+            return;
+          }
           // Create docs for video and transcript
           await setDoc(videoDocRef, {
               id: cleanVideoId,
