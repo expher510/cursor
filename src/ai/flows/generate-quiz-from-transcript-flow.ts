@@ -1,9 +1,9 @@
 
 'use server';
 import { z } from 'zod';
-import { Groq } from 'groq-sdk';
+import OpenAI from 'openai';
 
-const groq = new Groq();
+const openai = new OpenAI();
 
 // Define the schema for a single quiz question
 const QuizQuestionSchema = z.object({
@@ -42,7 +42,7 @@ function buildPrompt(input: GenerateQuizInput): string {
       The questions should be appropriate for a ${input.proficiencyLevel} level.
       
       Here are the rules for the output:
-      1. Your entire response MUST be a single, valid JSON object.
+      1. Your entire response MUST be a single, valid JSON object that adheres to the provided schema.
       2. The JSON object must contain a single key "questions".
       3. The value of "questions" must be an array of question objects.
       4. Each question object must have three properties: "questionText", "options" (an array of 4 choices), and "correctAnswer".
@@ -61,22 +61,20 @@ function buildPrompt(input: GenerateQuizInput): string {
 export async function generateQuizFromTranscript(input: GenerateQuizInput): Promise<GenerateQuizExtendedOutput> {
     const prompt = buildPrompt(input);
 
-    const chatCompletion = await groq.chat.completions.create({
+    const chatCompletion = await openai.chat.completions.create({
         "messages": [
             {
                 "role": "user",
                 "content": prompt
             }
         ],
-        "model": "openai/gpt-oss-120b",
+        "model": "gpt-4-turbo",
         "temperature": 0.7,
         "max_tokens": 1024,
         "top_p": 1,
-        "stream": false,
         "response_format": {
             "type": "json_object"
         },
-        "stop": null
     });
     
     const responseContent = chatCompletion.choices[0]?.message?.content || '';
@@ -85,7 +83,6 @@ export async function generateQuizFromTranscript(input: GenerateQuizInput): Prom
     
     try {
         const parsedJson = JSON.parse(responseContent);
-        // We still try to parse with Zod, but we won't crash if it fails.
         const validationResult = GenerateQuizOutputSchema.safeParse(parsedJson);
         if (validationResult.success) {
             parsedOutput = validationResult.data;

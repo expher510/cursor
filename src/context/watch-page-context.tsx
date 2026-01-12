@@ -2,18 +2,18 @@
 'use client';
 
 import { useFirebase } from '@/firebase';
-import { collection, doc, query, addDoc, deleteDoc, getDoc, setDoc, orderBy, limit, getDocs, updateDoc } from 'firebase/firestore';
+import { collection, doc, query, addDoc, deleteDoc, getDoc, setDoc, orderBy, limit, getDocs } from 'firebase/firestore';
 import { createContext, useContext, useState, useCallback, ReactNode, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
-import { processVideo, type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 import { translateWord } from '@/ai/flows/translate-word-flow';
 import { useSearchParams } from 'next/navigation';
-import { type QuizData, UserAnswer, QuizQuestion } from '@/lib/quiz-data';
+import { type QuizData, UserAnswer, QuizQuestion, TranscriptItem } from '@/lib/quiz-data';
 import { useToast } from '@/hooks/use-toast';
 import { extractYouTubeVideoId } from '@/lib/utils';
 import { generateQuizFromTranscript, GenerateQuizExtendedOutput } from '@/ai/flows/generate-quiz-from-transcript-flow';
 import { useUserProfile } from '@/hooks/use-user-profile';
+import { getVideoDetails, getSubtitles, type Subtitle } from 'youtube-caption-extractor';
 
 
 type VocabularyItem = {
@@ -24,7 +24,13 @@ type VocabularyItem = {
   userId: string;
 };
 
-type VideoData = ProcessVideoOutput & { videoId?: string };
+type VideoData = { 
+  title: string;
+  description: string;
+  transcript: TranscriptItem[];
+  sourceLang: string;
+  videoId?: string 
+};
 
 
 type WatchPageContextType = {
@@ -295,22 +301,44 @@ export function WatchPageProvider({ children, activeVideoId: passedVideoId, shou
           }
           toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
           
-          let result: ProcessVideoOutput;
+          let subtitles: Subtitle[];
+          let sourceLang: string;
           try {
             // First, try fetching with the user's target language
-            result = await processVideo({ videoId: cleanVideoId, lang: userProfile.targetLanguage });
-            toast({ variant: 'subtle', title: `Transcript found in ${userProfile.targetLanguage}!`});
+            sourceLang = userProfile.targetLanguage;
+            subtitles = await getSubtitles({ videoID: cleanVideoId, lang: sourceLang });
+            toast({ variant: 'subtle', title: `Transcript found in ${sourceLang}!`});
           } catch (e: any) {
              // If target language fails, fall back to English
-             if (e.message.includes('No transcript available')) {
+             if (e.message.includes('Could not find transcript')) {
                  console.warn(`Transcript not found in ${userProfile.targetLanguage}, falling back to English.`);
                  toast({ variant: 'subtle', title: 'Falling back to English transcript'});
-                 result = await processVideo({ videoId: cleanVideoId, lang: 'en' });
+                 sourceLang = 'en';
+                 subtitles = await getSubtitles({ videoID: cleanVideoId, lang: sourceLang });
              } else {
                  // Re-throw other errors (e.g., video not found, captions disabled)
                  throw e;
              }
           }
+          
+          const videoDetails = await getVideoDetails({ videoID: cleanVideoId });
+
+          const formattedTranscript: TranscriptItem[] = (subtitles || []).map((item: Subtitle) => {
+              const start = typeof item.start === 'string' ? parseFloat(item.start) : item.start;
+              const dur = typeof item.dur === 'string' ? parseFloat(item.dur) : item.dur;
+              return {
+                  text: item.text,
+                  offset: start * 1000,
+                  duration: dur * 1000,
+              };
+          });
+
+          const result: VideoData = {
+            title: videoDetails.title || `Video: ${cleanVideoId}`,
+            description: videoDetails.description || 'No description available.',
+            transcript: formattedTranscript,
+            sourceLang: sourceLang,
+          };
 
           if (!user) {
             setError("User not available to save video data.");
@@ -529,5 +557,3 @@ export function useWatchPage() {
   }
   return context;
 }
-
-    

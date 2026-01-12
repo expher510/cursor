@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A flow for translating words using the Groq API, considering the context of the sentence.
+ * @fileOverview A flow for translating words using the OpenAI API, considering the context of the sentence.
  *
  * - translateWord - A function that takes a word and its context and returns its translation.
  * - TranslateWordInput - The input type for the translateWord function.
@@ -9,9 +9,9 @@
  */
 
 import { z } from 'zod';
-import { Groq } from 'groq-sdk';
+import OpenAI from 'openai';
 
-const groq = new Groq();
+const openai = new OpenAI();
 
 const TranslateWordInputSchema = z.object({
   word: z.string().describe('The word to translate.'),
@@ -58,7 +58,7 @@ export async function translateWord(input: TranslateWordInput): Promise<Translat
     const prompt = buildPrompt(input);
 
     try {
-        const chatCompletion = await groq.chat.completions.create({
+        const chatCompletion = await openai.chat.completions.create({
             "messages": [
                 {
                     "role": "system",
@@ -69,15 +69,13 @@ export async function translateWord(input: TranslateWordInput): Promise<Translat
                     "content": prompt
                 }
             ],
-            "model": "llama-3.1-8b-instant",
+            "model": "gpt-4-turbo",
             "temperature": 0.1,
             "max_tokens": 1024,
             "top_p": 1,
-            "stream": false,
              "response_format": {
                 "type": "json_object"
             },
-            "stop": null
         });
 
         const responseContent = chatCompletion.choices[0]?.message?.content;
@@ -94,7 +92,7 @@ export async function translateWord(input: TranslateWordInput): Promise<Translat
         };
 
     } catch (error: any) {
-        console.error("Groq translation flow failed:", error);
+        console.error("OpenAI translation flow failed:", error);
          if (error instanceof z.ZodError) {
              throw new Error(`AI returned data in an unexpected format. Details: ${error.message}`);
         }

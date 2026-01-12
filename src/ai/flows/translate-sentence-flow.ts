@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A flow for translating a full sentence using the Groq API.
+ * @fileOverview A flow for translating a full sentence using the OpenAI API.
  *
  * - translateSentence - A function that takes a sentence and returns its translation.
  * - TranslateSentenceInput - The input type for the translateSentence function.
@@ -9,9 +9,9 @@
  */
 
 import { z } from 'zod';
-import { Groq } from 'groq-sdk';
+import OpenAI from 'openai';
 
-const groq = new Groq();
+const openai = new OpenAI();
 
 const TranslateSentenceInputSchema = z.object({
   sentence: z.string().describe('The sentence to translate.'),
@@ -56,7 +56,7 @@ export async function translateSentence(input: TranslateSentenceInput): Promise<
     const prompt = buildPrompt(input);
 
     try {
-        const chatCompletion = await groq.chat.completions.create({
+        const chatCompletion = await openai.chat.completions.create({
             "messages": [
                 {
                     "role": "system",
@@ -67,15 +67,13 @@ export async function translateSentence(input: TranslateSentenceInput): Promise<
                     "content": prompt
                 }
             ],
-            "model": "llama-3.1-8b-instant",
+            "model": "gpt-4-turbo",
             "temperature": 0.2,
             "max_tokens": 1024,
             "top_p": 1,
-            "stream": false,
              "response_format": {
                 "type": "json_object"
             },
-            "stop": null
         });
 
         const responseContent = chatCompletion.choices[0]?.message?.content;
@@ -92,7 +90,7 @@ export async function translateSentence(input: TranslateSentenceInput): Promise<
         };
 
     } catch (error: any) {
-        console.error("Groq sentence translation flow failed:", error);
+        console.error("OpenAI sentence translation flow failed:", error);
          if (error instanceof z.ZodError) {
              throw new Error(`AI returned data in an unexpected format. Details: ${error.message}`);
         }

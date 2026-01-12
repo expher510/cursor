@@ -1,5 +1,11 @@
 
 
+export type TranscriptItem = {
+  text: string;
+  offset: number;
+  duration: number;
+};
+
 export type QuizQuestion = {
   questionText: string;
   options: string[];

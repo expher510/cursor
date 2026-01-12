@@ -1,9 +1,9 @@
 
 'use server';
 import { z } from 'zod';
-import { Groq } from 'groq-sdk';
+import OpenAI from 'openai';
 
-const groq = new Groq();
+const openai = new OpenAI();
 
 // Define the schema for the input of our flow
 const GenerateWritingFeedbackInputSchema = z.object({
@@ -23,7 +23,7 @@ const GenerateWritingFeedbackOutputSchema = z.object({
 });
 export type GenerateWritingFeedbackOutput = z.infer<typeof GenerateWritingFeedbackOutputSchema>;
 
-// Helper function to build the prompt for Groq
+// Helper function to build the prompt for OpenAI
 function buildPrompt(input: GenerateWritingFeedbackInput): string {
     const wordList = input.usedWords.join(', ');
     return `
@@ -38,7 +38,7 @@ function buildPrompt(input: GenerateWritingFeedbackInput): string {
 
       Your entire response MUST be in the user's native language: ${input.nativeLanguage}.
 
-      Your task is to provide feedback in a structured JSON format. Your entire response MUST be a single, valid JSON object.
+      Your task is to provide feedback in a structured JSON format that adheres to the provided schema. Your entire response MUST be a single, valid JSON object.
       The JSON object must contain three keys: "feedback", "score", and "suggestions".
 
       SPECIAL INSTRUCTION 1: Analyze the user's text. If it is just a random, nonsensical jumble of words with no clear attempt to form a sentence or coherent thought, you MUST provide a roasting/sarcastic but funny response. For example: "Did a cat walk on your keyboard? I asked for a paragraph, not a grocery list.", and give a score of 0.
@@ -59,22 +59,20 @@ export async function generateWritingFeedback(input: GenerateWritingFeedbackInpu
     const prompt = buildPrompt(input);
 
     try {
-        const chatCompletion = await groq.chat.completions.create({
+        const chatCompletion = await openai.chat.completions.create({
             "messages": [
                 {
                     "role": "user",
                     "content": prompt
                 }
             ],
-            "model": "llama-3.1-8b-instant", 
+            "model": "gpt-4-turbo", 
             "temperature": 0.6,
             "max_tokens": 1024,
             "top_p": 1,
-            "stream": false,
             "response_format": {
                 "type": "json_object"
             },
-            "stop": null
         });
         
         const responseContent = chatCompletion.choices[0]?.message?.content;
@@ -90,7 +88,7 @@ export async function generateWritingFeedback(input: GenerateWritingFeedbackInpu
         return validatedOutput;
 
     } catch (error) {
-        console.error("Error generating writing feedback with Groq:", error);
+        console.error("Error generating writing feedback with OpenAI:", error);
         if (error instanceof z.ZodError) {
              throw new Error(`AI returned data in an unexpected format. Details: ${error.message}`);
         }
