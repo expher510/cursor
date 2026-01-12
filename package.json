@@ -5,7 +5,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+<<<<<<< HEAD
     "build": "NODE_ENV=production next build",
+=======
+    "build": "next build",
+>>>>>>> 3666ee5 (cursor cod)
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"

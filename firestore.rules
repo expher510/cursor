@@ -170,6 +170,29 @@ service cloud.firestore {
         allow update: if isExistingOwner(userId) && hasValidChildUpdateData();
         allow delete: if isExistingOwner(userId);
       }
+<<<<<<< HEAD
+=======
+      
+      /**
+       * @description Controls access to a user's speaking exercise attempts.
+       * @path /users/{userId}/speakingAttempts/{attemptId}
+       * @allow A signed-in user can manage their own speaking exercise attempts.
+       * @principle Enforces path-based ownership for all user attempts.
+       */
+      match /speakingAttempts/{attemptId} {
+        allow get, list, create, update, delete: if isOwner(userId);
+      }
+
+       /**
+       * @description Controls access to a user's writing feedback.
+       * @path /users/{userId}/writingFeedback/{feedbackId}
+       * @allow A signed-in user can manage their own writing feedback.
+       * @principle Enforces path-based ownership for all user feedback.
+       */
+       match /writingFeedback/{feedbackId} {
+          allow get, list, create, update, delete: if isOwner(userId);
+       }
+>>>>>>> 3666ee5 (cursor cod)
     }
   }
 }
