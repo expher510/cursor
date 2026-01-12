@@ -207,12 +207,12 @@ function MainContent() {
           {getSubtitle()}
         </p>
          {isProfileLoading ? (
-            <div className="flex items-center gap-4 mt-4">
+            <div className="flex items-center gap-4 mt-4 h-10">
                 <Skeleton className="h-6 w-32" />
                 <Skeleton className="h-6 w-24" />
             </div>
-          ) : userProfile && (
-             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-4 text-sm font-medium text-muted-foreground">
+          ) : userProfile ? (
+             <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 mt-4 text-sm font-medium text-muted-foreground h-10">
                 <Button variant="ghost" className="flex items-center gap-2" onClick={openEditModal}>
                     <User className="h-4 w-4 text-primary" />
                     <span>Welcome back, {userProfile.displayName}!</span>
@@ -225,6 +225,8 @@ function MainContent() {
                     </div>
                 )}
             </div>
+          ) : (
+            <div className="h-10 mt-4" />
           )}
       </div>
       <div className="w-full max-w-lg pt-4">
