@@ -57,16 +57,22 @@ const shuffleArray = (array: any[]) => {
 
 type WatchPageProviderProps = {
     children: ReactNode;
+    activeVideoId?: string | null;
+    shouldGenerate?: boolean;
 };
 
 
-export function WatchPageProvider({ children }: WatchPageProviderProps) {
+export function WatchPageProvider({ children, activeVideoId: passedVideoId, shouldGenerate: passedShouldGenerate = false }: WatchPageProviderProps) {
   const { firestore, user } = useFirebase();
   const { userProfile } = useUserProfile();
   const searchParams = useSearchParams();
   const urlVideoId = searchParams.get('v');
-  const shouldGenerate = searchParams.get('shouldGenerate') !== 'false'; // Default to true
+  const urlShouldGenerate = searchParams.get('shouldGenerate') !== 'false';
   const { toast } = useToast();
+
+  const activeVideoId = passedVideoId ?? urlVideoId;
+  const shouldGenerate = passedShouldGenerate || urlShouldGenerate;
+
 
   const [videoData, setVideoData] = useState<VideoData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,12 +81,12 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
   const [quizData, setQuizData] = useState<QuizData | null>(null);
   const [hardcodedQuizData, setHardcodedQuizData] = useState<QuizData | null>(null);
   
-  const [activeVideoId, setActiveVideoId] = useState<string | null>(urlVideoId);
+  const [currentVideoId, setCurrentVideoId] = useState<string | null>(activeVideoId);
 
   // Effect to fetch the last video ID if none is in the URL
   useEffect(() => {
-    if (urlVideoId) {
-      setActiveVideoId(urlVideoId);
+    if (activeVideoId) {
+      setCurrentVideoId(activeVideoId);
       return;
     }
 
@@ -97,7 +103,7 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
           if (!querySnapshot.empty) {
             const lastVideo = querySnapshot.docs[0];
             if (lastVideo.id !== '_placeholder') {
-                setActiveVideoId(lastVideo.id);
+                setCurrentVideoId(lastVideo.id);
             } else {
                 setError("No videos found in your history.");
                 setIsLoading(false);
@@ -116,7 +122,7 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
     } else if (!user) {
         setIsLoading(false);
     }
-  }, [urlVideoId, user, firestore]);
+  }, [activeVideoId, user, firestore]);
 
   const vocabQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
@@ -126,10 +132,10 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
   const { data: allVocabulary, setData: setAllVocabulary } = useCollection<VocabularyItem>(vocabQuery);
 
   const videoVocabulary = useMemo(() => {
-    if (!allVocabulary || !activeVideoId) return [];
-    const cleanVideoId = extractYouTubeVideoId(activeVideoId);
+    if (!allVocabulary || !currentVideoId) return [];
+    const cleanVideoId = extractYouTubeVideoId(currentVideoId);
     return allVocabulary.filter(item => item.videoId === cleanVideoId);
-  }, [allVocabulary, activeVideoId]);
+  }, [allVocabulary, currentVideoId]);
 
   const generateAndStoreHardcodedQuestions = useCallback(async (
     currentVideoData: VideoData,
@@ -208,9 +214,9 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
   }, [firestore, user]);
 
 
-  // Effect to fetch OR process video data based on activeVideoId
+  // Effect to fetch OR process video data based on currentVideoId
   useEffect(() => {
-    if (!activeVideoId) {
+    if (!currentVideoId) {
        if (!error) { 
          setIsLoading(false);
        }
@@ -223,7 +229,7 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
       return;
     }
 
-    if (videoData?.videoId === activeVideoId) {
+    if (videoData?.videoId === currentVideoId) {
         setIsLoading(false);
         return;
     }
@@ -235,7 +241,7 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
     setHardcodedQuizData(null); // Reset hardcoded quiz data
 
     async function fetchAndProcessVideoData() {
-      const cleanVideoId = extractYouTubeVideoId(activeVideoId);
+      const cleanVideoId = extractYouTubeVideoId(currentVideoId);
       if (!cleanVideoId) {
           setError("The provided YouTube URL or ID is invalid.");
           setIsLoading(false);
@@ -326,7 +332,7 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
     
     fetchAndProcessVideoData();
 
-  }, [activeVideoId, user, firestore, toast, shouldGenerate, userProfile, generateAndStoreHardcodedQuestions, videoVocabulary]);
+  }, [currentVideoId, user, firestore, toast, shouldGenerate, userProfile, generateAndStoreHardcodedQuestions, videoVocabulary]);
 
   const handleQuizGeneration = useCallback(async () => {
     if (!videoData?.transcript || videoData.transcript.length === 0 || !userProfile || !firestore || !user || !videoData?.videoId) {
@@ -390,11 +396,11 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
 
 
   const saveQuizResults = useCallback(async (results: { score: number, userAnswers: UserAnswer[] }) => {
-    if (!firestore || !user || !activeVideoId) {
+    if (!firestore || !user || !currentVideoId) {
         toast({ variant: "destructive", title: "Error Saving Results", description: "Could not save quiz results. Please try again."});
         return;
     }
-    const cleanVideoId = extractYouTubeVideoId(activeVideoId);
+    const cleanVideoId = extractYouTubeVideoId(currentVideoId);
     if (!cleanVideoId) return;
 
     const quizCollectionRef = collection(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`);
@@ -412,7 +418,7 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
         console.error("Failed to save quiz results:", e);
         toast({ variant: "destructive", title: "Save Failed", description: "There was a problem saving your quiz results."});
     }
-  }, [firestore, user, activeVideoId, toast]);
+  }, [firestore, user, currentVideoId, toast]);
 
   const savedWordsSet = useMemo(() => {
     return new Set(videoVocabulary?.map(item => item.word) ?? []);
@@ -420,8 +426,8 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
 
 
   const addVocabularyItem = useCallback(async (word: string, context: string) => {
-    if (!user || !firestore || !activeVideoId || !userProfile || !videoData) return;
-    const cleanVideoId = extractYouTubeVideoId(activeVideoId);
+    if (!user || !firestore || !currentVideoId || !userProfile || !videoData) return;
+    const cleanVideoId = extractYouTubeVideoId(currentVideoId);
     if (!cleanVideoId) return;
 
     const cleanedWord = word.toLowerCase().replace(/[.,\/#!$%^&*;:{}=\-_`~()]/g,"");
@@ -461,7 +467,7 @@ export function WatchPageProvider({ children }: WatchPageProviderProps) {
         setAllVocabulary(prev => prev?.filter(item => item.id !== tempId) || null);
     }
 
-  }, [user, firestore, activeVideoId, savedWordsSet, setAllVocabulary, userProfile, videoData]);
+  }, [user, firestore, currentVideoId, savedWordsSet, setAllVocabulary, userProfile, videoData]);
 
   const removeVocabularyItem = useCallback(async (id: string) => {
       if (!firestore || !user) return;

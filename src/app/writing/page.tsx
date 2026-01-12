@@ -16,6 +16,7 @@ import { useUserProfile } from "@/hooks/use-user-profile";
 import { generateWritingFeedback, type GenerateWritingFeedbackOutput } from "@/ai/flows/generate-writing-feedback-flow";
 import { collection, addDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import { useSearchParams } from "next/navigation";
 
 function WritingWorkspace() {
     const { videoData, vocabulary, isLoading: isContextLoading } = useWatchPage();
@@ -187,7 +188,7 @@ function WritingWorkspace() {
         }
     };
 
-    if (isContextLoading) {
+    if (isContextLoading && !videoData) {
         return <Loader2 className="h-8 w-8 animate-spin text-primary" />;
     }
 
@@ -210,7 +211,10 @@ function WritingWorkspace() {
                             onValueChange={(value) => setWordCount(value[0])}
                         />
                     </div>
-                    <Button onClick={startExercise} className="w-full">Start Exercise</Button>
+                    <Button onClick={startExercise} className="w-full" disabled={isContextLoading}>
+                        {isContextLoading ? <Loader2 className="animate-spin mr-2" /> : null}
+                        Start Exercise
+                    </Button>
                 </CardContent>
             </Card>
         );
@@ -286,11 +290,11 @@ function WritingWorkspace() {
 }
 
 function PageContent() {
-    // By providing shouldGenerate=false, we prevent the context from fetching/processing a video,
-    // which is not needed on this page and speeds up loading.
-    // The context will still provide access to the vocabulary list.
+    const searchParams = useSearchParams();
+    const videoId = searchParams.get('v');
+
     return (
-        <WatchPageProvider>
+        <WatchPageProvider activeVideoId={videoId} shouldGenerate={true}>
             <WritingWorkspace />
         </WatchPageProvider>
     );
@@ -315,5 +319,3 @@ export default function WritingPage() {
     </>
   );
 }
-
-    

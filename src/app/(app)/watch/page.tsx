@@ -6,15 +6,8 @@ import { Suspense } from "react";
 import { AppHeader } from "@/components/app-header";
 import { WatchPageProvider } from "@/context/watch-page-context";
 import { Loader2 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 
 function WatchPageContent() {
-  const searchParams = useSearchParams();
-  const videoId = searchParams.get('v');
-  const shouldGenerate = searchParams.get('shouldGenerate');
-  // Create a key that changes when the core params change, forcing a re-mount
-  const key = `${videoId}-${shouldGenerate}`;
-
   return (
     <WatchPageProvider>
       <VideoWorkspace />
