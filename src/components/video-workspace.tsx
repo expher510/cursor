@@ -6,12 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { AlertTriangle, Edit, Eye, EyeOff, Loader2, Circle } from "lucide-react";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
-import ReactPlayer from 'react-player/youtube';
+import dynamic from 'next/dynamic';
 import { useState, useRef, useEffect } from "react";
 import { CaptionView } from "./caption-view";
 import { VocabularyList } from "./vocabulary-list";
 import { Logo } from "./logo";
 import { QuizPlayer } from "./quiz-player";
+
+const ReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false });
 
 
 function LoadingState() {
@@ -124,12 +126,10 @@ export function VideoWorkspace() {
                         onEnded={handleVideoEnd}
                         onDuration={setDuration}
                         config={{
-                            youtube: {
-                                playerVars: {
-                                    modestbranding: 1,
-                                    rel: 0,
-                                    vq: 'tiny'
-                                }
+                            playerVars: {
+                                modestbranding: 1,
+                                rel: 0,
+                                vq: 'tiny'
                             }
                         }}
                     />

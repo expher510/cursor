@@ -1,5 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
-import ReactPlayer from 'react-player/youtube';
+import dynamic from 'next/dynamic';
+
+const ReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false });
 
 type VideoPlayerProps = {
   videoId: string;
@@ -18,11 +20,9 @@ export function VideoPlayer({ videoId, title }: VideoPlayerProps) {
                 controls={true}
                 playing={true}
                 config={{
-                    youtube: {
-                        playerVars: {
-                            modestbranding: 1,
-                            rel: 0,
-                        }
+                    playerVars: {
+                        modestbranding: 1,
+                        rel: 0,
                     }
                 }}
             />

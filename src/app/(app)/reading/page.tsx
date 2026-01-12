@@ -12,9 +12,11 @@ import { Logo } from "@/components/logo";
 import { useState, useMemo, Suspense, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { QuizPlayer } from "@/components/quiz-player";
-import ReactPlayer from 'react-player/youtube';
+import dynamic from 'next/dynamic';
 import { cn } from "@/lib/utils";
 import { CircularProgressControl } from "@/components/circular-progress-control";
+
+const ReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false });
 
 
 function ReadingQuiz() {
@@ -248,17 +250,14 @@ function DraggableVideoPlayer() {
                         onPlay={() => setIsPlaying(true)}
                         onPause={() => setIsPlaying(false)}
                         onProgress={(state) => setPlayed(state.played)}
-                        controls={true}
                         light={false}
                         config={{
-                            youtube: {
-                                playerVars: {
-                                    disablekb: 1,
-                                    fs: 0,
-                                    iv_load_policy: 3,
-                                    modestbranding: 1,
-                                    playsinline: 1,
-                                }
+                            playerVars: {
+                                disablekb: 1,
+                                fs: 0,
+                                iv_load_policy: 3,
+                                modestbranding: 1,
+                                playsinline: 1,
                             }
                         }}
                     />
