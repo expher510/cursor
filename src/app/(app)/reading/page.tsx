@@ -12,6 +12,7 @@ import { useState, useMemo, Suspense, useEffect, useRef, useCallback } from "rea
 import { useSearchParams } from "next/navigation";
 import { QuizPlayer } from "@/components/quiz-player";
 import { cn } from "@/lib/utils";
+import dynamic from 'next/dynamic';
 import LiteYouTubeEmbed from 'react-lite-youtube-embed';
 import 'react-lite-youtube-embed/dist/LiteYouTubeEmbed.css';
 
@@ -149,11 +150,6 @@ function ReadingPracticePageContent() {
 function DraggableVideoPlayer() {
     const { videoData } = useWatchPage();
     const dragRef = useRef<HTMLDivElement>(null);
-    const [isClient, setIsClient] = useState(false);
-
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
     
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
@@ -211,7 +207,7 @@ function DraggableVideoPlayer() {
     }, [isDragging, onDragMove]);
 
 
-    if (!videoData || !videoData.videoId || !isClient) return null;
+    if (!videoData || !videoData.videoId) return null;
 
     return (
         <div
@@ -238,6 +234,11 @@ function DraggableVideoPlayer() {
     );
 }
 
+const DynamicDraggableVideoPlayer = dynamic(() => Promise.resolve(DraggableVideoPlayer), {
+  ssr: false,
+  loading: () => <div className="fixed bottom-8 right-4 z-50 h-36 w-64 rounded-lg bg-muted shadow-lg flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin"/></div>,
+});
+
 
 function PageWithProvider() {
     return (
@@ -253,7 +254,7 @@ function PageContent() {
         <>
             <ReadingPracticePageContent />
             {!isLoading && videoData && (
-                <DraggableVideoPlayer />
+                <DynamicDraggableVideoPlayer />
             )}
         </>
     )

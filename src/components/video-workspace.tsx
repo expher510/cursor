@@ -6,13 +6,33 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { AlertTriangle, Edit, Eye, EyeOff, Loader2, Circle } from "lucide-react";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { CaptionView } from "./caption-view";
 import { VocabularyList } from "./vocabulary-list";
 import { Logo } from "./logo";
 import { QuizPlayer } from "./quiz-player";
-import LiteYouTubeEmbed from 'react-lite-youtube-embed';
+import dynamic from 'next/dynamic';
 import 'react-lite-youtube-embed/dist/LiteYouTubeEmbed.css';
+import LiteYouTubeEmbed from 'react-lite-youtube-embed';
+
+
+const ClientOnlyYoutubeEmbed = ({ videoId, title }: { videoId: string, title: string }) => {
+  return (
+    <div className="aspect-video w-full overflow-hidden rounded-lg bg-black/75 border">
+      <LiteYouTubeEmbed
+          id={videoId}
+          title={title}
+          params="modestbranding=1&rel=0&autoplay=1"
+          noCookie={true}
+      />
+    </div>
+  );
+};
+
+const DynamicYoutubeEmbed = dynamic(() => Promise.resolve(ClientOnlyYoutubeEmbed), {
+  ssr: false,
+  loading: () => <Skeleton className="aspect-video w-full" />,
+});
 
 
 function LoadingState() {
@@ -52,11 +72,7 @@ export function VideoWorkspace() {
   const [showTranscript, setShowTranscript] = useState(true);
   const [isQuizVisible, setIsQuizVisible] = useState(false);
   const quizContainerRef = useRef<HTMLDivElement>(null);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-      setIsClient(true);
-  }, []);
+  
 
   useEffect(() => {
     if (isQuizVisible && quizContainerRef.current) {
@@ -100,16 +116,7 @@ export function VideoWorkspace() {
 
         <div className="w-full flex flex-col gap-4 items-center">
              <div className="w-full">
-                <div className="aspect-video w-full overflow-hidden rounded-lg bg-black/75 border">
-                    {isClient && (
-                      <LiteYouTubeEmbed
-                          id={videoData.videoId}
-                          title={videoData.title}
-                          params="modestbranding=1&rel=0&autoplay=1"
-                          noCookie={true}
-                      />
-                    )}
-                </div>
+                <DynamicYoutubeEmbed videoId={videoData.videoId} title={videoData.title} />
              </div>
 
             <div className="w-full relative">

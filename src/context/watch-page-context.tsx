@@ -241,6 +241,11 @@ export function WatchPageProvider({ children, activeVideoId: passedVideoId, shou
     setHardcodedQuizData(null); // Reset hardcoded quiz data
 
     async function fetchAndProcessVideoData() {
+      if (!currentVideoId) {
+        setError("Video ID is missing.");
+        setIsLoading(false);
+        return;
+      }
       const cleanVideoId = extractYouTubeVideoId(currentVideoId);
       if (!cleanVideoId) {
           setError("The provided YouTube URL or ID is invalid.");
