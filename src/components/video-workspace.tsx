@@ -6,15 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { AlertTriangle, Edit, Eye, EyeOff, Loader2, Circle } from "lucide-react";
 import { useWatchPage } from "@/context/watch-page-context";
 import { Button } from "./ui/button";
-import dynamic from 'next/dynamic';
 import { useState, useRef, useEffect } from "react";
 import { CaptionView } from "./caption-view";
 import { VocabularyList } from "./vocabulary-list";
 import { Logo } from "./logo";
 import { QuizPlayer } from "./quiz-player";
-import type Player from 'react-player';
-
-const DynamicReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false });
+import LiteYouTubeEmbed from 'react-lite-youtube-embed';
+import 'react-lite-youtube-embed/dist/LiteYouTubeEmbed.css';
 
 
 function LoadingState() {
@@ -51,12 +49,8 @@ function ErrorState({ message, title = "Processing Error" }: { message: string, 
 
 export function VideoWorkspace() {
   const { videoData, combinedQuizData, isLoading, error, handleQuizGeneration, isGeneratingQuiz, saveQuizResults } = useWatchPage();
-  const [currentTime, setCurrentTime] = useState(0);
   const [showTranscript, setShowTranscript] = useState(true);
   const [isQuizVisible, setIsQuizVisible] = useState(false);
-  const [isBuffering, setIsBuffering] = useState(false);
-  const [duration, setDuration] = useState(0);
-  const playerRef = useRef<Player>(null);
   const quizContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -77,13 +71,6 @@ export function VideoWorkspace() {
   if (!videoData || !videoData.videoId || !videoData.transcript) {
     return <ErrorState message="Video data could not be loaded." />;
   }
-
-  const handleVideoEnd = () => {
-    if (playerRef.current && duration > 0) {
-      const seekToTime = duration > 1 ? duration - 1 : 0;
-      playerRef.current.seekTo(seekToTime, 'seconds');
-    }
-  };
   
   const toggleQuizVisibility = () => {
       const newVisibility = !isQuizVisible;
@@ -108,31 +95,12 @@ export function VideoWorkspace() {
 
         <div className="w-full flex flex-col gap-4 items-center">
              <div className="w-full">
-                <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-black/75">
-                     {isBuffering && (
-                        <div className="absolute inset-0 flex items-center justify-center z-10">
-                            <Loader2 className="h-12 w-12 animate-spin text-white" />
-                        </div>
-                    )}
-                    <DynamicReactPlayer
-                        ref={playerRef}
-                        url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                        width="100%"
-                        height="100%"
-                        controls={true}
-                        playing={true}
-                        onProgress={(progress) => setCurrentTime(progress.playedSeconds * 1000)}
-                        onBuffer={() => setIsBuffering(true)}
-                        onBufferEnd={() => setIsBuffering(false)}
-                        onEnded={handleVideoEnd}
-                        onDuration={setDuration}
-                        config={{
-                            playerVars: {
-                                modestbranding: 1,
-                                rel: 0,
-                                vq: 'tiny'
-                            }
-                        }}
+                <div className="aspect-video w-full overflow-hidden rounded-lg bg-black/75 border">
+                    <LiteYouTubeEmbed
+                        id={videoData.videoId}
+                        title={videoData.title}
+                        params="modestbranding=1&rel=0&autoplay=1"
+                        noCookie={true}
                     />
                 </div>
              </div>
@@ -149,7 +117,7 @@ export function VideoWorkspace() {
                 </Button>
                 
                 {showTranscript && (
-                    <CaptionView transcript={videoData.transcript} currentTime={currentTime} />
+                    <CaptionView transcript={videoData.transcript} currentTime={0} />
                 )}
             </div>
             

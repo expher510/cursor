@@ -12,12 +12,10 @@ import { Logo } from "@/components/logo";
 import { useState, useMemo, Suspense, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { QuizPlayer } from "@/components/quiz-player";
-import dynamic from 'next/dynamic';
 import { cn } from "@/lib/utils";
 import { CircularProgressControl } from "@/components/circular-progress-control";
-import type Player from 'react-player';
-
-const DynamicReactPlayer = dynamic(() => import('react-player/youtube'), { ssr: false });
+import LiteYouTubeEmbed from 'react-lite-youtube-embed';
+import 'react-lite-youtube-embed/dist/LiteYouTubeEmbed.css';
 
 
 function ReadingQuiz() {
@@ -152,21 +150,12 @@ function ReadingPracticePageContent() {
 
 function DraggableVideoPlayer() {
     const { videoData } = useWatchPage();
-    const playerRef = useRef<Player>(null);
     const dragRef = useRef<HTMLDivElement>(null);
-    const [played, setPlayed] = useState(0);
-    const [isPlaying, setIsPlaying] = useState(false);
     
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const dragStartPos = useRef({ x: 0, y: 0 });
 
-    const handleSeek = (progress: number) => {
-        if (playerRef.current) {
-            playerRef.current.seekTo(progress, 'fraction');
-            setPlayed(progress);
-        }
-    };
 
     const onDragStart = (e: React.MouseEvent | React.TouchEvent) => {
         setIsDragging(true);
@@ -219,48 +208,23 @@ function DraggableVideoPlayer() {
     }, [isDragging, onDragMove]);
 
 
-    if (!videoData) return null;
+    if (!videoData || !videoData.videoId) return null;
 
     return (
         <div
             ref={dragRef}
-            className="fixed bottom-8 right-4 z-50 h-36 w-36 cursor-grab"
+            className="fixed bottom-8 right-4 z-50 h-36 w-64 cursor-grab"
             style={{ transform: `translate(${position.x}px, ${position.y}px)` }}
             onMouseDown={onDragStart}
             onTouchStart={onDragStart}
         >
             <div className="absolute inset-0">
-                <CircularProgressControl
-                    progress={played * 100}
-                    onSeek={handleSeek}
-                    size={140}
-                    strokeWidth={6}
-                />
-            </div>
-
-            <div className="absolute inset-0 flex items-center justify-center">
-                 <div className="relative h-[112px] w-[112px] rounded-full overflow-hidden shadow-lg flex-shrink-0">
-                    <DynamicReactPlayer
-                        ref={playerRef}
-                        url={`https://www.youtube.com/watch?v=${videoData.videoId}`}
-                        volume={1}
-                        muted={false}
-                        width="100%"
-                        height="100%"
-                        playing={isPlaying}
-                        onPlay={() => setIsPlaying(true)}
-                        onPause={() => setIsPlaying(false)}
-                        onProgress={(state) => setPlayed(state.played)}
-                        light={false}
-                        config={{
-                            playerVars: {
-                                disablekb: 1,
-                                fs: 0,
-                                iv_load_policy: 3,
-                                modestbranding: 1,
-                                playsinline: 1,
-                            }
-                        }}
+                <div className="relative h-full w-full rounded-lg overflow-hidden shadow-lg flex-shrink-0 border-2 border-primary">
+                    <LiteYouTubeEmbed
+                        id={videoData.videoId}
+                        title={videoData.title}
+                        params="modestbranding=1&rel=0&autoplay=1"
+                        noCookie={true}
                     />
                 </div>
             </div>

@@ -133,7 +133,7 @@ export function QuizView({ questions, onQuizComplete, onRetry, title = "Quiz" }:
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="space-y-4">
-                        {shuffledQuestions.map((q, index) => {
+                        {shuffledQuestions.map((q: QuizQuestion, index: number) => {
                             const userAnswer = userAnswers[index];
                             const isCorrect = userAnswer === q.correctAnswer;
                             return (
@@ -184,7 +184,7 @@ export function QuizView({ questions, onQuizComplete, onRetry, title = "Quiz" }:
                     onValueChange={selectAnswer}
                     className="space-y-3"
                 >
-                    {currentQuestion.options.map((option, index) => (
+                    {currentQuestion.options.map((option: string, index: number) => (
                         <Label key={index} htmlFor={`option-${index}`} className={cn(
                            "flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-colors hover:bg-muted",
                            userAnswers[currentQuestionIndex] === option && "bg-primary/10 border-primary"
