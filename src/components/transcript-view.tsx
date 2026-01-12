@@ -146,3 +146,4 @@ export function TranscriptView({ transcript, videoId, onPlaySegment, activeSegme
     </div>
   );
 }
+
