@@ -1,9 +1,9 @@
 
 'use server';
 import { z } from 'zod';
-import OpenAI from 'openai';
+import Groq from 'groq-sdk';
 
-const openai = new OpenAI();
+const groq = new Groq();
 
 // Define the schema for a single quiz question
 const QuizQuestionSchema = z.object({
@@ -61,14 +61,14 @@ function buildPrompt(input: GenerateQuizInput): string {
 export async function generateQuizFromTranscript(input: GenerateQuizInput): Promise<GenerateQuizExtendedOutput> {
     const prompt = buildPrompt(input);
 
-    const chatCompletion = await openai.chat.completions.create({
+    const chatCompletion = await groq.chat.completions.create({
         "messages": [
             {
                 "role": "user",
                 "content": prompt
             }
         ],
-        "model": "gpt-4-turbo",
+        "model": "llama3-8b-8192",
         "temperature": 0.7,
         "max_tokens": 1024,
         "top_p": 1,

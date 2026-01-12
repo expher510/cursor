@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A flow for translating a full sentence using the OpenAI API.
+ * @fileOverview A flow for translating a full sentence using the Groq API.
  *
  * - translateSentence - A function that takes a sentence and returns its translation.
  * - TranslateSentenceInput - The input type for the translateSentence function.
@@ -9,9 +9,9 @@
  */
 
 import { z } from 'zod';
-import OpenAI from 'openai';
+import Groq from 'groq-sdk';
 
-const openai = new OpenAI();
+const groq = new Groq();
 
 const TranslateSentenceInputSchema = z.object({
   sentence: z.string().describe('The sentence to translate.'),
@@ -56,7 +56,7 @@ export async function translateSentence(input: TranslateSentenceInput): Promise<
     const prompt = buildPrompt(input);
 
     try {
-        const chatCompletion = await openai.chat.completions.create({
+        const chatCompletion = await groq.chat.completions.create({
             "messages": [
                 {
                     "role": "system",
@@ -67,7 +67,7 @@ export async function translateSentence(input: TranslateSentenceInput): Promise<
                     "content": prompt
                 }
             ],
-            "model": "gpt-4-turbo",
+            "model": "llama3-8b-8192",
             "temperature": 0.2,
             "max_tokens": 1024,
             "top_p": 1,
@@ -90,7 +90,7 @@ export async function translateSentence(input: TranslateSentenceInput): Promise<
         };
 
     } catch (error: any) {
-        console.error("OpenAI sentence translation flow failed:", error);
+        console.error("Groq sentence translation flow failed:", error);
          if (error instanceof z.ZodError) {
              throw new Error(`AI returned data in an unexpected format. Details: ${error.message}`);
         }

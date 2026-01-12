@@ -1,9 +1,9 @@
 
 'use server';
 import { z } from 'zod';
-import OpenAI from 'openai';
+import Groq from 'groq-sdk';
 
-const openai = new OpenAI();
+const groq = new Groq();
 
 // Define the schema for the input of our flow
 const GenerateWritingFeedbackInputSchema = z.object({
@@ -23,7 +23,7 @@ const GenerateWritingFeedbackOutputSchema = z.object({
 });
 export type GenerateWritingFeedbackOutput = z.infer<typeof GenerateWritingFeedbackOutputSchema>;
 
-// Helper function to build the prompt for OpenAI
+// Helper function to build the prompt for Groq
 function buildPrompt(input: GenerateWritingFeedbackInput): string {
     const wordList = input.usedWords.join(', ');
     return `
@@ -59,14 +59,14 @@ export async function generateWritingFeedback(input: GenerateWritingFeedbackInpu
     const prompt = buildPrompt(input);
 
     try {
-        const chatCompletion = await openai.chat.completions.create({
+        const chatCompletion = await groq.chat.completions.create({
             "messages": [
                 {
                     "role": "user",
                     "content": prompt
                 }
             ],
-            "model": "gpt-4-turbo", 
+            "model": "llama3-8b-8192", 
             "temperature": 0.6,
             "max_tokens": 1024,
             "top_p": 1,
@@ -88,7 +88,7 @@ export async function generateWritingFeedback(input: GenerateWritingFeedbackInpu
         return validatedOutput;
 
     } catch (error) {
-        console.error("Error generating writing feedback with OpenAI:", error);
+        console.error("Error generating writing feedback with Groq:", error);
         if (error instanceof z.ZodError) {
              throw new Error(`AI returned data in an unexpected format. Details: ${error.message}`);
         }

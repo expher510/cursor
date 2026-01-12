@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A flow for translating words using the OpenAI API, considering the context of the sentence.
+ * @fileOverview A flow for translating words using the Groq API, considering the context of the sentence.
  *
  * - translateWord - A function that takes a word and its context and returns its translation.
  * - TranslateWordInput - The input type for the translateWord function.
@@ -9,9 +9,9 @@
  */
 
 import { z } from 'zod';
-import OpenAI from 'openai';
+import Groq from 'groq-sdk';
 
-const openai = new OpenAI();
+const groq = new Groq();
 
 const TranslateWordInputSchema = z.object({
   word: z.string().describe('The word to translate.'),
@@ -58,7 +58,7 @@ export async function translateWord(input: TranslateWordInput): Promise<Translat
     const prompt = buildPrompt(input);
 
     try {
-        const chatCompletion = await openai.chat.completions.create({
+        const chatCompletion = await groq.chat.completions.create({
             "messages": [
                 {
                     "role": "system",
@@ -69,7 +69,7 @@ export async function translateWord(input: TranslateWordInput): Promise<Translat
                     "content": prompt
                 }
             ],
-            "model": "gpt-4-turbo",
+            "model": "llama3-8b-8192",
             "temperature": 0.1,
             "max_tokens": 1024,
             "top_p": 1,
@@ -92,7 +92,7 @@ export async function translateWord(input: TranslateWordInput): Promise<Translat
         };
 
     } catch (error: any) {
-        console.error("OpenAI translation flow failed:", error);
+        console.error("Groq translation flow failed:", error);
          if (error instanceof z.ZodError) {
              throw new Error(`AI returned data in an unexpected format. Details: ${error.message}`);
         }
