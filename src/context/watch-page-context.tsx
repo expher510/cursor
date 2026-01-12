@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { extractYouTubeVideoId } from '@/lib/utils';
 import { generateQuizFromTranscript, GenerateQuizExtendedOutput } from '@/ai/flows/generate-quiz-from-transcript-flow';
 import { useUserProfile } from '@/hooks/use-user-profile';
-import { getVideoDetails, getSubtitles, type Subtitle } from 'youtube-caption-extractor';
+import { processVideo, type ProcessVideoOutput } from '@/ai/flows/process-video-flow';
 
 
 type VocabularyItem = {
@@ -24,13 +24,7 @@ type VocabularyItem = {
   userId: string;
 };
 
-type VideoData = { 
-  title: string;
-  description: string;
-  transcript: TranscriptItem[];
-  sourceLang: string;
-  videoId?: string 
-};
+type VideoData = ProcessVideoOutput & { videoId?: string };
 
 
 type WatchPageContextType = {
@@ -301,49 +295,13 @@ export function WatchPageProvider({ children, activeVideoId: passedVideoId, shou
           }
           toast({ title: "Processing New Video", description: "Please wait while we prepare your lesson." });
           
-          let subtitles: Subtitle[];
-          let sourceLang: string;
-          try {
-            // First, try fetching with the user's target language
-            sourceLang = userProfile.targetLanguage;
-            subtitles = await getSubtitles({ videoID: cleanVideoId, lang: sourceLang });
-            toast({ variant: 'subtle', title: `Transcript found in ${sourceLang}!`});
-          } catch (e: any) {
-             // If target language fails, fall back to English
-             if (e.message.includes('Could not find transcript')) {
-                 console.warn(`Transcript not found in ${userProfile.targetLanguage}, falling back to English.`);
-                 toast({ variant: 'subtle', title: 'Falling back to English transcript'});
-                 sourceLang = 'en';
-                 subtitles = await getSubtitles({ videoID: cleanVideoId, lang: sourceLang });
-             } else {
-                 // Re-throw other errors (e.g., video not found, captions disabled)
-                 throw e;
-             }
-          }
-          
-          const videoDetails = await getVideoDetails({ videoID: cleanVideoId });
-
-          const formattedTranscript: TranscriptItem[] = (subtitles || []).map((item: Subtitle) => {
-              const start = typeof item.start === 'string' ? parseFloat(item.start) : item.start;
-              const dur = typeof item.dur === 'string' ? parseFloat(item.dur) : item.dur;
-              return {
-                  text: item.text,
-                  offset: start * 1000,
-                  duration: dur * 1000,
-              };
-          });
-
-          const result: VideoData = {
-            title: videoDetails.title || `Video: ${cleanVideoId}`,
-            description: videoDetails.description || 'No description available.',
-            transcript: formattedTranscript,
-            sourceLang: sourceLang,
-          };
+          const result = await processVideo({ videoId: cleanVideoId, lang: userProfile.targetLanguage });
 
           if (!user) {
             setError("User not available to save video data.");
             return;
           }
+
           // Create docs for video and transcript
           await setDoc(videoDocRef, {
               id: cleanVideoId,
