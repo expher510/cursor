@@ -254,9 +254,14 @@ export function WatchPageProvider({ children, activeVideoId: passedVideoId, shou
       }
 
       try {
-        const videoDocRef = doc(firestore, `users/${user!.uid}/videos`, cleanVideoId);
-        const transcriptDocRef = doc(firestore, `users/${user!.uid}/videos/${cleanVideoId}/transcripts`, cleanVideoId);
-        const hardcodedQuizDocRef = doc(firestore, `users/${user!.uid}/videos/${cleanVideoId}/quizzes`, 'hardcoded-questions');
+        if (!user) {
+            setError("User session is not available.");
+            setIsLoading(false);
+            return;
+        }
+        const videoDocRef = doc(firestore, `users/${user.uid}/videos`, cleanVideoId);
+        const transcriptDocRef = doc(firestore, `users/${user.uid}/videos/${cleanVideoId}/transcripts`, cleanVideoId);
+        const hardcodedQuizDocRef = doc(firestore, `users/${user.uid}/videos/${cleanVideoId}/quizzes`, 'hardcoded-questions');
         
         const [videoDocSnap, transcriptDocSnap, hardcodedQuizSnap] = await Promise.all([
           getDoc(videoDocRef),
@@ -474,7 +479,7 @@ export function WatchPageProvider({ children, activeVideoId: passedVideoId, shou
             videoId: cleanVideoId,
         });
 
-        setAllVocabulary(prev => prev?.map(item => item.id === tempId ? { ...item, id: docRef.id, translation: translation || 'No translation found' } : item));
+        setAllVocabulary(prev => (prev || []).map(item => item.id === tempId ? { ...item, id: docRef.id, translation: translation || 'No translation found' } : item));
 
     } catch (e: any) {
         console.error("Failed to translate or save word", e);
@@ -524,3 +529,5 @@ export function useWatchPage() {
   }
   return context;
 }
+
+    
