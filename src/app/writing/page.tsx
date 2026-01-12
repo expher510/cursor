@@ -3,7 +3,7 @@
 import { AppHeader } from "@/components/app-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useState, useMemo, useRef, useEffect }from "react";
+import { useState, useMemo, useRef, useEffect, Suspense }from "react";
 import { useWatchPage, WatchPageProvider } from "@/context/watch-page-context";
 import { Loader2, Sparkles, CheckCircle } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
@@ -285,6 +285,18 @@ function WritingWorkspace() {
     );
 }
 
+function PageContent() {
+    // By providing shouldGenerate=false, we prevent the context from fetching/processing a video,
+    // which is not needed on this page and speeds up loading.
+    // The context will still provide access to the vocabulary list.
+    return (
+        <WatchPageProvider>
+            <WritingWorkspace />
+        </WatchPageProvider>
+    );
+}
+
+
 export default function WritingPage() {
   return (
     <>
@@ -296,10 +308,12 @@ export default function WritingPage() {
         <p className="text-muted-foreground max-w-2xl text-center">
             Use the selected words to practice your writing skills. When you've used all the words, you can get AI feedback.
         </p>
-        <WatchPageProvider>
-            <WritingWorkspace />
-        </WatchPageProvider>
+        <Suspense fallback={<div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <PageContent />
+        </Suspense>
       </main>
     </>
   );
 }
+
+    
