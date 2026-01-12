@@ -121,8 +121,8 @@ function MainContent() {
     }
   };
   
-  const showOnboarding = userProfile && !userProfile.onboardingCompleted;
-  const showEditModal = isEditing && userProfile;
+  const showOnboarding = !!(userProfile && !userProfile.onboardingCompleted);
+  const showEditModal = !!(isEditing && userProfile);
 
 
   const handleUrlChange = (newUrl: string) => {
@@ -130,7 +130,7 @@ function MainContent() {
     setActiveVideoId(videoId);
   };
 
-  const handlePracticeNavigation = async (activity: ActivityType, videoId?: string, shouldGenerate: boolean = true) => {
+  const handlePracticeNavigation = async (activity: ActivityType, videoId?: string | null, shouldGenerate: boolean = true) => {
     const videoIdToUse = videoId || activeVideoId;
 
     if (!user || !videoIdToUse) {
@@ -189,7 +189,7 @@ function MainContent() {
     <>
       {(showOnboarding || showEditModal) && (
         <OnboardingModal
-            open={showOnboarding || showEditModal}
+            open={!!(showOnboarding || showEditModal)}
             onSave={handleOnboardingSave}
             isEditMode={showEditModal}
             initialData={userProfile || undefined}
