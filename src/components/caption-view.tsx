@@ -68,7 +68,7 @@ export function CaptionView({ transcript, currentTime }: CaptionViewProps) {
                       "h-auto px-1 py-0.5 text-xl font-semibold leading-relaxed hover:bg-primary/10 disabled:opacity-100 disabled:cursor-default text-foreground",
                        isSaved && "bg-primary/20 text-primary cursor-default"
                   )}
-                  onClick={() => addVocabularyItem(cleanedWord)}
+                  onClick={() => addVocabularyItem(cleanedWord, line.text)}
                   disabled={isSaved}
                 >
                   {word}
